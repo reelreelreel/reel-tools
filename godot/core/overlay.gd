@@ -17,7 +17,7 @@ func _init() -> void:
 	fx.material = sm
 	add_child(fx)
 
-	hint = _label("CLIQUE UNE MACHINE  ·  GLISSE OU FLÈCHES POUR NAVIGUER", 11, Color(.925, .894, .839, .7))
+	hint = _label("STUDIO 70/80  ·  DÉCOR EN COURS", 11, Color(.925, .894, .839, .7))
 	hint.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	hint.offset_top = -44
 	hint.offset_bottom = -20

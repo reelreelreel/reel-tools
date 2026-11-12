@@ -8,8 +8,9 @@ const DESK_D := 0.95
 const WALL_Z := -0.72
 const WIN := {"x": -.45, "y": .92, "w": 2.1, "h": .8}
 
-## Disposition des machines : [x, z, rotY, y, inclinaison X] (inclinaison = dessus tourné vers la caméra)
-const L := {
+## Emplacements réservés aux futures machines : [x, z, rotY, y, inclinaison X]
+## (repris du prototype ; les machines seront redessinées et remises une par une)
+const EMPLACEMENTS := {
 	"tape": [-1.12, -.2, .28, .34 + .155, 1.2],
 	"scope": [-.42, -.32, .12, .1 + .13, 1.05],
 	"synth": [-.1, .2, .04, 0, .08],
@@ -17,23 +18,13 @@ const L := {
 	"rack": [1.08, -.25, -.42, .16, 0],
 	"tt": [.95, .2, -.25, 0, 0],
 	"book": [.38, .3, -.3, 0, 0],
-	"cup": [.64, .36, 0, 0, 0],
 }
-## Ordre de navigation (glisser / flèches)
-const ORDER := ["overview", "tempo", "loudness", "scope", "synth", "modular", "tt", "tape", "book"]
+## Plans caméra disponibles (glisser / flèches). Pour l'instant : le plan large du décor.
+var order: Array = ["overview"]
 
 var engine: TempoEngine
-var nodes := {}
-var rack: RtRack7080
-var scope: RtScope7080
-var synth: RtSynth7080
-var modular: RtModular7080
-var tt: RtTurntable7080
-var tape: RtTape7080
-var book: SplitsBook7080
 var lamp_g: Node3D
 var lamp: SpotLight3D
-var glow_amber: OmniLight3D
 var tv: TexLib.LiveCanvas
 var tv_t := 0.0
 var env: Environment
@@ -45,37 +36,14 @@ func _init(e: TempoEngine) -> void:
 	name = "Studio7080"
 	_build_environment()
 	_build_room()
-	rack = RtRack7080.new(engine)
-	scope = RtScope7080.new()
-	synth = RtSynth7080.new()
-	modular = RtModular7080.new()
-	tt = RtTurntable7080.new()
-	tape = RtTape7080.new()
-	book = SplitsBook7080.new()
-	nodes = {"rack": rack, "scope": scope, "modular": modular, "synth": synth, "tt": tt, "tape": tape, "book": book, "cup": _build_cup()}
-	for k in nodes:
-		add_child(nodes[k])
+	var cup := _build_cup()
+	cup.position = Vector3(.64, 0, .36)
+	add_child(cup)
 	_build_lights()
-	place()
 
 
 func _ready() -> void:
-	rack.add_picks()
-	Mk.add_pick(scope, "m:scope")
-	Mk.add_pick(synth, "m:synth")
-	Mk.add_pick(modular, "m:modular")
-	Mk.add_pick(tt, "m:tt")
-	Mk.add_pick(tape, "m:tape")
-	Mk.add_pick(book, "m:book", 1, .01)
 	_aim(lamp, lamp_g.to_global(Vector3(0, .44, .36)), Vector3(-.45, 0, .2))
-	glow_amber.global_position = rack.loud.to_global(Vector3(0, 0, .12))
-
-
-func place() -> void:
-	for k in L:
-		var v: Array = L[k]
-		nodes[k].position = Vector3(v[0], v[3], v[1])
-		nodes[k].basis = Mk.euler_yxz(v[4], v[2])
 
 
 # ---------------------------------------------------------------- environnement & post-traitement
@@ -438,11 +406,7 @@ func _build_lights() -> void:
 	cold.spot_angle = rad_to_deg(.9)
 	_aim(cold, Vector3(-.4, 1.1, -1.2), Vector3(0, 0, .3))
 	add_child(cold)
-	glow_amber = OmniLight3D.new()
-	glow_amber.light_color = Mk.c(0xffa040)
-	glow_amber.light_energy = .4
-	glow_amber.omni_range = .5
-	add_child(glow_amber)
+
 
 
 ## Oriente une lumière (le studio est à l'origine : repère local = monde).
@@ -452,31 +416,12 @@ func _aim(n: Node3D, from: Vector3, to: Vector3) -> void:
 
 # ---------------------------------------------------------------- plans caméra
 ## Renvoie [position, point visé] pour un plan.
-func shot_pose(shot: String, cam: Camera3D, aspect: float) -> Array:
+func shot_pose(_shot: String, cam: Camera3D, aspect: float) -> Array:
 	var tall := aspect < .85
-	match shot:
-		"overview":
-			var look := Vector3(-.05, .55 if tall else .45, -.25)
-			var dir := Vector3(-.15 if tall else -.3, .4 if tall else .3, 1).normalized()
-			var d := _fit(cam, aspect, 1.4 if tall else 1.75, 1.0 if tall else .95) * 1.04
-			return [look + dir * d, look]
-		"tempo":
-			return _via(rack.tempo, Vector3.ZERO, Vector3.BACK, RtRack7080.RW / 2, .06, cam, aspect)
-		"loudness":
-			return _via(rack.loud, Vector3.ZERO, Vector3.BACK, RtRack7080.RW / 2, .06, cam, aspect)
-		"scope":
-			return _via(scope, Vector3(0, .045, 0), Vector3(0, 1, .3), .14, .17, cam, aspect)
-		"synth":
-			return _via(synth, Vector3(0, .06, 0), Vector3(0, 1, .55), .4, .2, cam, aspect)
-		"modular":
-			return _via(modular, Vector3(0, .03, 0), Vector3(0, 1, .25), .2, .13, cam, aspect)
-		"tt":
-			return _via(tt, Vector3(0, .06, 0), Vector3(0, 1, .3), .25, .2, cam, aspect)
-		"tape":
-			return _via(tape, Vector3(0, .07, 0), Vector3(0, 1, .3), .23, .18, cam, aspect)
-		"book":
-			return _via(book, Vector3(0, .014, 0), Vector3(0, 1, .2), .1, .14, cam, aspect)
-	return shot_pose("overview", cam, aspect)
+	var look := Vector3(-.05, .55 if tall else .45, -.25)
+	var dir := Vector3(-.15 if tall else -.3, .4 if tall else .3, 1).normalized()
+	var d := _fit(cam, aspect, 1.4 if tall else 1.75, 1.0 if tall else .95) * 1.04
+	return [look + dir * d, look]
 
 
 func _fit(cam: Camera3D, aspect: float, half_w: float, half_h: float) -> float:
@@ -491,15 +436,10 @@ func _via(obj: Node3D, local: Vector3, n: Vector3, hw: float, hh: float, cam: Ca
 
 
 # ---------------------------------------------------------------- animation
-func animate(t: float, dt: float, reduced: bool) -> void:
-	rack.animate(t, dt, reduced)
+func animate(t: float, _dt: float, reduced: bool) -> void:
 	if reduced:
 		return
-	tt.animate(dt)
-	tape.animate(t, dt)
-	modular.animate(t)
 	if t - _last_screen > 1.0 / 30.0:
 		_last_screen = t
-		scope.animate(t)
 		tv_t = t
 		tv.redraw()

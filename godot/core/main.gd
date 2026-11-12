@@ -1,8 +1,8 @@
 extends Node3D
 ## REEL'S TOOLS — point d'entrée : monte le studio, la caméra, et gère clic / glisser / clavier.
 ##
-## Raccourcis : Échap = plan large · ←/→ ou PageUp/PageDown = machine précédente/suivante
-## Sur le RT-140 : Espace = tap, ↑/↓ = BPM (Maj = 0,1), N = valeur de note, molette sur le potard
+## Phase décor : pas de machines pour l'instant (elles seront redessinées et remises une par une).
+## Raccourcis : Échap = plan large · ←/→ ou PageUp/PageDown = plan précédent/suivant
 ## F ou Cmd+F = plein écran · T = garder la fenêtre au premier plan (à côté du DAW)
 ##
 ## Options de lancement (après « -- ») : --shot=tempo  --screenshot=chemin.png (ou dossier/ + --shots=a,b)  --frames=N
@@ -17,14 +17,11 @@ var cam_pos := Vector3.ZERO
 var cam_look := Vector3.ZERO
 var pointer := Vector2.ZERO
 var par := Vector2.ZERO
-var drag = null   # {pos, start}
 var swipe = null  # {pos, t, a}
 var t := 0.0
 var reduced := false
 var ready_done := false
 var _args := {}
-
-const CONTROL_ACTIONS := ["tempo", "note", "tap", "half", "double", "copy"]
 
 
 func _ready() -> void:
@@ -49,7 +46,7 @@ func _ready() -> void:
 	overlay = Overlay.new()
 	add_child(overlay)
 	current = _args.get("shot", Store.get_v("shot", "overview"))
-	if not Studio7080.ORDER.has(current):
+	if not studio.order.has(current):
 		current = "overview"
 	await Tex.flush()
 	_update_fov()
@@ -58,9 +55,7 @@ func _ready() -> void:
 	cam_look = p[1]
 	ready_done = true
 	overlay.boot_done()
-	if _args.has("selftest"):
-		_selftest()
-	elif _args.has("screenshot"):
+	if _args.has("screenshot"):
 		_screenshot_and_quit()
 
 
@@ -81,8 +76,8 @@ func go(shot: String) -> void:
 
 
 func step(dir: int) -> void:
-	var i := Studio7080.ORDER.find(current)
-	go(Studio7080.ORDER[clampi(i + dir, 0, Studio7080.ORDER.size() - 1)])
+	var i := studio.order.find(current)
+	go(studio.order[clampi(i + dir, 0, studio.order.size() - 1)])
 
 
 func pick(screen_pos: Vector2) -> Dictionary:
@@ -104,9 +99,6 @@ func _unhandled_input(e: InputEvent) -> void:
 	if e is InputEventMouseMotion:
 		var vs := get_viewport().get_visible_rect().size
 		pointer = e.position / vs - Vector2(.5, .5)
-		if drag != null:
-			engine.set_bpm(drag.start + ((drag.pos.y - e.position.y) + (e.position.x - drag.pos.x)) * .2)
-			return
 		var hover: String = pick(e.position).action
 		Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND if hover != "" else Input.CURSOR_ARROW)
 	elif e is InputEventMouseButton:
@@ -116,29 +108,17 @@ func _unhandled_input(e: InputEvent) -> void:
 
 
 func _mouse_button(e: InputEventMouseButton) -> void:
-	if e.button_index == MOUSE_BUTTON_WHEEL_UP or e.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-		if e.pressed and current == "tempo" and pick(e.position).action == "tempo":
-			var d := 1.0 if e.button_index == MOUSE_BUTTON_WHEEL_UP else -1.0
-			engine.set_bpm(engine.bpm + d * (.1 if e.shift_pressed else 1.0))
-		return
 	if e.button_index != MOUSE_BUTTON_LEFT:
 		return
 	if e.pressed:
-		var a: String = pick(e.position).action
-		swipe = {"pos": e.position, "t": Time.get_ticks_msec(), "a": a}
-		if current == "tempo" and a == "tempo":
-			drag = {"pos": e.position, "start": engine.bpm}
+		swipe = {"pos": e.position, "t": Time.get_ticks_msec(), "a": pick(e.position).action}
 		return
-	var was_drag := drag != null
-	drag = null
 	if swipe == null:
 		return
 	var dpos: Vector2 = e.position - swipe.pos
 	var dt: int = Time.get_ticks_msec() - swipe.t
 	var a: String = swipe.a
 	swipe = null
-	if was_drag:
-		return
 	var big := maxf(absf(dpos.x), absf(dpos.y))
 	if big > 50 and dt < 700:
 		var v := -dpos.y if absf(dpos.y) > absf(dpos.x) else -dpos.x
@@ -146,43 +126,18 @@ func _mouse_button(e: InputEventMouseButton) -> void:
 		return
 	if big > 12:
 		return
-	if current == "tempo" and CONTROL_ACTIONS.has(a):
-		_tempo_action(a)
-		return
-	if CONTROL_ACTIONS.has(a):
-		go("tempo")
-		return
 	if a.begins_with("m:"):
 		var m := a.substr(2)
-		if current != m:
+		if current != m and studio.order.has(m):
 			go(m)
 		return
 	if a == "" and current != "overview":
 		go("overview")
 
 
-func _tempo_action(a: String) -> void:
-	var rack := studio.rack
-	match a:
-		"tap":
-			rack.on_tap()
-		"note":
-			engine.set_note(engine.note_ix + 1)
-		"half":
-			engine.set_bpm(engine.bpm / 2.0)
-			rack.message("TEMPO ÷ 2", "")
-		"double":
-			engine.set_bpm(engine.bpm * 2.0)
-			rack.message("TEMPO × 2", "")
-		"copy":
-			var ms := ("%.1f" % engine.note_ms()).replace(".", ",")
-			DisplayServer.clipboard_set(ms)
-			rack.message("COPIED", "  " + ms + " ms")
-
-
 func _key(e: InputEventKey) -> void:
 	var k := e.keycode
-	if k == KEY_F and (e.is_command_or_control_pressed() or not e.shift_pressed):
+	if k == KEY_F:
 		var fs := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if fs else DisplayServer.WINDOW_MODE_FULLSCREEN)
 		return
@@ -192,22 +147,10 @@ func _key(e: InputEventKey) -> void:
 		return
 	if k == KEY_ESCAPE:
 		go("overview")
-	if k == KEY_PAGEDOWN or (k == KEY_RIGHT and current != "tempo"):
+	if k == KEY_PAGEDOWN or k == KEY_RIGHT:
 		step(1)
-	if k == KEY_PAGEUP or (k == KEY_LEFT and current != "tempo"):
+	if k == KEY_PAGEUP or k == KEY_LEFT:
 		step(-1)
-	if current != "tempo":
-		return
-	var fine := .1 if e.shift_pressed else 1.0
-	match k:
-		KEY_SPACE:
-			studio.rack.on_tap()
-		KEY_UP:
-			engine.set_bpm(engine.bpm + fine)
-		KEY_DOWN:
-			engine.set_bpm(engine.bpm - fine)
-		KEY_N:
-			engine.set_note(engine.note_ix + 1)
 
 
 # ---------------------------------------------------------------- boucle
@@ -255,31 +198,3 @@ func _screenshot_and_quit() -> void:
 		print("screenshot: ", path)
 	get_tree().quit()
 
-
-## Vérif automatique : vise chaque machine depuis le plan large et contrôle ce que le clic touche.
-func _selftest() -> void:
-	for i in 5:
-		await get_tree().process_frame
-	var targets := {"m:tempo": studio.rack.tempo, "m:loudness": studio.rack.loud, "m:scope": studio.scope, "m:synth": studio.synth,
-		"m:modular": studio.modular, "m:tt": studio.tt, "m:tape": studio.tape, "m:book": studio.book}
-	var ok := 0
-	for want in targets:
-		var n: Node3D = targets[want]
-		var got: String = pick(cam.unproject_position(n.global_position + n.global_basis.y * .03)).action
-		print("pick ", want, " -> ", got)
-		ok += int(got == want or (want == "m:tempo" and CONTROL_ACTIONS.has(got)))
-	go("tempo")
-	for i in 3:
-		await get_tree().process_frame
-	var p := studio.shot_pose("tempo", cam, _aspect())
-	cam.position = p[0]
-	cam.look_at(p[1])
-	var knob: Node3D = studio.rack.tempo.get_node("TempoKnob")
-	var got_k: String = pick(cam.unproject_position(knob.global_position)).action
-	print("pick tempo knob -> ", got_k)
-	var bpm0 := engine.bpm
-	_tempo_action("double")
-	print("double: ", bpm0, " -> ", engine.bpm, "  note ms: ", engine.note_ms())
-	engine.set_bpm(bpm0)
-	print("selftest ", ok, "/", targets.size())
-	get_tree().quit()
