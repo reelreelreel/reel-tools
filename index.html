@@ -7,399 +7,520 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<meta name="theme-color" content="#e9ecef" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#111418" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#0c0d10">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="REEL Tools">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-/* Plan : console de studio. Fond gris acier, encre graphite, accent cobalt (sélection, actions), ambre pour les signaux.
-   Layout : barre d'onglets fixe en haut, un outil par vue, colonnes qui passent en une seule sur téléphone. */
+/* Plan : console de studio moderne, toujours en sombre (choix assumé, comme un plugin).
+   Châssis noir graphite, modules en relief léger, afficheurs LCD encastrés aux chiffres ambre lumineux,
+   sérigraphie en petites capitales condensées, LED d'état (ambre = actif, vert = OK, rouge = alerte).
+   Layout : un module par outil ; onglets en haut sur ordi, barre d'onglets en bas sur téléphone. */
 :root {
-  --bg: #e9ecef;
-  --panel: #f7f8f9;
-  --ink: #15181d;
-  --muted: #5d6570;
-  --line: #d3d8de;
-  --accent: #2c56c9;
-  --accent-soft: #dfe7fb;
-  --signal: #b86b00;
-  --ok: #1f7a4a;
-  --ok-soft: #dcf1e5;
-  --bad: #b3261e;
-  --bad-soft: #f9e0de;
-  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #111418;
-    --panel: #1a1e24;
-    --ink: #e8ebef;
-    --muted: #98a1ad;
-    --line: #2c323b;
-    --accent: #7ea2ff;
-    --accent-soft: #1f2b4a;
-    --signal: #f0a63a;
-    --ok: #5cc98d;
-    --ok-soft: #173326;
-    --bad: #ff8a80;
-    --bad-soft: #3a1c1a;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #111418;
-  --panel: #1a1e24;
-  --ink: #e8ebef;
-  --muted: #98a1ad;
-  --line: #2c323b;
-  --accent: #7ea2ff;
-  --accent-soft: #1f2b4a;
-  --signal: #f0a63a;
-  --ok: #5cc98d;
-  --ok-soft: #173326;
-  --bad: #ff8a80;
-  --bad-soft: #3a1c1a;
+  --chassis: #0c0d10;
+  --module: #16181d;
+  --module-hi: #1d2026;
+  --edge: #262a32;
+  --lcd: #08090b;
+  --silk: #8b93a1;
+  --ink: #e9ecf1;
+  --amber: #ffb340;
+  --amber-glow: rgba(255, 179, 64, 0.35);
+  --amber-dim: #6b4a17;
+  --green: #4fd98a;
+  --green-dim: #153a26;
+  --red: #ff6b5e;
+  --red-dim: #3d1814;
+  --label: "Barlow Semi Condensed", "Arial Narrow", sans-serif;
+  --body: "Barlow", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --tabbar-h: 0px;
   color-scheme: dark;
 }
-
-* { box-sizing: border-box; }
-html, body { margin: 0; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; }
 body {
-  background: var(--bg);
+  background:
+    radial-gradient(1200px 600px at 50% -200px, #1a1d24 0%, transparent 60%),
+    var(--chassis);
   color: var(--ink);
-  font-family: var(--display);
+  font-family: var(--body);
   font-size: 15px;
   line-height: 1.45;
+  min-height: 100%;
 }
-header {
-  position: sticky; top: 0; z-index: 5;
-  background: var(--bg);
-  border-bottom: 1px solid var(--line);
-  padding-top: env(safe-area-inset-top);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
-}
-main { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); padding-bottom: max(48px, env(safe-area-inset-bottom)); }
-.top {
-  max-width: 1040px; margin: 0 auto;
-  padding: 14px 16px 0;
-  display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap;
-}
-.brand { font-weight: 800; letter-spacing: 0.12em; font-size: 13px; text-transform: uppercase; }
-.brand span { color: var(--muted); font-weight: 500; letter-spacing: 0.04em; text-transform: none; }
-nav {
-  max-width: 1040px; margin: 0 auto; padding: 8px 16px 0;
-  display: flex; gap: 4px; overflow-x: auto;
-}
-nav a {
-  flex: 0 0 auto;
-  text-decoration: none; color: var(--muted);
-  font-weight: 600; font-size: 14px;
-  padding: 10px 14px;
-  border-bottom: 3px solid transparent;
-}
-nav a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--accent); }
-nav a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-main { max-width: 1040px; margin: 0 auto; padding-top: 20px; }
+/* ---------- Header / nav ---------- */
+header {
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(12, 13, 16, 0.88);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--edge);
+  padding-top: env(safe-area-inset-top);
+}
+.bar {
+  max-width: 1080px; margin: 0 auto;
+  padding: 12px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left));
+  display: flex; align-items: center; gap: 16px;
+}
+.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); }
+.logo svg { width: 28px; height: 28px; }
+.logo b { font: 700 16px var(--label); letter-spacing: 0.22em; }
+.logo span { font: 600 11px var(--label); letter-spacing: 0.14em; color: var(--silk); text-transform: uppercase; }
+nav.tabs { display: flex; gap: 4px; margin-left: auto; }
+nav.tabs a {
+  display: flex; align-items: center; gap: 8px;
+  text-decoration: none; color: var(--silk);
+  font: 600 13px var(--label); letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 9px 14px; border-radius: 8px;
+  border: 1px solid transparent;
+}
+nav.tabs a svg { width: 18px; height: 18px; }
+nav.tabs a:hover { color: var(--ink); }
+nav.tabs a[aria-current="page"] {
+  color: var(--ink);
+  background: linear-gradient(180deg, var(--module-hi), var(--module));
+  border-color: var(--edge);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+nav.tabs a .led { width: 6px; height: 6px; border-radius: 50%; background: #2b2f37; }
+nav.tabs a[aria-current="page"] .led { background: var(--amber); box-shadow: 0 0 8px var(--amber-glow); }
+
+@media (max-width: 760px) {
+  :root { --tabbar-h: 64px; }
+  .bar { padding-top: 10px; padding-bottom: 10px; }
+  nav.tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    margin: 0; gap: 0;
+    background: rgba(14, 15, 19, 0.94);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--edge);
+    padding: 6px max(6px, env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-right));
+  }
+  nav.tabs a {
+    flex: 1 1 0; flex-direction: column; gap: 4px;
+    padding: 6px 2px; font-size: 10.5px; letter-spacing: 0.08em;
+    border: 0; background: none !important; box-shadow: none !important;
+  }
+  nav.tabs a svg { width: 22px; height: 22px; }
+  nav.tabs a .led { display: none; }
+  nav.tabs a[aria-current="page"] { color: var(--amber); }
+}
+
+/* ---------- Layout ---------- */
+main {
+  max-width: 1080px; margin: 0 auto;
+  padding: 22px max(16px, env(safe-area-inset-right)) calc(40px + var(--tabbar-h) + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+}
 section[data-view] { display: none; }
 section[data-view].active { display: block; }
-h1 { font-size: 26px; line-height: 1.15; margin: 0 0 4px; text-wrap: balance; font-weight: 800; }
-.lede { color: var(--muted); margin: 0 0 20px; max-width: 62ch; }
-h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin: 0 0 10px; font-weight: 700; }
+.head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+h1 { font: 700 28px/1.1 var(--label); letter-spacing: 0.04em; margin: 0; text-transform: uppercase; text-wrap: balance; }
+.lede { color: var(--silk); margin: 4px 0 0; max-width: 60ch; font-size: 14px; }
 
-.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 10px;
+.rack { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+.span-12 { grid-column: span 12; } .span-7 { grid-column: span 7; } .span-5 { grid-column: span 5; } .span-6 { grid-column: span 6; } .span-8 { grid-column: span 8; } .span-4 { grid-column: span 4; }
+@media (max-width: 860px) { .rack > * { grid-column: span 12; } }
+
+.module {
+  position: relative;
+  background: linear-gradient(180deg, var(--module-hi) 0%, var(--module) 60%);
+  border: 1px solid var(--edge);
+  border-radius: 14px;
   padding: 16px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 10px 30px rgba(0,0,0,0.35);
 }
-
-label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
-input[type="text"], input[type="number"], select {
-  width: 100%;
-  font: 500 15px var(--display);
-  color: var(--ink);
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 9px 10px;
+.module > div.silk:first-of-type { margin-top: 0; }
+.screw { position: absolute; width: 7px; height: 7px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #3a3f49, #16181c); box-shadow: inset 0 0 0 1px #0a0b0d; }
+.screw.tl { top: 8px; left: 8px; } .screw.tr { top: 8px; right: 8px; } .screw.bl { bottom: 8px; left: 8px; } .screw.br { bottom: 8px; right: 8px; }
+.silk {
+  font: 600 11px var(--label); letter-spacing: 0.18em; text-transform: uppercase; color: var(--silk);
+  margin: 14px 0 8px; display: flex; align-items: center; gap: 10px;
 }
-input.big {
-  font: 600 40px var(--mono);
-  padding: 6px 10px;
-  font-variant-numeric: tabular-nums;
-}
+.silk::after { content: ""; flex: 1; height: 1px; background: var(--edge); }
+.stack { display: grid; gap: 12px; align-content: start; }
 .row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
 .row > * { flex: 1 1 120px; }
 
-button {
-  font: 600 14px var(--display);
+/* ---------- LCD ---------- */
+.lcd {
+  background: var(--lcd);
+  border-radius: 10px;
+  border: 1px solid #000;
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.05);
+  padding: 12px 14px;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--amber);
+  text-shadow: 0 0 12px var(--amber-glow);
+}
+.lcd .cap { font: 600 10px var(--label); letter-spacing: 0.2em; color: var(--amber-dim); text-transform: uppercase; text-shadow: none; display: block; }
+.lcd .big { font-size: 56px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+.lcd .mid { font-size: 22px; font-weight: 700; line-height: 1.15; }
+.lcd .unit { font-size: 14px; color: var(--amber-dim); text-shadow: none; margin-left: 4px; }
+.lcds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+@media (max-width: 420px) { .lcd .big { font-size: 46px; } .lcd .mid { font-size: 18px; } }
+
+/* editable LCD (BPM) */
+.lcd-input { display: flex; align-items: center; gap: 12px; }
+.lcd-input input[type="number"] {
+  width: 100%; min-width: 0;
+  background: transparent; border: 0; outline: none; box-shadow: none;
+  font: 700 64px/1 var(--mono); color: var(--amber); text-shadow: 0 0 14px var(--amber-glow);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; padding: 0;
+  -moz-appearance: textfield;
+}
+.lcd-input input[type="number"]::-webkit-outer-spin-button, .lcd-input input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.beatled { display: flex; gap: 6px; }
+.beatled i { width: 12px; height: 12px; border-radius: 50%; background: #2a1d09; box-shadow: inset 0 0 0 1px #000; }
+.beatled i.on { background: var(--amber); box-shadow: 0 0 12px var(--amber-glow); }
+.beatled i.on.down { background: #fff2d6; }
+@media (prefers-reduced-motion: reduce) { .beatled { display: none; } }
+
+/* ---------- Controls ---------- */
+label.f { display: block; font: 600 11px var(--label); letter-spacing: 0.16em; text-transform: uppercase; color: var(--silk); margin-bottom: 6px; }
+input[type="text"], input[type="number"], select {
+  width: 100%;
+  font: 500 15px var(--body); color: var(--ink);
+  background: var(--lcd);
+  border: 1px solid #000; border-radius: 8px;
+  box-shadow: inset 0 1px 4px rgba(0,0,0,0.7), 0 1px 0 rgba(255,255,255,0.04);
+  padding: 10px 11px;
+}
+select { appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--silk) 50%), linear-gradient(135deg, var(--silk) 50%, transparent 50%); background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 28px; }
+input:focus-visible, select:focus-visible, button:focus-visible, nav.tabs a:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+.key {
+  font: 600 13px var(--label); letter-spacing: 0.1em; text-transform: uppercase;
   color: var(--ink);
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 9px 12px;
-  cursor: pointer;
+  background: linear-gradient(180deg, #2a2e36 0%, #1e2128 100%);
+  border: 1px solid #08090b; border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 2px 0 #050608, 0 4px 10px rgba(0,0,0,0.35);
+  padding: 10px 14px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  transition: transform .05s, box-shadow .05s;
 }
-button:hover { border-color: var(--accent); }
-button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-:root[data-theme="dark"] button.primary { color: #0d1220; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) button.primary { color: #0d1220; } }
-button.ghost { background: transparent; }
-.chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.chips button { padding: 6px 10px; font-family: var(--mono); font-weight: 500; }
+.key:hover { background: linear-gradient(180deg, #30353e 0%, #22262d 100%); }
+.key:active, .key.pressed { transform: translateY(2px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 0 0 #050608; }
+.key .dot { width: 7px; height: 7px; border-radius: 50%; background: #2b2f37; box-shadow: inset 0 0 0 1px #000; }
+.key[aria-pressed="true"] .dot, .key.on .dot { background: var(--amber); box-shadow: 0 0 8px var(--amber-glow); }
+.key.accent { color: #1b1203; background: linear-gradient(180deg, #ffc666 0%, #f0a02c 100%); }
+.key.accent:hover { background: linear-gradient(180deg, #ffd083 0%, #f5a937 100%); }
+.key.small { padding: 7px 10px; font-size: 12px; }
+.keys { display: flex; gap: 8px; flex-wrap: wrap; }
+.keys .key { font-family: var(--mono); letter-spacing: 0; }
 
+/* ---------- Tables ---------- */
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-th, td { text-align: right; padding: 8px 8px; border-bottom: 1px solid var(--line); }
-th:first-child, td:first-child { text-align: left; }
-th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; }
-td.val { font-family: var(--mono); cursor: pointer; }
-td.val:hover { color: var(--accent); }
+th { font: 600 11px var(--label); letter-spacing: 0.16em; text-transform: uppercase; color: var(--silk); text-align: right; padding: 0 10px 8px; }
+th:first-child { text-align: left; }
+td { padding: 9px 10px; border-top: 1px solid var(--edge); text-align: right; }
+td:first-child { text-align: left; font: 600 14px var(--label); letter-spacing: 0.06em; color: var(--silk); }
+td.val { font-family: var(--mono); font-weight: 500; cursor: pointer; border-radius: 6px; }
+td.val:hover { color: var(--amber); background: rgba(255,179,64,0.06); }
+td.val.main { color: var(--ink); font-weight: 700; }
 .tablewrap { overflow-x: auto; }
-.note { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
-.mono { font-family: var(--mono); }
+.note { color: var(--silk); font-size: 13px; margin: 10px 0 0; }
 
-.readout { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; }
-.readout div { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
-.readout b { display: block; font: 600 22px var(--mono); font-variant-numeric: tabular-nums; }
-.readout span { font-size: 12px; color: var(--muted); }
-
-/* Tap */
-#tapBtn {
-  width: 100%; min-height: 180px;
-  font: 800 22px var(--display); letter-spacing: 0.08em; text-transform: uppercase;
-  background: var(--accent-soft); color: var(--accent);
-  border: 2px solid var(--accent); border-radius: 12px;
-  user-select: none; touch-action: manipulation;
+/* ---------- Tap pad ---------- */
+.pad {
+  width: 100%; aspect-ratio: 16 / 9; max-height: 260px;
+  border-radius: 16px; cursor: pointer;
+  background: radial-gradient(120% 120% at 50% 0%, #2a2e36 0%, #17191e 70%);
+  border: 1px solid #050608;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 0 #050608, 0 12px 30px rgba(0,0,0,0.45);
+  color: var(--silk);
+  font: 700 14px var(--label); letter-spacing: 0.3em; text-transform: uppercase;
+  display: grid; place-items: center; position: relative; overflow: hidden;
+  user-select: none; -webkit-user-select: none; touch-action: manipulation;
 }
-#tapBtn.hit { background: var(--accent); color: var(--panel); }
-.bpmBig { font: 600 64px var(--mono); line-height: 1; font-variant-numeric: tabular-nums; }
-.taps { color: var(--muted); font-size: 13px; }
-.keygrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
-@media (max-width: 420px) { .keygrid { grid-template-columns: repeat(4, 1fr); } }
-.keygrid button { padding: 8px 0; font-family: var(--mono); }
-.keygrid button[aria-pressed="true"] { background: var(--accent); color: var(--panel); border-color: var(--accent); }
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
-.seg button { border: 0; border-radius: 0; }
-.seg button[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
-.camelot { display: flex; align-items: baseline; gap: 12px; margin: 12px 0; }
-.camelot .code { font: 600 44px var(--mono); color: var(--signal); }
-.compat { display: grid; gap: 6px; }
-.compat div { display: flex; justify-content: space-between; gap: 10px; padding: 8px 10px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
-.compat div span:last-child { font-family: var(--mono); font-weight: 600; }
+.pad::before { content: ""; position: absolute; inset: 10px; border-radius: 10px; border: 2px solid rgba(255,179,64,0.12); transition: border-color .12s, box-shadow .12s; }
+.pad.hit { transform: translateY(3px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 1px 0 #050608; color: var(--amber); }
+.pad.hit::before { border-color: var(--amber); box-shadow: 0 0 24px var(--amber-glow), inset 0 0 24px var(--amber-glow); }
+.pad small { display: block; letter-spacing: 0.12em; font-weight: 600; font-size: 11px; margin-top: 6px; opacity: 0.7; }
 
-/* Export */
-.checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
-.check { display: flex; gap: 8px; align-items: center; font-weight: 500; color: var(--ink); font-size: 14px; margin: 0; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); cursor: pointer; }
-.check input { accent-color: var(--accent); }
+/* ---------- Piano key picker ---------- */
+.piano { position: relative; height: 120px; display: flex; gap: 3px; user-select: none; }
+.piano .w {
+  flex: 1; height: 100%; border-radius: 0 0 8px 8px; cursor: pointer;
+  background: linear-gradient(180deg, #d9dce2 0%, #f3f4f6 85%, #c9ccd3 100%);
+  border: 1px solid #000; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.12);
+  display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px;
+  font: 700 13px var(--mono); color: #4a4f59;
+}
+.piano .b {
+  position: absolute; top: 0; width: 9%; height: 62%; z-index: 2; cursor: pointer;
+  border-radius: 0 0 6px 6px;
+  background: linear-gradient(180deg, #2b2f37 0%, #0f1013 90%);
+  border: 1px solid #000; box-shadow: 0 3px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+  display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px;
+  font: 700 10px var(--mono); color: #8b93a1;
+}
+.piano .sel.w { background: linear-gradient(180deg, #ffd99a 0%, #ffb340 100%); color: #3a2604; }
+.piano .sel.b { background: linear-gradient(180deg, #ffb340 0%, #b8761c 100%); color: #2a1a02; }
+.seg { display: inline-flex; background: var(--lcd); border: 1px solid #000; border-radius: 9px; padding: 3px; box-shadow: inset 0 1px 4px rgba(0,0,0,0.7); }
+.seg button { font: 600 12px var(--label); letter-spacing: 0.14em; text-transform: uppercase; color: var(--silk); background: none; border: 0; border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { color: #1b1203; background: linear-gradient(180deg, #ffc666, #f0a02c); }
+.compat { display: grid; gap: 6px; }
+.compat div {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 8px; background: rgba(0,0,0,0.25); border: 1px solid var(--edge);
+}
+.compat .k { font-weight: 500; }
+.compat .k small { display: block; color: var(--silk); font: 600 11px var(--label); letter-spacing: 0.12em; text-transform: uppercase; }
+.compat .c { font: 700 16px var(--mono); color: var(--amber); }
+
+/* ---------- Export ---------- */
+.toggles { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.toggles .key { justify-content: flex-start; width: 100%; }
 .names { display: grid; gap: 6px; }
 .name {
   display: flex; justify-content: space-between; align-items: center; gap: 10px;
-  font-family: var(--mono); font-size: 13px;
-  background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px;
+  font: 500 12.5px var(--mono); color: var(--amber); text-shadow: 0 0 10px rgba(255,179,64,0.2);
+  background: var(--lcd); border: 1px solid #000; border-radius: 8px;
+  box-shadow: inset 0 1px 6px rgba(0,0,0,0.8);
+  padding: 9px 10px;
 }
 .name code { overflow-wrap: anywhere; }
-.todo { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
-.todo label { display: flex; gap: 8px; align-items: flex-start; color: var(--ink); font-weight: 500; font-size: 14px; margin: 0; cursor: pointer; }
-.todo input { margin-top: 3px; accent-color: var(--ok); }
-.todo .grp { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-top: 10px; font-weight: 700; }
+.todo { list-style: none; padding: 0; margin: 0; display: grid; gap: 2px; }
+.todo .grp { font: 600 11px var(--label); letter-spacing: 0.18em; text-transform: uppercase; color: var(--silk); margin: 12px 0 4px; }
+.todo .grp:first-child { margin-top: 0; }
+.todo label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; padding: 6px 4px; border-radius: 6px; }
+.todo label:hover { background: rgba(255,255,255,0.03); }
+.todo input { position: absolute; opacity: 0; pointer-events: none; }
+.todo .box { flex: 0 0 auto; width: 14px; height: 14px; margin-top: 3px; border-radius: 50%; background: #2b2f37; box-shadow: inset 0 0 0 1px #000; }
+.todo input:checked + .box { background: var(--green); box-shadow: 0 0 10px rgba(79,217,138,0.45); }
+.todo input:checked ~ span { color: var(--silk); text-decoration: line-through; text-decoration-color: rgba(139,147,161,0.5); }
+.todo input:focus-visible + .box { outline: 2px solid var(--amber); outline-offset: 2px; }
+.progress { font: 700 12px var(--mono); color: var(--green); }
 
-/* SACEM */
-.parts td, .parts th { text-align: left; }
-.parts td { padding: 6px 6px; vertical-align: middle; }
-.parts input, .parts select { padding: 7px 8px; font-size: 14px; }
-.parts td.num { width: 110px; }
-.parts td.eur { text-align: right; font-family: var(--mono); white-space: nowrap; }
-.parts td.del { width: 40px; }
-.parts .del button { padding: 6px 9px; }
-.status {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
-  margin-top: 12px; padding: 10px 12px; border-radius: 8px; font-weight: 600;
+/* ---------- SACEM ---------- */
+.strip { display: grid; gap: 8px; }
+.ch {
+  display: grid; grid-template-columns: 1fr 150px 92px 92px 34px; gap: 8px; align-items: center;
+  padding: 8px; border-radius: 10px; background: rgba(0,0,0,0.22); border: 1px solid var(--edge);
 }
-.status.ok { background: var(--ok-soft); color: var(--ok); }
-.status.bad { background: var(--bad-soft); color: var(--bad); }
-.status b { font-family: var(--mono); }
-pre.recap {
-  margin: 0; white-space: pre-wrap;
-  font: 500 14px/1.6 var(--mono);
-  background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px;
+.ch .eur { font: 500 13px var(--mono); text-align: right; color: var(--silk); }
+.ch .pct input { text-align: right; font-family: var(--mono); font-weight: 700; color: var(--amber); }
+.ch .eq { display: flex; align-items: center; gap: 6px; font: 600 11px var(--label); letter-spacing: 0.12em; text-transform: uppercase; color: var(--silk); cursor: pointer; }
+.ch .eq input { position: absolute; opacity: 0; pointer-events: none; }
+.ch .eq .box { width: 10px; height: 10px; border-radius: 50%; background: #2b2f37; box-shadow: inset 0 0 0 1px #000; }
+.ch .eq input:checked + .box { background: var(--amber); box-shadow: 0 0 8px var(--amber-glow); }
+.ch .eq input:focus-visible + .box { outline: 2px solid var(--amber); outline-offset: 2px; }
+.ch .x { width: 34px; height: 34px; padding: 0; }
+.ch-head { display: grid; grid-template-columns: 1fr 150px 92px 92px 34px; gap: 8px; padding: 0 8px; }
+.ch-head span { font: 600 11px var(--label); letter-spacing: 0.16em; text-transform: uppercase; color: var(--silk); }
+.ch-head span:nth-child(3), .ch-head span:nth-child(4) { text-align: right; }
+.rolecell { display: grid; gap: 6px; }
+@media (max-width: 600px) {
+  .ch-head { display: none; }
+  .ch { grid-template-columns: 1fr 1fr 34px; }
+  .ch .who { grid-column: 1 / 3; }
+  .ch .x { grid-column: 3; grid-row: 1; }
+  .ch .rolecell { grid-column: 1 / 2; }
+  .ch .pct { grid-column: 2 / 3; }
+  .ch .eur { grid-column: 1 / 4; text-align: left; }
 }
+
+.meter { position: relative; height: 18px; border-radius: 9px; background: var(--lcd); border: 1px solid #000; box-shadow: inset 0 1px 6px rgba(0,0,0,0.8); overflow: hidden; }
+.meter .fill { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 9px; background: repeating-linear-gradient(90deg, var(--green) 0 6px, transparent 6px 8px); transition: width .2s; }
+.meter.over .fill { background: repeating-linear-gradient(90deg, var(--red) 0 6px, transparent 6px 8px); }
+.meter.under .fill { background: repeating-linear-gradient(90deg, var(--amber) 0 6px, transparent 6px 8px); }
+.meter .mark { position: absolute; top: -2px; bottom: -2px; left: calc(100% / 1.1); width: 2px; background: var(--ink); opacity: 0.6; }
+.meterline { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.state { font: 700 13px var(--label); letter-spacing: 0.14em; text-transform: uppercase; display: inline-flex; align-items: center; gap: 8px; }
+.state i { width: 9px; height: 9px; border-radius: 50%; }
+.state.ok { color: var(--green); } .state.ok i { background: var(--green); box-shadow: 0 0 10px rgba(79,217,138,0.6); }
+.state.bad { color: var(--red); } .state.bad i { background: var(--red); box-shadow: 0 0 10px rgba(255,107,94,0.6); }
+.state.under { color: var(--amber); } .state.under i { background: var(--amber); box-shadow: 0 0 10px var(--amber-glow); }
+pre.recap { margin: 0; white-space: pre-wrap; font: 500 13.5px/1.65 var(--mono); }
+@media (prefers-reduced-motion: reduce) { .meter .fill, .key, .pad::before { transition: none; } }
+
 .toast {
-  position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
-  background: var(--ink); color: var(--panel); padding: 10px 14px; border-radius: 8px; font-weight: 600; font-size: 14px;
-  opacity: 0; pointer-events: none; transition: opacity .15s;
+  position: fixed; left: 50%; bottom: calc(24px + var(--tabbar-h) + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  background: #f3f4f6; color: #0c0d10; padding: 10px 16px; border-radius: 999px;
+  font: 600 13px var(--label); letter-spacing: 0.1em; text-transform: uppercase;
+  opacity: 0; pointer-events: none; transition: opacity .15s; z-index: 30; white-space: nowrap;
 }
 .toast.show { opacity: 1; }
-@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
-.stack { display: grid; gap: 14px; }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-bpm" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8 3h8l3 18H5L8 3Zm4 14 4-9"/><circle cx="12" cy="17" r="1.3" fill="currentColor"/></symbol>
+    <symbol id="i-tap" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="3" width="8" height="8" rx="2" fill="currentColor" opacity=".35"/><rect x="3" y="13" width="8" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="13" width="8" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-export" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></symbol>
+    <symbol id="i-sacem" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M5 20V10m5 10V4m5 16v-7m5 7V8"/></symbol>
+  </defs>
+</svg>
+
 <header>
-  <div class="top">
-    <div class="brand">REEL <span>· boîte à outils studio</span></div>
+  <div class="bar">
+    <a class="logo" href="#bpm" aria-label="REEL, accueil">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#2c56c9"/><circle cx="16" cy="16" r="13.6" fill="none" stroke="#7ea2ff" stroke-width=".8"/><circle cx="16" cy="8.4" r="3.3" fill="#0c0d10"/><circle cx="9.4" cy="20" r="3.3" fill="#0c0d10"/><circle cx="22.6" cy="20" r="3.3" fill="#0c0d10"/><circle cx="16" cy="16" r="2.3" fill="#ffb340"/><circle cx="16" cy="16" r=".9" fill="#0c0d10"/></svg>
+      <div><b>REEL</b><br><span>Studio tools</span></div>
+    </a>
+    <nav class="tabs" aria-label="Outils">
+      <a href="#bpm" data-tab="bpm"><span class="led"></span><svg aria-hidden="true"><use href="#i-bpm"/></svg>Tempo</a>
+      <a href="#tap" data-tab="tap"><span class="led"></span><svg aria-hidden="true"><use href="#i-tap"/></svg>Tap &amp; ton</a>
+      <a href="#export" data-tab="export"><span class="led"></span><svg aria-hidden="true"><use href="#i-export"/></svg>Export</a>
+      <a href="#sacem" data-tab="sacem"><span class="led"></span><svg aria-hidden="true"><use href="#i-sacem"/></svg>SACEM</a>
+    </nav>
   </div>
-  <nav aria-label="Outils">
-    <a href="#bpm" data-tab="bpm">BPM → ms</a>
-    <a href="#tap" data-tab="tap">Tap tempo &amp; tonalité</a>
-    <a href="#export" data-tab="export">Export &amp; nommage</a>
-    <a href="#sacem" data-tab="sacem">Calculateur SACEM</a>
-  </nav>
 </header>
 
 <main>
-<!-- ============ BPM ============ -->
+<!-- ============ TEMPO ============ -->
 <section data-view="bpm">
-  <h1>BPM → millisecondes</h1>
-  <p class="lede">Les temps de delay, de pre-delay et de decay calés sur le tempo. Clique sur une valeur pour la copier.</p>
-  <div class="grid">
-    <div class="panel stack">
+  <div class="head">
+    <div><h1>Tempo → ms</h1><p class="lede">Delays, pre-delay et decay calés sur le BPM. Touche une valeur pour la copier.</p></div>
+  </div>
+  <div class="rack">
+    <div class="module span-5 stack">
+      <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
+      <div class="lcd">
+        <span class="cap">Tempo · BPM</span>
+        <div class="lcd-input">
+          <input id="bpmIn" type="number" min="20" max="400" step="0.01" value="140" inputmode="decimal" aria-label="Tempo en BPM">
+          <div class="beatled" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        </div>
+      </div>
+      <div class="keys" aria-label="Tempos rapides">
+        <button type="button" class="key small" data-bpm="70">70</button>
+        <button type="button" class="key small" data-bpm="90">90</button>
+        <button type="button" class="key small" data-bpm="120">120</button>
+        <button type="button" class="key small" data-bpm="140">140</button>
+        <button type="button" class="key small" data-bpm="150">150</button>
+        <button type="button" class="key small" id="halfBtn">÷2</button>
+        <button type="button" class="key small" id="dblBtn">×2</button>
+      </div>
+      <div class="lcds">
+        <div class="lcd"><span class="cap">1 temps</span><span class="mid" id="beatMs">–</span></div>
+        <div class="lcd"><span class="cap">1 mesure</span><span class="mid" id="barMs">–</span></div>
+        <div class="lcd"><span class="cap">8 mesures</span><span class="mid" id="barSec">–</span></div>
+      </div>
       <div>
-        <label for="bpmIn">Tempo (BPM)</label>
-        <input id="bpmIn" class="big" type="number" min="20" max="400" step="0.01" value="140" inputmode="decimal">
-      </div>
-      <div class="chips" aria-label="Tempos rapides">
-        <button type="button" data-bpm="70">70</button>
-        <button type="button" data-bpm="90">90</button>
-        <button type="button" data-bpm="120">120</button>
-        <button type="button" data-bpm="140">140</button>
-        <button type="button" data-bpm="150">150</button>
-        <button type="button" id="halfBtn">÷ 2</button>
-        <button type="button" id="dblBtn">× 2</button>
-      </div>
-      <div class="readout">
-        <div><b id="beatMs">–</b><span>1 temps (noire)</span></div>
-        <div><b id="barMs">–</b><span>1 mesure 4/4</span></div>
-        <div><b id="barSec">–</b><span>8 mesures</span></div>
-      </div>
-      <div>
-        <h2>Reverb calée sur le tempo</h2>
+        <div class="silk">Reverb</div>
         <table>
           <tbody>
-            <tr><td>Pre-delay court (1/64)</td><td class="val" id="pd64">–</td></tr>
-            <tr><td>Pre-delay long (1/32)</td><td class="val" id="pd32">–</td></tr>
-            <tr><td>Decay court (1/2 − pre-delay 1/64)</td><td class="val" id="dcShort">–</td></tr>
-            <tr><td>Decay long (1 mesure − pre-delay 1/32)</td><td class="val" id="dcLong">–</td></tr>
+            <tr><td>Pre-delay court · 1/64</td><td class="val" id="pd64">–</td></tr>
+            <tr><td>Pre-delay long · 1/32</td><td class="val" id="pd32">–</td></tr>
+            <tr><td>Decay court · 1/2</td><td class="val" id="dcShort">–</td></tr>
+            <tr><td>Decay long · 1 mesure</td><td class="val" id="dcLong">–</td></tr>
           </tbody>
         </table>
-        <p class="note">Le decay calé sur le tempo laisse la queue de reverb s'éteindre juste avant le temps suivant.</p>
+        <p class="note">Decay = durée de la note moins le pre-delay : la queue s'éteint juste avant le temps suivant.</p>
       </div>
     </div>
-    <div class="panel">
-      <h2>Delays</h2>
+    <div class="module span-7">
+      <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
+      <div class="silk">Delays · ms</div>
       <div class="tablewrap">
         <table>
-          <thead><tr><th>Valeur</th><th>Normal</th><th>Pointé</th><th>Triolet</th><th>Hz</th></tr></thead>
+          <thead><tr><th>Note</th><th>Normal</th><th>Pointé</th><th>Triolet</th><th>LFO Hz</th></tr></thead>
           <tbody id="delayRows"></tbody>
         </table>
       </div>
-      <p class="note">Pointé = × 1,5. Triolet = × 2/3. La colonne Hz donne la vitesse d'un LFO calé sur la valeur normale (tremolo, auto-pan, filtre).</p>
+      <p class="note">Pointé × 1,5 · Triolet × 2/3 · LFO Hz = vitesse d'un tremolo, auto-pan ou filtre calé sur la valeur normale.</p>
     </div>
   </div>
 </section>
 
-<!-- ============ TAP ============ -->
+<!-- ============ TAP & TON ============ -->
 <section data-view="tap">
-  <h1>Tap tempo &amp; tonalité</h1>
-  <p class="lede">Tape le rythme du morceau pour trouver son BPM, puis choisis la tonalité pour voir les tonalités compatibles (roue de Camelot).</p>
-  <div class="grid">
-    <div class="panel stack">
-      <button type="button" id="tapBtn">Tape ici<br><span style="font-size:13px;letter-spacing:0;text-transform:none;font-weight:600">ou barre d'espace</span></button>
-      <div class="row" style="align-items:center">
-        <div>
-          <div class="bpmBig" id="tapBpm">—</div>
-          <div class="taps" id="tapInfo">Tape au moins 4 fois.</div>
-        </div>
-        <div class="stack" style="flex:0 1 auto">
-          <button type="button" id="tapReset" class="ghost">Remettre à zéro</button>
-          <button type="button" id="tapSend" class="primary">Envoyer vers BPM → ms</button>
-        </div>
+  <div class="head">
+    <div><h1>Tap &amp; tonalité</h1><p class="lede">Tape le rythme pour trouver le BPM, puis choisis la tonalité sur le clavier pour voir les compatibles.</p></div>
+  </div>
+  <div class="rack">
+    <div class="module span-6 stack">
+      <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
+      <div class="lcd">
+        <span class="cap">Tap tempo · BPM</span>
+        <span class="big" id="tapBpm">---</span>
+        <span class="cap" id="tapInfo" style="margin-top:6px">Tape au moins 4 fois</span>
       </div>
-      <div class="readout">
-        <div><b id="tapHalf">–</b><span>Moitié</span></div>
-        <div><b id="tapRound">–</b><span>Arrondi</span></div>
-        <div><b id="tapDouble">–</b><span>Double</span></div>
+      <button type="button" class="pad" id="tapBtn">Tap<small>ou barre d'espace</small></button>
+      <div class="lcds">
+        <div class="lcd"><span class="cap">÷ 2</span><span class="mid" id="tapHalf">–</span></div>
+        <div class="lcd"><span class="cap">Arrondi</span><span class="mid" id="tapRound">–</span></div>
+        <div class="lcd"><span class="cap">× 2</span><span class="mid" id="tapDouble">–</span></div>
+      </div>
+      <div class="row">
+        <button type="button" class="key" id="tapReset">Reset</button>
+        <button type="button" class="key accent" id="tapSend">Envoyer vers Tempo</button>
       </div>
     </div>
-    <div class="panel">
+    <div class="module span-6 stack">
+      <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
       <div class="row" style="align-items:center;justify-content:space-between">
-        <h2 style="margin:0">Tonalité</h2>
-        <div class="seg" role="group" aria-label="Mode">
+        <div class="silk" style="margin:0;flex:1">Tonalité</div>
+        <div class="seg" role="group" aria-label="Mode" style="flex:0 0 auto">
           <button type="button" id="modeMin" aria-pressed="true">Mineur</button>
           <button type="button" id="modeMaj" aria-pressed="false">Majeur</button>
         </div>
       </div>
-      <div class="keygrid" id="keyGrid" style="margin-top:12px"></div>
-      <div class="camelot">
-        <div class="code" id="camCode">5A</div>
-        <div><b id="camName">Do mineur (Cm)</b><div class="taps">Code Camelot</div></div>
+      <div class="piano" id="piano" role="group" aria-label="Note fondamentale"></div>
+      <div class="lcd" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <div><span class="cap">Camelot</span><span class="big" id="camCode">5A</span></div>
+        <div style="text-align:right"><span class="cap">Tonalité</span><span class="mid" id="camName">Cm</span><span class="cap" id="camFr" style="margin-top:4px">Do mineur</span></div>
       </div>
-      <h2>Compatibles</h2>
+      <div class="silk" style="margin:4px 0 0">Compatibles</div>
       <div class="compat" id="compat"></div>
-      <p class="note">Même numéro, ou numéro ± 1 avec la même lettre : ça se mélange sans frotter. Pratique pour choisir un sample ou enchaîner deux prods.</p>
     </div>
   </div>
 </section>
 
 <!-- ============ EXPORT ============ -->
 <section data-view="export">
-  <h1>Export &amp; nommage</h1>
-  <p class="lede">Remplis les infos du titre, coche ce que tu exportes : les noms de fichiers se génèrent tout seuls et la checklist suit.</p>
-  <div class="grid">
-    <div class="panel stack">
+  <div class="head">
+    <div><h1>Export &amp; nommage</h1><p class="lede">Remplis le titre, active ce que tu exportes : noms de fichiers générés et checklist avant envoi.</p></div>
+  </div>
+  <div class="rack">
+    <div class="module span-7 stack">
+      <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
       <div class="row">
-        <div><label for="exArtist">Artiste</label><input id="exArtist" type="text" value="ElGrandeToto"></div>
-        <div><label for="exTitle">Titre</label><input id="exTitle" type="text" value="La Bohème"></div>
+        <div><label class="f" for="exArtist">Artiste</label><input id="exArtist" type="text" value="ElGrandeToto"></div>
+        <div><label class="f" for="exTitle">Titre</label><input id="exTitle" type="text" value="La Bohème"></div>
       </div>
       <div class="row">
-        <div><label for="exVer">Version</label><input id="exVer" type="number" min="1" value="3"></div>
-        <div><label for="exBpm">BPM (option)</label><input id="exBpm" type="text" value="140"></div>
-        <div><label for="exKey">Tonalité (option)</label><input id="exKey" type="text" value="Cm"></div>
+        <div><label class="f" for="exVer">Version</label><input id="exVer" type="number" min="1" value="3"></div>
+        <div><label class="f" for="exBpm">BPM</label><input id="exBpm" type="text" value="140"></div>
+        <div><label class="f" for="exKey">Tonalité</label><input id="exKey" type="text" value="Cm"></div>
       </div>
       <div class="row">
-        <div>
-          <label for="exFmt">Format</label>
+        <div><label class="f" for="exFmt">Format</label>
           <select id="exFmt">
-            <option value="24b48k">WAV 24 bit / 48 kHz</option>
-            <option value="24b44k">WAV 24 bit / 44,1 kHz</option>
-            <option value="16b44k">WAV 16 bit / 44,1 kHz</option>
+            <option value="24b48k">WAV 24 bit · 48 kHz</option>
+            <option value="24b44k">WAV 24 bit · 44,1 kHz</option>
+            <option value="16b44k">WAV 16 bit · 44,1 kHz</option>
             <option value="mp3">MP3 320</option>
           </select>
         </div>
-        <div>
-          <label for="exCase">Casse</label>
+        <div><label class="f" for="exCase">Casse</label>
           <select id="exCase">
             <option value="upper">MAJUSCULES</option>
             <option value="keep">Comme tapé</option>
           </select>
         </div>
       </div>
-      <div>
-        <label>À exporter</label>
-        <div class="checks" id="exTypes"></div>
+      <div class="silk">Sources</div>
+      <div class="toggles" id="exTypes"></div>
+      <div class="row" style="align-items:center;justify-content:space-between;margin-top:6px">
+        <div class="silk" style="margin:0;flex:1">Noms de fichiers</div>
+        <button type="button" class="key small" id="copyNames" style="flex:0 0 auto">Tout copier</button>
       </div>
-      <div>
-        <div class="row" style="align-items:center;justify-content:space-between">
-          <h2 style="margin:0">Noms de fichiers</h2>
-          <button type="button" id="copyNames">Tout copier</button>
-        </div>
-        <div class="names" id="exNames" style="margin-top:10px"></div>
-      </div>
+      <div class="names" id="exNames"></div>
     </div>
-    <div class="panel">
+    <div class="module span-5">
+      <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
       <div class="row" style="align-items:center;justify-content:space-between">
-        <h2 style="margin:0">Checklist avant envoi</h2>
-        <button type="button" id="todoReset" class="ghost">Tout décocher</button>
+        <div class="silk" style="margin:0;flex:1">Checklist <span class="progress" id="todoProg"></span></div>
+        <button type="button" class="key small" id="todoReset" style="flex:0 0 auto">Reset</button>
       </div>
       <ul class="todo" id="exTodo" style="margin-top:10px"></ul>
     </div>
@@ -408,51 +529,57 @@ pre.recap {
 
 <!-- ============ SACEM ============ -->
 <section data-view="sacem">
-  <h1>Calculateur SACEM</h1>
-  <p class="lede">Vérifie qu'une répartition tombe juste à 100 %, partage une part à égalité entre plusieurs compositeurs (avec l'arrondi au centième, comme 4,17 / 4,16) et sors le récap à coller dans un mail.</p>
-  <div class="grid" style="grid-template-columns: 1.4fr 1fr">
-    <div class="panel stack">
+  <div class="head">
+    <div><h1>Calculateur SACEM</h1><p class="lede">Vérifie qu'une répartition tombe à 100 %, partage une part à égalité au centième près et copie le récap pour ton mail.</p></div>
+  </div>
+  <div class="rack">
+    <div class="module span-8 stack">
+      <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
       <div class="row">
-        <div><label for="scTitle">Titre</label><input id="scTitle" type="text" value="RITUEL"></div>
-        <div><label for="scEur">Droits à simuler (€)</label><input id="scEur" type="number" min="0" step="1" value="1000"></div>
+        <div><label class="f" for="scTitle">Titre</label><input id="scTitle" type="text" value="RITUEL"></div>
+        <div><label class="f" for="scEur">Droits à simuler (€)</label><input id="scEur" type="number" min="0" step="1" value="1000"></div>
       </div>
-      <div class="tablewrap">
-        <table class="parts">
-          <thead><tr><th>Ayant droit</th><th>Rôle</th><th>Part %</th><th style="text-align:right">€</th><th></th></tr></thead>
-          <tbody id="scRows"></tbody>
-        </table>
+      <div>
+        <div class="lcd" style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px">
+          <div><span class="cap">Total</span><span class="big" id="scTotal">100</span><span class="unit">%</span></div>
+          <span class="state ok" id="scState"><i></i>Juste</span>
+        </div>
+        <div class="meter" id="scMeter" style="margin-top:10px" aria-hidden="true"><div class="fill" id="scFill"></div><div class="mark"></div></div>
+        <div class="meterline"><span class="note" style="margin:0" id="scGap">&nbsp;</span><span class="note" style="margin:0">repère = 100 %</span></div>
       </div>
+      <div class="ch-head"><span>Ayant droit</span><span>Rôle</span><span>Part %</span><span>€</span><span></span></div>
+      <div class="strip" id="scRows"></div>
       <div class="row">
-        <button type="button" id="scAdd">+ Ajouter une ligne</button>
-        <button type="button" id="scClear" class="ghost">Vider</button>
-        <button type="button" id="scExample" class="ghost">Exemple RITUEL</button>
+        <button type="button" class="key" id="scAdd">+ Ligne</button>
+        <button type="button" class="key" id="scExample">Exemple Rituel</button>
+        <button type="button" class="key" id="scClear">Vider</button>
       </div>
-      <div class="status" id="scStatus"></div>
     </div>
-    <div class="stack">
-      <div class="panel stack">
-        <h2 style="margin:0">Partage égal</h2>
-        <p class="note" style="margin:0">Répartit un pourcentage entre toutes les lignes cochées « partage » (par ex. 25 % de compo entre 6 beatmakers). Les centièmes en trop vont aux premières lignes.</p>
+    <div class="span-4 stack">
+      <div class="module stack">
+        <span class="screw tl"></span><span class="screw tr"></span>
+        <div class="silk" style="margin-top:0">Partage égal</div>
+        <p class="note" style="margin:0">Répartit le % entre les lignes avec la LED « partage » allumée. Les centièmes restants vont aux premières.</p>
         <div class="row">
-          <div><label for="eqPct">% à partager</label><input id="eqPct" type="number" min="0" max="100" step="0.01" value="25"></div>
-          <div style="flex:0 0 auto"><button type="button" id="eqGo" class="primary">Répartir</button></div>
+          <div><label class="f" for="eqPct">% à partager</label><input id="eqPct" type="number" min="0" max="100" step="0.01" value="25"></div>
+          <div style="flex:0 0 auto"><button type="button" class="key accent" id="eqGo">Répartir</button></div>
         </div>
       </div>
-      <div class="panel stack">
+      <div class="module stack">
+        <span class="screw tl"></span><span class="screw tr"></span>
         <div class="row" style="align-items:center;justify-content:space-between">
-          <h2 style="margin:0">Récap à coller</h2>
-          <button type="button" id="scCopy">Copier</button>
+          <div class="silk" style="margin:0;flex:1">Récap</div>
+          <button type="button" class="key small" id="scCopy" style="flex:0 0 auto">Copier</button>
         </div>
-        <pre class="recap" id="scRecap"></pre>
+        <div class="lcd"><pre class="recap" id="scRecap"></pre></div>
       </div>
-      <div class="panel stack">
-        <h2 style="margin:0">Ta part</h2>
-        <div class="row" style="align-items:flex-end">
-          <div><label for="scMe">Ton nom dans la liste</label><input id="scMe" type="text" value="Réel"></div>
-        </div>
-        <div class="readout" style="grid-template-columns:1fr 1fr">
-          <div><b id="mePct">–</b><span>Total de tes parts</span></div>
-          <div><b id="meEur">–</b><span>Sur les droits simulés</span></div>
+      <div class="module stack">
+        <span class="screw tl"></span><span class="screw tr"></span>
+        <div class="silk" style="margin-top:0">Ta part</div>
+        <div><label class="f" for="scMe">Ton nom dans la liste</label><input id="scMe" type="text" value="Réel"></div>
+        <div class="lcds" style="grid-template-columns:1fr 1fr">
+          <div class="lcd"><span class="cap">Parts</span><span class="mid" id="mePct">–</span></div>
+          <div class="lcd"><span class="cap">Sur simulation</span><span class="mid" id="meEur">–</span></div>
         </div>
       </div>
     </div>
@@ -469,6 +596,7 @@ pre.recap {
     set: function (k, v) { try { localStorage.setItem("reel-tk-" + k, JSON.stringify(v)); } catch (e) {} }
   };
   var $ = function (id) { return document.getElementById(id); };
+  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   // ---------- toast + copy ----------
   var toastT;
@@ -483,12 +611,13 @@ pre.recap {
       document.body.appendChild(ta); ta.select();
       var ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
       document.body.removeChild(ta);
-      toast(ok ? (label || "Copié") : "Copie impossible ici : sélectionne le texte à la main");
+      toast(ok ? (label || "Copié") : "Copie impossible ici");
     }
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(function () { toast(label || "Copié"); }, fallback);
     } else { fallback(); }
   }
+  function press(el) { el.classList.add("pressed"); setTimeout(function () { el.classList.remove("pressed"); }, 90); }
 
   // ---------- tabs ----------
   var tabs = ["bpm", "tap", "export", "sacem"];
@@ -496,50 +625,48 @@ pre.recap {
     if (tabs.indexOf(name) < 0) name = store.get("tab", "bpm");
     if (tabs.indexOf(name) < 0) name = "bpm";
     document.querySelectorAll("section[data-view]").forEach(function (s) { s.classList.toggle("active", s.dataset.view === name); });
-    document.querySelectorAll("nav a").forEach(function (a) {
+    document.querySelectorAll("nav.tabs a").forEach(function (a) {
       if (a.dataset.tab === name) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
     });
     store.set("tab", name);
+    window.scrollTo(0, 0);
   }
   window.addEventListener("hashchange", function () { show(location.hash.slice(1)); });
   show(location.hash.slice(1));
 
-  // ---------- number formatting ----------
+  // ---------- formatting ----------
   var nf1 = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
   var nf2 = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2, minimumFractionDigits: 0 });
   var nf2f = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2, minimumFractionDigits: 2 });
   var eurF = new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" });
-  function ms(v) { return nf1.format(v) + " ms"; }
+  var U = function (u) { return "<span class='unit'>" + u + "</span>"; };
 
-  // ---------- BPM ----------
+  // ---------- TEMPO ----------
   var bpmIn = $("bpmIn");
   bpmIn.value = store.get("bpm", 140);
   var notes = [["1/1", 4], ["1/2", 2], ["1/4", 1], ["1/8", 0.5], ["1/16", 0.25], ["1/32", 0.125], ["1/64", 0.0625]];
+  var currentBeat = 60000 / 140;
   function renderBpm() {
     var bpm = parseFloat(String(bpmIn.value).replace(",", "."));
-    if (!(bpm >= 20 && bpm <= 400)) { return; }
+    if (!(bpm >= 20 && bpm <= 400)) return;
     store.set("bpm", bpm);
-    var beat = 60000 / bpm;
-    $("beatMs").textContent = ms(beat);
-    $("barMs").textContent = ms(beat * 4);
-    $("barSec").textContent = nf2.format(beat * 32 / 1000) + " s";
-    var rows = notes.map(function (n) {
+    var beat = 60000 / bpm; currentBeat = beat;
+    $("beatMs").innerHTML = nf1.format(beat) + U("ms");
+    $("barMs").innerHTML = nf1.format(beat * 4) + U("ms");
+    $("barSec").innerHTML = nf2.format(beat * 32 / 1000) + U("s");
+    $("delayRows").innerHTML = notes.map(function (n) {
       var v = beat * n[1];
-      return "<tr><td>" + n[0] + "</td>" +
-        "<td class='val' data-copy='" + v.toFixed(1) + "'>" + nf1.format(v) + "</td>" +
-        "<td class='val' data-copy='" + (v * 1.5).toFixed(1) + "'>" + nf1.format(v * 1.5) + "</td>" +
-        "<td class='val' data-copy='" + (v * 2 / 3).toFixed(1) + "'>" + nf1.format(v * 2 / 3) + "</td>" +
+      function cell(x, cls) { return "<td class='val" + (cls ? " " + cls : "") + "' data-copy='" + x.toFixed(1) + "'>" + nf1.format(x) + "</td>"; }
+      return "<tr><td>" + n[0] + "</td>" + cell(v, "main") + cell(v * 1.5) + cell(v * 2 / 3) +
         "<td class='val' data-copy='" + (1000 / v).toFixed(3) + "'>" + nf2.format(1000 / v) + "</td></tr>";
     }).join("");
-    $("delayRows").innerHTML = rows;
     var p64 = beat / 16, p32 = beat / 8;
-    setVal("pd64", p64); setVal("pd32", p32);
-    setVal("dcShort", beat * 2 - p64); setVal("dcLong", beat * 4 - p32);
+    setVal("pd64", p64); setVal("pd32", p32); setVal("dcShort", beat * 2 - p64); setVal("dcLong", beat * 4 - p32);
   }
-  function setVal(id, v) { var el = $(id); el.textContent = ms(v); el.dataset.copy = v.toFixed(1); }
+  function setVal(id, v) { var el = $(id); el.textContent = nf1.format(v) + " ms"; el.dataset.copy = v.toFixed(1); }
   document.addEventListener("click", function (e) {
     var c = e.target.closest("td.val");
-    if (c && c.dataset.copy) copy(c.dataset.copy.replace(".", ","), c.dataset.copy.replace(".", ",") + " copié");
+    if (c && c.dataset.copy) { var s = c.dataset.copy.replace(".", ","); copy(s, s + " copié"); }
   });
   bpmIn.addEventListener("input", renderBpm);
   document.querySelectorAll("[data-bpm]").forEach(function (b) {
@@ -548,6 +675,20 @@ pre.recap {
   $("halfBtn").addEventListener("click", function () { bpmIn.value = +(parseFloat(bpmIn.value) / 2).toFixed(2); renderBpm(); });
   $("dblBtn").addEventListener("click", function () { bpmIn.value = +(parseFloat(bpmIn.value) * 2).toFixed(2); renderBpm(); });
   renderBpm();
+  // beat LEDs
+  if (!reduced) {
+    var leds = document.querySelectorAll(".beatled i"), beatN = 0, t0 = performance.now();
+    (function loop() {
+      var now = performance.now();
+      var n = Math.floor((now - t0) / currentBeat);
+      if (n !== beatN) {
+        beatN = n;
+        var idx = n % 4;
+        leds.forEach(function (l, i) { l.classList.toggle("on", i === idx); l.classList.toggle("down", i === 0 && idx === 0); });
+      }
+      requestAnimationFrame(loop);
+    })();
+  }
 
   // ---------- TAP ----------
   var taps = [], lastBpm = null;
@@ -556,11 +697,8 @@ pre.recap {
     if (taps.length && now - taps[taps.length - 1] > 2000) taps = [];
     taps.push(now);
     if (taps.length > 12) taps.shift();
-    var b = $("tapBtn"); b.classList.add("hit"); setTimeout(function () { b.classList.remove("hit"); }, 80);
-    if (taps.length >= 2) {
-      var span = taps[taps.length - 1] - taps[0];
-      lastBpm = 60000 / (span / (taps.length - 1));
-    }
+    var b = $("tapBtn"); b.classList.add("hit"); setTimeout(function () { b.classList.remove("hit"); }, 90);
+    if (taps.length >= 2) lastBpm = 60000 / ((taps[taps.length - 1] - taps[0]) / (taps.length - 1));
     renderTap();
   }
   function renderTap() {
@@ -569,10 +707,11 @@ pre.recap {
       $("tapHalf").textContent = nf1.format(lastBpm / 2);
       $("tapRound").textContent = Math.round(lastBpm);
       $("tapDouble").textContent = nf1.format(lastBpm * 2);
-      $("tapInfo").textContent = taps.length < 4 ? "Encore quelques taps pour affiner." : taps.length + " taps · moyenne des derniers";
+      $("tapInfo").textContent = taps.length < 4 ? "Continue…" : taps.length + " taps";
     } else {
-      $("tapBpm").textContent = "—"; ["tapHalf", "tapRound", "tapDouble"].forEach(function (i) { $(i).textContent = "–"; });
-      $("tapInfo").textContent = "Tape au moins 4 fois.";
+      $("tapBpm").textContent = "---";
+      ["tapHalf", "tapRound", "tapDouble"].forEach(function (i) { $(i).textContent = "–"; });
+      $("tapInfo").textContent = "Tape au moins 4 fois";
     }
   }
   $("tapBtn").addEventListener("pointerdown", function (e) { e.preventDefault(); tap(); });
@@ -590,50 +729,55 @@ pre.recap {
     bpmIn.value = Math.round(lastBpm); renderBpm(); location.hash = "bpm";
   });
 
-  // Keys / Camelot
+  // ---------- Keys / Camelot ----------
   var keyNames = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
   var frNames = ["Do", "Do#", "Ré", "Mi♭", "Mi", "Fa", "Fa#", "Sol", "La♭", "La", "Si♭", "Si"];
-  // Camelot number for each root (index in keyNames)
   var camMin = { "Ab": 1, "Eb": 2, "Bb": 3, "F": 4, "C": 5, "G": 6, "D": 7, "A": 8, "E": 9, "B": 10, "F#": 11, "C#": 12 };
   var camMaj = { "B": 1, "F#": 2, "C#": 3, "Ab": 4, "Eb": 5, "Bb": 6, "F": 7, "C": 8, "G": 9, "D": 10, "A": 11, "E": 12 };
-  function keyFrom(num, letter) {
-    var map = letter === "A" ? camMin : camMaj;
-    for (var k in map) if (map[k] === num) return k;
-  }
-  function label(k, letter) {
-    var i = keyNames.indexOf(k);
-    return frNames[i] + (letter === "A" ? " mineur (" + k + "m)" : " majeur (" + k + ")");
-  }
+  function keyFrom(num, letter) { var map = letter === "A" ? camMin : camMaj; for (var k in map) if (map[k] === num) return k; }
+  function shortName(k, L) { return k + (L === "A" ? "m" : ""); }
+  function frName(k, L) { return frNames[keyNames.indexOf(k)] + (L === "A" ? " mineur" : " majeur"); }
   var keyState = store.get("key", { root: "C", mode: "A" });
-  var grid = $("keyGrid");
-  keyNames.forEach(function (k) {
-    var b = document.createElement("button"); b.type = "button"; b.textContent = k; b.dataset.key = k;
-    b.addEventListener("click", function () { keyState.root = k; renderKey(); });
-    grid.appendChild(b);
+  // build piano: 7 white keys, 5 black keys
+  var piano = $("piano");
+  var whites = ["C", "D", "E", "F", "G", "A", "B"];
+  var blacks = [["C#", 1], ["Eb", 2], ["F#", 4], ["Ab", 5], ["Bb", 6]]; // positioned after white index
+  whites.forEach(function (k) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "w"; b.dataset.key = k; b.textContent = k;
+    b.setAttribute("aria-label", frNames[keyNames.indexOf(k)]);
+    piano.appendChild(b);
   });
+  blacks.forEach(function (x) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "b"; b.dataset.key = x[0]; b.textContent = x[0];
+    b.setAttribute("aria-label", frNames[keyNames.indexOf(x[0])]);
+    b.style.left = "calc(" + (x[1] * 100 / 7) + "% - 4.5%)";
+    piano.appendChild(b);
+  });
+  piano.addEventListener("click", function (e) { var b = e.target.closest("button[data-key]"); if (b) { keyState.root = b.dataset.key; renderKey(); } });
   $("modeMin").addEventListener("click", function () { keyState.mode = "A"; renderKey(); });
   $("modeMaj").addEventListener("click", function () { keyState.mode = "B"; renderKey(); });
   function wrap(n) { return ((n - 1 + 12) % 12) + 1; }
   function renderKey() {
     store.set("key", keyState);
-    grid.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.key === keyState.root ? "true" : "false"); });
+    piano.querySelectorAll("button").forEach(function (b) {
+      var on = b.dataset.key === keyState.root; b.classList.toggle("sel", on); b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
     $("modeMin").setAttribute("aria-pressed", keyState.mode === "A" ? "true" : "false");
     $("modeMaj").setAttribute("aria-pressed", keyState.mode === "B" ? "true" : "false");
-    var map = keyState.mode === "A" ? camMin : camMaj;
-    var num = map[keyState.root];
     var L = keyState.mode, other = L === "A" ? "B" : "A";
+    var num = (L === "A" ? camMin : camMaj)[keyState.root];
     $("camCode").textContent = num + L;
-    $("camName").textContent = label(keyState.root, L);
+    $("camName").textContent = shortName(keyState.root, L);
+    $("camFr").textContent = frName(keyState.root, L);
     var list = [
-      ["Même tonalité", num, L],
       ["Relative " + (L === "A" ? "majeure" : "mineure"), num, other],
-      ["Un cran au-dessus (+1)", wrap(num + 1), L],
-      ["Un cran en dessous (−1)", wrap(num - 1), L],
-      ["Énergie + (montée de ton, +2)", wrap(num + 2), L]
+      ["Voisin +1", wrap(num + 1), L],
+      ["Voisin −1", wrap(num - 1), L],
+      ["Montée d'énergie +2", wrap(num + 2), L]
     ];
     $("compat").innerHTML = list.map(function (x) {
       var k = keyFrom(x[1], x[2]);
-      return "<div><span>" + x[0] + " · " + label(k, x[2]) + "</span><span>" + x[1] + x[2] + "</span></div>";
+      return "<div><span class='k'><small>" + x[0] + "</small>" + shortName(k, x[2]) + " · " + frName(k, x[2]) + "</span><span class='c'>" + x[1] + x[2] + "</span></div>";
     }).join("");
   }
   renderKey();
@@ -645,17 +789,20 @@ pre.recap {
     { id: "instru", label: "Instru", suffix: "INSTRU" },
     { id: "acap", label: "A cappella", suffix: "ACAPELLA" },
     { id: "tv", label: "TV track", suffix: "TVTRACK" },
-    { id: "clean", label: "Version clean", suffix: "CLEAN" },
-    { id: "stems", label: "Stems (dossier)", suffix: "STEMS" }
+    { id: "clean", label: "Clean", suffix: "CLEAN" },
+    { id: "stems", label: "Stems", suffix: "STEMS" }
   ];
   var exSel = store.get("exSel", { mix: true, master: true, instru: true, acap: true, stems: true });
   var typeBox = $("exTypes");
   types.forEach(function (t) {
-    var l = document.createElement("label"); l.className = "check";
-    l.innerHTML = "<input type='checkbox' id='ty-" + t.id + "'> " + t.label;
-    typeBox.appendChild(l);
-    var cb = l.querySelector("input"); cb.checked = !!exSel[t.id];
-    cb.addEventListener("change", function () { exSel[t.id] = cb.checked; store.set("exSel", exSel); renderExport(); });
+    var b = document.createElement("button"); b.type = "button"; b.className = "key";
+    b.innerHTML = "<span class='dot'></span>" + t.label;
+    b.setAttribute("aria-pressed", exSel[t.id] ? "true" : "false");
+    b.addEventListener("click", function () {
+      exSel[t.id] = !exSel[t.id]; b.setAttribute("aria-pressed", exSel[t.id] ? "true" : "false");
+      store.set("exSel", exSel); renderExport();
+    });
+    typeBox.appendChild(b);
   });
   function clean(s, upper) {
     s = String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -663,14 +810,14 @@ pre.recap {
     return upper ? s.toUpperCase() : s;
   }
   var todoItems = {
-    common: ["Pas de clip sur le master bus (vérifier le peak)", "Écouter le début et la fin du bounce (pas de coupe, queue de reverb entière)", "Bon sample rate et bonne résolution", "Nom de fichier vérifié, version à jour", "Fichiers testés à l'ouverture avant envoi"],
-    mix: ["Headroom laissé pour le master (≈ -6 dBFS de crête)", "Limiteur de bus de mix coupé si quelqu'un d'autre masterise"],
-    master: ["True peak sous -1 dBTP", "Loudness vérifiée (LUFS intégrés notés dans le mail)", "Silence en début ≤ 0,5 s, fin propre"],
-    instru: ["Même longueur que le mix, même point de départ"],
+    common: ["Pas de clip sur le master bus (vérifier le peak)", "Début et fin du bounce écoutés (pas de coupe, queue de reverb entière)", "Bon sample rate et bonne résolution", "Nom de fichier vérifié, version à jour", "Fichiers testés à l'ouverture avant envoi"],
+    mix: ["Headroom laissé pour le master (≈ -6 dBFS de crête)", "Limiteur du bus de mix coupé si quelqu'un d'autre masterise"],
+    master: ["True peak sous -1 dBTP", "LUFS intégrés notés dans le mail", "Silence en début ≤ 0,5 s, fin propre"],
+    instru: ["Même longueur et même point de départ que le mix"],
     acap: ["Effets inclus (reverb, delays) sauf demande contraire"],
     tv: ["Instru + chœurs et backs, sans lead"],
     clean: ["Mots censurés listés avec le time code"],
-    stems: ["Tous les stems commencent à 0:00 et ont la même longueur", "Nommés 01_KICK, 02_BASS, 03_LEAD… dans l'ordre de la session", "Traitements de bus inclus ou pas : préciser dans le mail", "Dossier zippé avec le BPM et la tonalité dans le nom"]
+    stems: ["Tous les stems commencent à 0:00 et ont la même longueur", "Nommés 01_KICK, 02_BASS, 03_LEAD… dans l'ordre de la session", "Traitements de bus inclus ou non : préciser dans le mail", "Dossier zippé avec le BPM et la tonalité dans le nom"]
   };
   var todoState = store.get("todo", {});
   function renderExport() {
@@ -680,28 +827,29 @@ pre.recap {
     var V = "V" + (parseInt($("exVer").value, 10) || 1);
     var bpm = String($("exBpm").value).trim(); bpm = bpm ? clean(bpm, upper) + (upper ? "BPM" : "bpm") : "";
     var key = clean($("exKey").value, false);
-    var fmt = $("exFmt").value;
-    var ext = fmt === "mp3" ? ".mp3" : ".wav";
-    var fmtTag = fmt === "mp3" ? "320" : fmt;
+    var fmt = $("exFmt").value, ext = fmt === "mp3" ? ".mp3" : ".wav", fmtTag = fmt === "mp3" ? "320" : fmt;
     var names = types.filter(function (t) { return exSel[t.id]; }).map(function (t) {
       var parts = [A, T, upper ? t.suffix : t.suffix.toLowerCase(), V];
       if (bpm) parts.push(bpm);
       if (key) parts.push(key);
-      if (t.id === "stems") return parts.join("_") + "/  (dossier, puis 01_KICK" + ext + "…)";
+      if (t.id === "stems") return parts.join("_") + "/";
       parts.push(fmtTag);
       return parts.join("_") + ext;
     });
     $("exNames").innerHTML = names.length ? names.map(function (n) {
-      return "<div class='name'><code>" + n.replace(/</g, "&lt;") + "</code><button type='button' data-name='" + n.replace(/'/g, "&#39;") + "'>Copier</button></div>";
-    }).join("") : "<p class='note'>Coche au moins un type d'export.</p>";
-    var groups = [["Pour tout export", todoItems.common]];
+      return "<div class='name'><code>" + n.replace(/</g, "&lt;") + "</code><button type='button' class='key small' data-name='" + n.replace(/'/g, "&#39;") + "'>Copier</button></div>";
+    }).join("") : "<p class='note'>Active au moins une source.</p>";
+    var groups = [["Tous les exports", todoItems.common]];
     types.forEach(function (t) { if (exSel[t.id] && todoItems[t.id]) groups.push([t.label, todoItems[t.id]]); });
-    $("exTodo").innerHTML = groups.map(function (g, gi) {
+    var total = 0, done = 0;
+    $("exTodo").innerHTML = groups.map(function (g) {
       return "<li class='grp'>" + g[0] + "</li>" + g[1].map(function (it, ii) {
-        var id = "td-" + g[0] + "-" + ii;
-        return "<li><label><input type='checkbox' data-todo='" + id.replace(/'/g, "") + "'" + (todoState[id.replace(/'/g, "")] ? " checked" : "") + "> <span>" + it + "</span></label></li>";
+        var id = ("td-" + g[0] + "-" + ii).replace(/[^A-Za-z0-9-]/g, "");
+        total++; if (todoState[id]) done++;
+        return "<li><label><input type='checkbox' data-todo='" + id + "'" + (todoState[id] ? " checked" : "") + "><span class='box'></span><span>" + it + "</span></label></li>";
       }).join("");
     }).join("");
+    $("todoProg").textContent = done + "/" + total;
     store.set("ex", { a: $("exArtist").value, t: $("exTitle").value, v: $("exVer").value, b: $("exBpm").value, k: $("exKey").value, f: fmt, c: $("exCase").value });
     return names;
   }
@@ -718,12 +866,15 @@ pre.recap {
   $("exTodo").addEventListener("change", function (e) {
     var cb = e.target.closest("input[data-todo]"); if (!cb) return;
     todoState[cb.dataset.todo] = cb.checked; store.set("todo", todoState);
+    var all = $("exTodo").querySelectorAll("input[data-todo]"), d = 0;
+    all.forEach(function (x) { if (x.checked) d++; });
+    $("todoProg").textContent = d + "/" + all.length;
   });
   $("todoReset").addEventListener("click", function () { todoState = {}; store.set("todo", todoState); renderExport(); });
   renderExport();
 
   // ---------- SACEM ----------
-  var roles = [["A", "Auteur"], ["C", "Compositeur"], ["AC", "Auteur-compositeur"], ["E", "Éditeur"]];
+  var roles = [["A", "Auteur"], ["C", "Compositeur"], ["AC", "Auteur-compo"], ["E", "Éditeur"]];
   var example = [
     { n: "ElGrandeToto", r: "A", p: 25, eq: false },
     { n: "Réel", r: "C", p: 4.17, eq: true },
@@ -737,20 +888,19 @@ pre.recap {
   var rows = store.get("sacemRows", null) || example.map(function (x) { return Object.assign({}, x); });
   var scSaved = store.get("sacemMeta", null);
   if (scSaved) { $("scTitle").value = scSaved.t; $("scEur").value = scSaved.e; $("scMe").value = scSaved.m; }
-
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;"); }
   function num(v) { var x = parseFloat(String(v).replace(",", ".")); return isNaN(x) ? 0 : x; }
   function cents(x) { return Math.round(x * 100); }
 
   function renderRows() {
     $("scRows").innerHTML = rows.map(function (r, i) {
-      return "<tr data-i='" + i + "'>" +
-        "<td><input type='text' aria-label='Nom' data-f='n' value=\"" + esc(r.n) + "\"></td>" +
-        "<td><select aria-label='Rôle' data-f='r'>" + roles.map(function (o) { return "<option value='" + o[0] + "'" + (r.r === o[0] ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select>" +
-        "<label class='check' style='margin-top:4px;padding:3px 6px;font-size:12px'><input type='checkbox' data-f='eq'" + (r.eq ? " checked" : "") + "> partage</label></td>" +
-        "<td class='num'><input type='text' inputmode='decimal' aria-label='Part en %' data-f='p' value=\"" + esc(String(r.p).replace(".", ",")) + "\"></td>" +
-        "<td class='eur' data-eur='" + i + "'></td>" +
-        "<td class='del'><button type='button' aria-label='Supprimer la ligne' data-del='" + i + "'>×</button></td></tr>";
+      return "<div class='ch' data-i='" + i + "'>" +
+        "<div class='who'><input type='text' aria-label='Ayant droit' placeholder='Nom' data-f='n' value=\"" + esc(r.n) + "\"></div>" +
+        "<div class='rolecell'><select aria-label='Rôle' data-f='r'>" + roles.map(function (o) { return "<option value='" + o[0] + "'" + (r.r === o[0] ? " selected" : "") + ">" + o[1] + "</option>"; }).join("") + "</select>" +
+        "<label class='eq'><input type='checkbox' data-f='eq'" + (r.eq ? " checked" : "") + "><span class='box'></span>Partage</label></div>" +
+        "<div class='pct'><input type='text' inputmode='decimal' aria-label='Part en %' data-f='p' value=\"" + esc(String(r.p).replace(".", ",")) + "\"></div>" +
+        "<div class='eur' data-eur='" + i + "'></div>" +
+        "<button type='button' class='key x' aria-label='Supprimer la ligne' data-del='" + i + "'>×</button></div>";
     }).join("");
     renderCalc();
   }
@@ -759,42 +909,46 @@ pre.recap {
     var eur = num($("scEur").value);
     var total = rows.reduce(function (s, r) { return s + cents(num(r.p)); }, 0) / 100;
     rows.forEach(function (r, i) {
-      var cell = document.querySelector("td[data-eur='" + i + "']");
+      var cell = document.querySelector("[data-eur='" + i + "']");
       if (cell) cell.textContent = eurF.format(eur * num(r.p) / 100);
     });
-    var st = $("scStatus");
     var diff = Math.round((100 - total) * 100) / 100;
+    $("scTotal").textContent = nf2.format(total);
+    var meter = $("scMeter"), st = $("scState");
+    $("scFill").style.width = Math.min(total / 110 * 100, 100) + "%";
+    meter.classList.remove("over", "under");
     if (Math.abs(diff) < 0.005) {
-      st.className = "status ok"; st.innerHTML = "<span>Le total tombe juste.</span><b>100 %</b>";
+      st.className = "state ok"; st.innerHTML = "<i></i>Juste"; $("scGap").textContent = "La répartition tombe à 100 %.";
+    } else if (diff > 0) {
+      meter.classList.add("under"); st.className = "state under"; st.innerHTML = "<i></i>Manque";
+      $("scGap").textContent = "Il manque " + nf2f.format(diff) + " %.";
     } else {
-      st.className = "status bad";
-      st.innerHTML = "<span>" + (diff > 0 ? "Il manque " : "Il y a " ) + "<b>" + nf2f.format(Math.abs(diff)) + " %</b>" + (diff > 0 ? "" : " de trop") + "</span><b>" + nf2f.format(total) + " %</b>";
+      meter.classList.add("over"); st.className = "state bad"; st.innerHTML = "<i></i>Trop";
+      $("scGap").textContent = "Il y a " + nf2f.format(-diff) + " % de trop.";
     }
-    var creators = rows.filter(function (r) { return r.r !== "E"; });
-    var editors = rows.filter(function (r) { return r.r === "E"; });
     var lines = [title.toUpperCase()];
-    creators.forEach(function (r) { lines.push(r.r + " " + (r.n || "?") + " " + nf2.format(num(r.p)) + " %"); });
-    editors.forEach(function (r) { lines.push("E " + (r.n || "?") + " " + nf2.format(num(r.p)) + " %"); });
+    rows.filter(function (r) { return r.r !== "E"; }).forEach(function (r) { lines.push(r.r + " " + (r.n || "?") + " " + nf2.format(num(r.p)) + " %"); });
+    rows.filter(function (r) { return r.r === "E"; }).forEach(function (r) { lines.push("E " + (r.n || "?") + " " + nf2.format(num(r.p)) + " %"); });
     lines.push("Total : " + nf2.format(total) + " %");
     $("scRecap").textContent = lines.join("\n");
     var me = $("scMe").value.trim().toLowerCase();
     var mine = me ? rows.filter(function (r) { return String(r.n).trim().toLowerCase() === me; }) : [];
     var mp = mine.reduce(function (s, r) { return s + num(r.p); }, 0);
-    $("mePct").textContent = mine.length ? nf2.format(mp) + " %" : "–";
+    $("mePct").innerHTML = mine.length ? nf2.format(mp) + U("%") : "–";
     $("meEur").textContent = mine.length ? eurF.format(eur * mp / 100) : "–";
     store.set("sacemRows", rows);
     store.set("sacemMeta", { t: $("scTitle").value, e: $("scEur").value, m: $("scMe").value });
   }
   $("scRows").addEventListener("input", function (e) {
-    var tr = e.target.closest("tr[data-i]"); if (!tr) return;
-    var r = rows[+tr.dataset.i], f = e.target.dataset.f;
+    var ch = e.target.closest("[data-i]"); if (!ch) return;
+    var r = rows[+ch.dataset.i], f = e.target.dataset.f;
     if (f === "n") r.n = e.target.value;
     if (f === "p") r.p = e.target.value;
     renderCalc();
   });
   $("scRows").addEventListener("change", function (e) {
-    var tr = e.target.closest("tr[data-i]"); if (!tr) return;
-    var r = rows[+tr.dataset.i], f = e.target.dataset.f;
+    var ch = e.target.closest("[data-i]"); if (!ch) return;
+    var r = rows[+ch.dataset.i], f = e.target.dataset.f;
     if (f === "r") r.r = e.target.value;
     if (f === "eq") r.eq = e.target.checked;
     if (f === "p") { r.p = num(e.target.value); e.target.value = String(r.p).replace(".", ","); }
@@ -810,15 +964,18 @@ pre.recap {
   ["scTitle", "scEur", "scMe"].forEach(function (id) { $(id).addEventListener("input", renderCalc); });
   $("eqGo").addEventListener("click", function () {
     var sel = rows.filter(function (r) { return r.eq; });
-    if (!sel.length) { toast("Coche « partage » sur au moins une ligne"); return; }
+    if (!sel.length) { toast("Allume « partage » sur une ligne"); return; }
     var totalC = cents(num($("eqPct").value));
     var base = Math.floor(totalC / sel.length), extra = totalC - base * sel.length;
     sel.forEach(function (r, i) { r.p = (base + (i < extra ? 1 : 0)) / 100; });
     renderRows();
-    toast(nf2.format(totalC / 100) + " % répartis entre " + sel.length);
+    toast(nf2.format(totalC / 100) + " % → " + sel.length + " lignes");
   });
   $("scCopy").addEventListener("click", function () { copy($("scRecap").textContent, "Récap copié"); });
   renderRows();
+
+  // key press feedback
+  document.addEventListener("pointerdown", function (e) { var k = e.target.closest(".key"); if (k) press(k); });
 
   // ---------- installable / hors ligne ----------
   if ("serviceWorker" in navigator && location.protocol === "https:") {

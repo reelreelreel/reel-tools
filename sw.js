@@ -1,6 +1,6 @@
 // Service worker : met l'appli en cache pour qu'elle marche sans internet.
 // Change VERSION à chaque mise à jour pour que les appareils récupèrent la nouvelle version.
-const VERSION = "reel-tools-v1";
+const VERSION = "reel-tools-v2";
 const CORE = [
   "./",
   "./index.html",
