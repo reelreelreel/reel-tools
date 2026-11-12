@@ -233,7 +233,7 @@ shadow(rackG);
 // ================= 2. CRT SCOPE (analyse) =================
 const scope = new THREE.Group();
 // handheld analyser lying flat: beige 90s plastic, phosphor screen on top
-const scopeBody = new THREE.Mesh(new RoundedBoxGeometry(.24, .045, .3, 5, .012), new THREE.MeshPhysicalMaterial({ color: 0xb9b2a3, roughness: .55, clearcoat: .2 })); scopeBody.position.y = .0225; scope.add(scopeBody);
+const scopeBody = new THREE.Mesh(new RoundedBoxGeometry(.24, .045, .3, 5, .012), new THREE.MeshPhysicalMaterial({ color: 0x8c8578, roughness: .55, clearcoat: .2 })); scopeBody.position.y = .0225; scope.add(scopeBody);
 const [sc, sx] = cv(512, 400), scopeTex = ctex(sc, true);
 function drawScope(t) {
   sx.fillStyle = "#020a04"; sx.fillRect(0, 0, 512, 400);
@@ -246,7 +246,7 @@ function drawScope(t) {
 }
 const scrW = .19, scrD = .148;
 const scrWin = screenWindow(glowMat(0xffffff, 1.1), scrW, scrD, 0x0b1a0e); scrWin.children[1].material.emissiveMap = scopeTex; scrWin.position.set(0, .046, -.055); scope.add(scrWin);
-const scopeTop = panel(.22, .1, (x, P, W, H) => { x.fillStyle = "#b9b2a3"; x.fillRect(0, 0, W, H); grime(x, W, H, 44, 1); silk(x, "RT-SC1  ANALYSE", P(.012), H * .14, 54, "rgba(30,30,30,.85)"); ["TIME", "VOLT", "TRIG", "FFT"].forEach((l, i) => silk(x, l, P(.03 + i * .052), H * .9, 34, "rgba(30,30,30,.75)", "center")); }, { metal: 0, rough: .6, scratch: false, side: 0xb9b2a3 });
+const scopeTop = panel(.22, .1, (x, P, W, H) => { x.fillStyle = "#8c8578"; x.fillRect(0, 0, W, H); grime(x, W, H, 44, 1); silk(x, "RT-SC1  ANALYSE", P(.012), H * .14, 54, "rgba(30,30,30,.85)"); ["TIME", "VOLT", "TRIG", "FFT"].forEach((l, i) => silk(x, l, P(.03 + i * .052), H * .9, 34, "rgba(30,30,30,.75)", "center")); }, { metal: 0, rough: .6, scratch: false, side: 0x8c8578 });
 scopeTop.position.set(0, .0455, .095); scope.add(scopeTop);
 for (let i = 0; i < 4; i++) { const k = knob(.008, .012); k.position.set(-.11 + .03 + i * .052, .047, .1); scope.add(k); }
 shadow(scope);
@@ -402,7 +402,7 @@ const soffit = new THREE.Mesh(new THREE.BoxGeometry(4.2, .12, .5), new THREE.Mes
 const downs = [];
 [-1.35, -.65, .05, .75, 1.45].forEach((x) => {
   const bulb = new THREE.Mesh(new THREE.CircleGeometry(.025, 24), glowMat(0xffc68a, 6)); bulb.rotation.x = Math.PI / 2; bulb.position.set(x, 1.338, -.3); scene.add(bulb);
-  const sp = new THREE.SpotLight(0xffb36b, .9, 3.2, .55, .85, 1.6); sp.position.set(x, 1.32, -.3); sp.target.position.set(x * .9, 0, .05); scene.add(sp, sp.target); downs.push(sp);
+  const sp = new THREE.SpotLight(0xffb36b, .5, 3.2, .55, .85, 1.6); sp.position.set(x, 1.32, -.3); sp.target.position.set(x * .9, 0, .05); scene.add(sp, sp.target); downs.push(sp);
 });
 // a couple of frames on the wall (right of the window)
 [[1.25, 1.05, .32, .4], [1.68, 1.12, .26, .32], [1.3, .55, .36, .26]].forEach(([x, y, w, h], i) => {
@@ -455,7 +455,7 @@ cableC.forEach((pts, i) => { const t = new THREE.Mesh(new THREE.TubeGeometry(new
 
 // ================= layout (landscape / portrait) =================
 // [x, z, rotY, y, tiltX]  — tilt brings the top face toward the camera
-const L = { tape: [-1.12, -.2, .28, .34 + .155, 1.2], scope: [-.42, -.32, .12, .1 + .13, 1.05], synth: [-.1, .2, .04, 0, .08], modular: [-.78, .25, .3, 0, .3], rack: [1.08, -.25, -.42, .16, 0], tt: [.95, .2, -.25, 0, 0], book: [.38, .3, -.3, 0, 0], cup: [.12, .32, 0, 0, 0] };
+const L = { tape: [-1.12, -.2, .28, .34 + .155, 1.2], scope: [-.42, -.32, .12, .1 + .13, 1.05], synth: [-.1, .2, .04, 0, .08], modular: [-.78, .25, .3, 0, .3], rack: [1.08, -.25, -.42, .16, 0], tt: [.95, .2, -.25, 0, 0], book: [.38, .3, -.3, 0, 0], cup: [.64, .36, 0, 0, 0] };
 const nodes = { rack: rackG, scope, modular, synth, tt, tape, book, cup };
 Object.values(nodes).forEach((n) => scene.add(n));
 const tagMap = { rack: "m:tempo", scope: "m:scope", modular: "m:modular", synth: "m:synth", tt: "m:tt", tape: "m:tape", book: "m:book" };
@@ -471,7 +471,7 @@ function place() {
 }
 
 // ================= lights =================
-const lamp = new THREE.SpotLight(0xffa456, 1.6, 3, .9, .7, 1.4);
+const lamp = new THREE.SpotLight(0xffa456, 1.25, 3, .9, .7, 1.4);
 const roomWarm = new THREE.PointLight(0xffa060, .5, 6, 1.6); roomWarm.position.set(.2, 1.1, 1.4); scene.add(roomWarm);
 lamp.castShadow = true; lamp.shadow.mapSize.set(2048, 2048); lamp.shadow.bias = -.0002; lamp.shadow.radius = 6;
 scene.add(lamp, lamp.target);
@@ -488,7 +488,7 @@ function shotPose(name) {
   const up = new THREE.Vector3(0, 1, 0);
   const viaNormal = (obj, local, n, hw, hh, m = 1.12) => { const c = worldPoint(obj, local); const nn = worldNormal(obj, n); return { pos: c.clone().add(nn.multiplyScalar(fitDist(hw * m, hh * m))), look: c }; };
   switch (name) {
-    case "overview": { const t = layoutMode === "tall"; const look = new THREE.Vector3(t ? 0 : -.05, t ? .34 : .45, t ? -.1 : -.25); const dir = new THREE.Vector3(-.3, t ? .42 : .3, 1).normalize(); const d = fitDist(t ? 1.12 : 1.75, t ? .7 : .95) * 1.08; return { pos: look.clone().add(dir.multiplyScalar(d)), look }; }
+    case "overview": { const t = layoutMode === "tall"; const look = new THREE.Vector3(-.05, t ? .55 : .45, -.25); const dir = new THREE.Vector3(t ? -.15 : -.3, t ? .4 : .3, 1).normalize(); const d = fitDist(t ? 1.4 : 1.75, t ? 1.0 : .95) * 1.04; return { pos: look.clone().add(dir.multiplyScalar(d)), look }; }
     case "tempo": return viaNormal(tempo, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 1), RW / 2, .06);
     case "loudness": return viaNormal(loud, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 1), RW / 2, .06);
     case "scope": return viaNormal(scope, new THREE.Vector3(0, .045, 0), new THREE.Vector3(0, 1, .3), .14, .17);
