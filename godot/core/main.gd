@@ -160,6 +160,10 @@ func _process(delta: float) -> void:
 		return
 	_update_fov()
 	var target := studio.shot_pose(current, cam, _aspect())
+	if _args.has("cam"):  # caméra libre pour les vérifs : --cam=x,y,z --look=x,y,z
+		target = [_vec(_args.cam), _vec(_args.get("look", "0,0,0"))]
+		cam_pos = target[0]
+		cam_look = target[1]
 	var k := 1.0 if reduced else 1.0 - pow(1.0 - .06, delta * 60.0)
 	cam_pos = cam_pos.lerp(target[0], k)
 	cam_look = cam_look.lerp(target[1], k)
@@ -198,3 +202,8 @@ func _screenshot_and_quit() -> void:
 		print("screenshot: ", path)
 	get_tree().quit()
 
+
+
+func _vec(txt: String) -> Vector3:
+	var p := txt.split(",")
+	return Vector3(float(p[0]), float(p[1]), float(p[2]))

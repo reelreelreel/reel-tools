@@ -316,6 +316,16 @@ static func torus_arc(R: float, r: float, arc: float, segs := 24, rsegs := 8) ->
 	return _sweep(s, r, rsegs)
 
 
+## Anneau (tore complet) à plat dans le plan XZ.
+static func torus_ring(R: float, r: float) -> TorusMesh:
+	var t := TorusMesh.new()
+	t.inner_radius = R - r
+	t.outer_radius = R + r
+	t.rings = 32
+	t.ring_segments = 8
+	return t
+
+
 ## Disque à plat face +Y, UV planaires (dessus de potard, étiquette de disque).
 static func disc(r: float, segs := 64) -> ArrayMesh:
 	var st := SurfaceTool.new()
