@@ -1,0 +1,285 @@
+extends Node3D
+## REEL'S TOOLS — point d'entrée : monte le studio, la caméra, et gère clic / glisser / clavier.
+##
+## Raccourcis : Échap = plan large · ←/→ ou PageUp/PageDown = machine précédente/suivante
+## Sur le RT-140 : Espace = tap, ↑/↓ = BPM (Maj = 0,1), N = valeur de note, molette sur le potard
+## F ou Cmd+F = plein écran · T = garder la fenêtre au premier plan (à côté du DAW)
+##
+## Options de lancement (après « -- ») : --shot=tempo  --screenshot=chemin.png (ou dossier/ + --shots=a,b)  --frames=N
+
+var engine: TempoEngine
+var studio: Studio7080
+var cam: Camera3D
+var attrs: CameraAttributesPractical
+var overlay: Overlay
+var current := "overview"
+var cam_pos := Vector3.ZERO
+var cam_look := Vector3.ZERO
+var pointer := Vector2.ZERO
+var par := Vector2.ZERO
+var drag = null   # {pos, start}
+var swipe = null  # {pos, t, a}
+var t := 0.0
+var reduced := false
+var ready_done := false
+var _args := {}
+
+const CONTROL_ACTIONS := ["tempo", "note", "tap", "half", "double", "copy"]
+
+
+func _ready() -> void:
+	for a in OS.get_cmdline_user_args():
+		var kv := a.trim_prefix("--").split("=", true, 1)
+		_args[kv[0]] = kv[1] if kv.size() > 1 else "1"
+	DisplayServer.window_set_title("REEL'S TOOLS")
+	DisplayServer.window_set_min_size(Vector2i(480, 320))
+	engine = TempoEngine.new()
+	studio = Studio7080.new(engine)
+	add_child(studio)
+	cam = Camera3D.new()
+	cam.near = 0.02
+	cam.far = 30.0
+	attrs = CameraAttributesPractical.new()
+	attrs.dof_blur_far_enabled = true
+	attrs.dof_blur_near_enabled = true
+	attrs.auto_exposure_enabled = false
+	cam.attributes = attrs
+	add_child(cam)
+	cam.current = true
+	overlay = Overlay.new()
+	add_child(overlay)
+	current = _args.get("shot", Store.get_v("shot", "overview"))
+	if not Studio7080.ORDER.has(current):
+		current = "overview"
+	await Tex.flush()
+	_update_fov()
+	var p := studio.shot_pose(current, cam, _aspect())
+	cam_pos = p[0]
+	cam_look = p[1]
+	ready_done = true
+	overlay.boot_done()
+	if _args.has("selftest"):
+		_selftest()
+	elif _args.has("screenshot"):
+		_screenshot_and_quit()
+
+
+func _aspect() -> float:
+	var s := get_viewport().get_visible_rect().size
+	return s.x / maxf(s.y, 1.0)
+
+
+func _update_fov() -> void:
+	cam.fov = 44.0 if _aspect() < .85 else 34.0
+
+
+# ---------------------------------------------------------------- navigation
+func go(shot: String) -> void:
+	current = shot
+	Store.set_v("shot", shot)
+	overlay.hide_hint()
+
+
+func step(dir: int) -> void:
+	var i := Studio7080.ORDER.find(current)
+	go(Studio7080.ORDER[clampi(i + dir, 0, Studio7080.ORDER.size() - 1)])
+
+
+func pick(screen_pos: Vector2) -> Dictionary:
+	var from := cam.project_ray_origin(screen_pos)
+	var to := from + cam.project_ray_normal(screen_pos) * 20.0
+	var space := get_world_3d().direct_space_state
+	for mask in [2, 1]:
+		var q := PhysicsRayQueryParameters3D.create(from, to, mask)
+		var hit := space.intersect_ray(q)
+		if not hit.is_empty():
+			return {"action": hit.collider.get_meta("action", ""), "collider": hit.collider}
+	return {"action": ""}
+
+
+# ---------------------------------------------------------------- entrées
+func _unhandled_input(e: InputEvent) -> void:
+	if not ready_done:
+		return
+	if e is InputEventMouseMotion:
+		var vs := get_viewport().get_visible_rect().size
+		pointer = e.position / vs - Vector2(.5, .5)
+		if drag != null:
+			engine.set_bpm(drag.start + ((drag.pos.y - e.position.y) + (e.position.x - drag.pos.x)) * .2)
+			return
+		var hover: String = pick(e.position).action
+		Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND if hover != "" else Input.CURSOR_ARROW)
+	elif e is InputEventMouseButton:
+		_mouse_button(e)
+	elif e is InputEventKey and e.pressed:
+		_key(e)
+
+
+func _mouse_button(e: InputEventMouseButton) -> void:
+	if e.button_index == MOUSE_BUTTON_WHEEL_UP or e.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+		if e.pressed and current == "tempo" and pick(e.position).action == "tempo":
+			var d := 1.0 if e.button_index == MOUSE_BUTTON_WHEEL_UP else -1.0
+			engine.set_bpm(engine.bpm + d * (.1 if e.shift_pressed else 1.0))
+		return
+	if e.button_index != MOUSE_BUTTON_LEFT:
+		return
+	if e.pressed:
+		var a: String = pick(e.position).action
+		swipe = {"pos": e.position, "t": Time.get_ticks_msec(), "a": a}
+		if current == "tempo" and a == "tempo":
+			drag = {"pos": e.position, "start": engine.bpm}
+		return
+	var was_drag := drag != null
+	drag = null
+	if swipe == null:
+		return
+	var dpos: Vector2 = e.position - swipe.pos
+	var dt: int = Time.get_ticks_msec() - swipe.t
+	var a: String = swipe.a
+	swipe = null
+	if was_drag:
+		return
+	var big := maxf(absf(dpos.x), absf(dpos.y))
+	if big > 50 and dt < 700:
+		var v := -dpos.y if absf(dpos.y) > absf(dpos.x) else -dpos.x
+		step(1 if v > 0 else -1)
+		return
+	if big > 12:
+		return
+	if current == "tempo" and CONTROL_ACTIONS.has(a):
+		_tempo_action(a)
+		return
+	if CONTROL_ACTIONS.has(a):
+		go("tempo")
+		return
+	if a.begins_with("m:"):
+		var m := a.substr(2)
+		if current != m:
+			go(m)
+		return
+	if a == "" and current != "overview":
+		go("overview")
+
+
+func _tempo_action(a: String) -> void:
+	var rack := studio.rack
+	match a:
+		"tap":
+			rack.on_tap()
+		"note":
+			engine.set_note(engine.note_ix + 1)
+		"half":
+			engine.set_bpm(engine.bpm / 2.0)
+			rack.message("TEMPO ÷ 2", "")
+		"double":
+			engine.set_bpm(engine.bpm * 2.0)
+			rack.message("TEMPO × 2", "")
+		"copy":
+			var ms := ("%.1f" % engine.note_ms()).replace(".", ",")
+			DisplayServer.clipboard_set(ms)
+			rack.message("COPIED", "  " + ms + " ms")
+
+
+func _key(e: InputEventKey) -> void:
+	var k := e.keycode
+	if k == KEY_F and (e.is_command_or_control_pressed() or not e.shift_pressed):
+		var fs := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if fs else DisplayServer.WINDOW_MODE_FULLSCREEN)
+		return
+	if k == KEY_T:
+		var on := not DisplayServer.window_get_flag(DisplayServer.WINDOW_FLAG_ALWAYS_ON_TOP)
+		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_ALWAYS_ON_TOP, on)
+		return
+	if k == KEY_ESCAPE:
+		go("overview")
+	if k == KEY_PAGEDOWN or (k == KEY_RIGHT and current != "tempo"):
+		step(1)
+	if k == KEY_PAGEUP or (k == KEY_LEFT and current != "tempo"):
+		step(-1)
+	if current != "tempo":
+		return
+	var fine := .1 if e.shift_pressed else 1.0
+	match k:
+		KEY_SPACE:
+			studio.rack.on_tap()
+		KEY_UP:
+			engine.set_bpm(engine.bpm + fine)
+		KEY_DOWN:
+			engine.set_bpm(engine.bpm - fine)
+		KEY_N:
+			engine.set_note(engine.note_ix + 1)
+
+
+# ---------------------------------------------------------------- boucle
+func _process(delta: float) -> void:
+	t += delta
+	if not ready_done:
+		return
+	_update_fov()
+	var target := studio.shot_pose(current, cam, _aspect())
+	var k := 1.0 if reduced else 1.0 - pow(1.0 - .06, delta * 60.0)
+	cam_pos = cam_pos.lerp(target[0], k)
+	cam_look = cam_look.lerp(target[1], k)
+	par += (pointer - par) * (1.0 - pow(.95, delta * 60.0))
+	var amp := .05 if current == "overview" else .015
+	var dr := 0.0 if reduced else 1.0
+	cam.position = cam_pos + Vector3(par.x * amp + sin(t * .31) * .006 * dr, -par.y * amp * .5 + sin(t * .23) * .004 * dr, 0)
+	cam.look_at(cam_look, Vector3.UP)
+	var focus := cam.position.distance_to(cam_look)
+	var wide := current == "overview"
+	attrs.dof_blur_far_distance = focus * (1.12 if wide else 1.06)
+	attrs.dof_blur_far_transition = focus * (.9 if wide else .5)
+	attrs.dof_blur_near_distance = focus * (.55 if wide else .8)
+	attrs.dof_blur_near_transition = focus * (.35 if wide else .3)
+	attrs.dof_blur_amount = .06 if wide else .1
+	studio.animate(t, delta, reduced)
+
+
+func _screenshot_and_quit() -> void:
+	# --screenshot=dossier/ avec --shots=overview,tempo,... : une capture par plan
+	var frames := int(_args.get("frames", "60"))
+	var shots: Array = _args.get("shots", current).split(",")
+	for s in shots:
+		current = s
+		var p := studio.shot_pose(current, cam, _aspect())
+		cam_pos = p[0]
+		cam_look = p[1]
+		for i in frames:
+			await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		var img := get_viewport().get_texture().get_image()
+		var path: String = _args.screenshot
+		if path.ends_with("/"):
+			path += s + ".png"
+		img.save_png(path)
+		print("screenshot: ", path)
+	get_tree().quit()
+
+
+## Vérif automatique : vise chaque machine depuis le plan large et contrôle ce que le clic touche.
+func _selftest() -> void:
+	for i in 5:
+		await get_tree().process_frame
+	var targets := {"m:tempo": studio.rack.tempo, "m:loudness": studio.rack.loud, "m:scope": studio.scope, "m:synth": studio.synth,
+		"m:modular": studio.modular, "m:tt": studio.tt, "m:tape": studio.tape, "m:book": studio.book}
+	var ok := 0
+	for want in targets:
+		var n: Node3D = targets[want]
+		var got: String = pick(cam.unproject_position(n.global_position + n.global_basis.y * .03)).action
+		print("pick ", want, " -> ", got)
+		ok += int(got == want or (want == "m:tempo" and CONTROL_ACTIONS.has(got)))
+	go("tempo")
+	for i in 3:
+		await get_tree().process_frame
+	var p := studio.shot_pose("tempo", cam, _aspect())
+	cam.position = p[0]
+	cam.look_at(p[1])
+	var knob: Node3D = studio.rack.tempo.get_node("TempoKnob")
+	var got_k: String = pick(cam.unproject_position(knob.global_position)).action
+	print("pick tempo knob -> ", got_k)
+	var bpm0 := engine.bpm
+	_tempo_action("double")
+	print("double: ", bpm0, " -> ", engine.bpm, "  note ms: ", engine.note_ms())
+	engine.set_bpm(bpm0)
+	print("selftest ", ok, "/", targets.size())
+	get_tree().quit()
