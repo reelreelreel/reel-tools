@@ -1,10 +1,7 @@
-# REEL'S TOOLS — prototypes de D.A
+# REEL'S TOOLS — prototype en cours
 
-- `studio-top/` : **piste actuelle** — studio vu du dessus, 8 machines (une par module), interface dans le décor. Tempo jouable, les autres en attente de peaufinage.
+- `studio-face/` : studio vu de trois-quarts face (façon photo de référence), 8 machines, une par module, interface dans le décor. Seul le Tempo est jouable ; les autres machines sont à peaufiner une par une.
 
-- `studio-rack/` : D.A retenue (v2) — baie de rack réaliste, interface dans le décor, module Tempo RT-140 jouable.
-- `module-tempo-3d.html` : v1 du module Tempo (machine de table, abandonnée). Machine Tempo 3D réaliste (three.js 0.160), studio de nuit.
-- `sceau-metal-3d.html` : essai 3D précédent (plaque gravée, pièce, cire, chaîne en verre).
-- `da-canvas/` : pistes A–D (+ D1) du canevas de design (fichiers .dc.html).
+Les anciennes pistes (vue du dessus, rack de face, module Tempo de table, sceau métal, canevas de D.A) ont été retirées ; elles restent dans l'historique git.
 
 L'appli en ligne (racine du dépôt, `index.html`) est encore l'ancienne version 2D « console ».
