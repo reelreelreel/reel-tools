@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Piste B · Skin 2003</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&amp;family=VT323&amp;family=Syncopate:wght@700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+@keyframes sk-holo{0%{background-position:0% 0%}100%{background-position:300% 300%}}
+@keyframes sk-scan{0%{transform:translateY(-100%)}100%{transform:translateY(100%)}}
+@keyframes sk-blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes sk-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes sk-wobble{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(-2deg)}}
+@keyframes sk-eq{0%,100%{height:20%}50%{height:100%}}
+@keyframes sk-spin{to{transform:rotate(360deg)}}
+.sk-bevel{background:linear-gradient(180deg,#dfe3ea 0%,#9aa0ab 8%,#4b4f57 50%,#2a2c31 92%,#6d717a 100%);border:1px solid #000;box-shadow:inset 1px 1px 0 rgba(255,255,255,0.7),inset -1px -1px 0 rgba(0,0,0,0.6)}
+.sk-holo{background:linear-gradient(115deg,#ff9ad5,#9ad0ff,#b8ffd9,#fff3a1,#d4a8ff,#ff9ad5,#9ad0ff);background-size:300% 300%;animation:sk-holo 5s linear infinite}
+.sk-chrome-t{background:linear-gradient(180deg,#ffffff 0%,#c9ced8 40%,#5b5f68 52%,#e7eaf0 70%,#8a8f99 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sk-lcd{background:#0a1a10;color:#9dffb8;text-shadow:0 0 8px rgba(157,255,184,0.6);font-family:VT323,monospace}
+.sk-eq span{display:block;width:6px;background:linear-gradient(#ff9ad5,#9ad0ff,#b8ffd9);animation:sk-eq .7s ease-in-out infinite}
+@media (prefers-reduced-motion: reduce){.sk-holo,.sk-eq span,[style*="animation"]{animation:none!important}}
+</style>
+</helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;background:#0b0b0e;color:#e7eaf0;font-family:Silkscreen,monospace">
+  <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.035) 1px,transparent 1px);background-size:22px 22px"></div>
+  <div style="position:absolute;top:38px;left:0;right:0;height:22px;overflow:hidden;border-top:1px solid #333;border-bottom:1px solid #333;background:#111">
+    <div style="display:flex;width:max-content;animation:sk-marquee 14s linear infinite;font-size:10px;letter-spacing:.2em;line-height:22px;color:#8d93a0;white-space:nowrap">
+      <span>★ REEL'S TOOLS ★ STUDIO UTILITY v1.0 ★ BPM → MS ★ TAP ★ GAMMES ★ SPLITS ★ NO SAMPLE CLEARED ★&#160;</span>
+      <span>★ REEL'S TOOLS ★ STUDIO UTILITY v1.0 ★ BPM → MS ★ TAP ★ GAMMES ★ SPLITS ★ NO SAMPLE CLEARED ★&#160;</span>
+    </div>
+  </div>
+
+  <div class="sk-holo" style="position:absolute;top:74px;right:18px;width:96px;height:96px;border-radius:50%;display:grid;place-items:center;box-shadow:0 8px 20px rgba(0,0,0,0.6);animation:sk-holo 5s linear infinite, sk-wobble 4s ease-in-out infinite;z-index:3">
+    <svg width="70" height="70" viewBox="0 0 64 64" aria-hidden="true" style="animation:sk-spin 12s linear infinite">
+      <path d="M32 4 L38 24 L58 18 L44 32 L58 46 L38 40 L32 60 L26 40 L6 46 L20 32 L6 18 L26 24 Z" fill="#0b0b0e"/>
+      <text x="32" y="37" text-anchor="middle" font-family="Syncopate" font-weight="700" font-size="12" fill="#fff">RT</text>
+    </svg>
+  </div>
+
+  <div style="position:absolute;top:84px;left:16px;transform:rotate(-3deg);z-index:2">
+    <div class="sk-chrome-t" style="font-family:Syncopate,sans-serif;font-weight:700;font-size:44px;line-height:.9;letter-spacing:-.02em;filter:drop-shadow(0 2px 0 #000) drop-shadow(0 0 14px rgba(154,208,255,0.35))">REEL'S<br>TOOLS</div>
+    <div style="margin-top:6px;display:inline-block;background:#fff3a1;color:#0b0b0e;font-size:9px;padding:3px 6px;transform:rotate(2deg)">BY BEATMAKERS · FOR BEATMAKERS</div>
+  </div>
+
+  <div class="sk-bevel" style="position:absolute;top:212px;left:14px;right:14px;border-radius:6px;padding:6px;transform:rotate(1.2deg);z-index:2">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:2px 4px 6px;font-size:9px;color:#e7eaf0">
+      <span>TEMPO.EXE</span>
+      <span style="display:flex;gap:4px"><span style="width:10px;height:10px;background:#ccc;border:1px solid #000"></span><span style="width:10px;height:10px;background:#ccc;border:1px solid #000"></span><span style="width:10px;height:10px;background:#ff9ad5;border:1px solid #000"></span></span>
+    </div>
+    <div class="sk-lcd" style="position:relative;overflow:hidden;border:2px inset #333;padding:8px 12px;display:flex;justify-content:space-between;align-items:flex-end">
+      <div style="position:absolute;left:0;right:0;height:40%;background:linear-gradient(transparent,rgba(157,255,184,0.08),transparent);animation:sk-scan 3s linear infinite"></div>
+      <div>
+        <div style="font-size:16px;opacity:.7">BPM <span style="animation:sk-blink 0.857s steps(1) infinite">●</span></div>
+        <div style="font-size:96px;line-height:.85">{{bpm}}</div>
+      </div>
+      <div class="sk-eq" style="display:flex;gap:3px;align-items:flex-end;height:70px">
+        <span style="animation-delay:0s"></span><span style="animation-delay:.15s"></span><span style="animation-delay:.3s"></span><span style="animation-delay:.05s"></span><span style="animation-delay:.22s"></span><span style="animation-delay:.11s"></span><span style="animation-delay:.36s"></span>
+      </div>
+    </div>
+    <div style="display:flex;gap:4px;margin-top:6px">
+      <sc-for list="{{presets}}" as="p" hint-placeholder-count="5">
+        <button type="button" onClick="{{p.pick}}" style="{{p.style}}">{{p.label}}</button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div class="sk-bevel" style="position:absolute;top:470px;left:22px;width:200px;border-radius:6px;padding:6px;transform:rotate(-2.5deg);z-index:3">
+    <div style="font-size:9px;padding:0 4px 5px">DELAYS.TXT</div>
+    <div class="sk-lcd" style="border:2px inset #333;padding:6px 10px;font-size:20px;line-height:1.15">
+      <div>1/4 ..... {{q}}</div>
+      <div>1/8. .... {{e}}</div>
+      <div>1/16T ... {{s}}</div>
+    </div>
+  </div>
+
+  <div style="position:absolute;top:452px;right:18px;width:140px;height:150px;background:#f4f1e8;color:#0b0b0e;padding:12px;transform:rotate(4deg);box-shadow:0 10px 20px rgba(0,0,0,0.5);z-index:2;font-family:VT323,monospace;font-size:18px;line-height:1.05">
+    <div style="position:absolute;top:-10px;left:40px;width:60px;height:20px;background:rgba(255,243,161,0.7);transform:rotate(-4deg)"></div>
+    REVERB<br>decay :<br><span style="font-size:30px">{{rv}}</span><br>ms ✔
+  </div>
+
+  <div class="sk-holo" style="position:absolute;top:620px;left:150px;padding:6px 10px;font-size:10px;color:#0b0b0e;transform:rotate(-8deg);z-index:4;box-shadow:0 4px 10px rgba(0,0,0,0.5)">HOLO EDITION</div>
+  <div style="position:absolute;top:655px;left:30px;font-family:Syncopate,sans-serif;font-weight:700;font-size:58px;color:transparent;-webkit-text-stroke:1px rgba(255,255,255,0.18);transform:rotate(-4deg);z-index:1">MS/BPM</div>
+
+  <nav aria-label="Outils" class="sk-bevel" style="position:absolute;left:12px;right:12px;bottom:22px;height:64px;border-radius:8px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;padding:6px;z-index:5">
+    <a href="#" class="sk-holo" style="display:grid;place-items:center;text-decoration:none;color:#0b0b0e;font-size:10px;border:1px solid #000">TEMPO</a>
+    <a href="#" style="display:grid;place-items:center;text-decoration:none;color:#e7eaf0;font-size:10px;background:#1a1b1f;border:1px solid #000">TAP</a>
+    <a href="#" style="display:grid;place-items:center;text-decoration:none;color:#e7eaf0;font-size:10px;background:#1a1b1f;border:1px solid #000">GAMMES</a>
+    <a href="#" style="display:grid;place-items:center;text-decoration:none;color:#e7eaf0;font-size:10px;background:#1a1b1f;border:1px solid #000">SPLITS</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p){ super(p); this.state = { bpm: 140 }; }
+  renderVals() {
+    var bpm = this.state.bpm, beat = 60000 / bpm, self = this;
+    var f = function (x) { return x.toFixed(1); };
+    var presets = [70, 90, 120, 140, 160].map(function (b) {
+      var on = b === bpm;
+      return { label: String(b), pick: function () { self.setState({ bpm: b }); },
+        style: 'flex:1;height:44px;font-family:Silkscreen,monospace;font-size:11px;cursor:pointer;border:1px solid #000;' +
+          (on ? 'color:#0b0b0e;background:linear-gradient(180deg,#fff,#c9ced8 45%,#8a8f99 55%,#e7eaf0);box-shadow:0 0 12px rgba(154,208,255,0.6)'
+              : 'color:#e7eaf0;background:linear-gradient(180deg,#5b5f68,#2a2c31);box-shadow:inset 1px 1px 0 rgba(255,255,255,0.3)') };
+    });
+    return { bpm: String(bpm), presets: presets, q: f(beat), e: f(beat * 0.75), s: f(beat / 4 * 2 / 3), rv: Math.round(beat * 4 - beat / 8) };
+  }
+}
+</script>
+</body>
+</html>

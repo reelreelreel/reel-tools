@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>D1 · Plaque gravée</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&amp;family=Pirata+One&amp;family=IBM+Plex+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+@keyframes d1-coin{to{transform:rotateY(360deg)}}
+@keyframes d1-spec{0%{transform:translateX(-120%) skewX(-18deg)}55%,100%{transform:translateX(320%) skewX(-18deg)}}
+@keyframes d1-stamp{0%,100%{transform:rotate(-14deg) scale(1)}10%{transform:rotate(-14deg) scale(.84)}20%{transform:rotate(-14deg) scale(1.05)}30%{transform:rotate(-14deg) scale(1)}}
+.d1-deboss{color:#3d4046;text-shadow:0 1px 0 rgba(255,255,255,0.6),0 -1px 1px rgba(0,0,0,0.7)}
+.d1-wax{background:radial-gradient(circle at 35% 30%,#e0574a 0%,#a3231b 45%,#5e0d09 100%);box-shadow:inset -4px -6px 10px rgba(0,0,0,0.5),inset 4px 4px 8px rgba(255,160,140,0.35),0 8px 18px rgba(0,0,0,0.6)}
+@media (prefers-reduced-motion: reduce){[style*="animation"]{animation:none!important}}
+</style>
+</helmet>
+<div style="width:390px;height:844px;position:relative;overflow:hidden;background:#0a0a0b;color:#e4e6ea;font-family:'IBM Plex Mono',monospace">
+  <svg aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;opacity:.55;mix-blend-mode:screen;pointer-events:none">
+    <filter id="d1g"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 .5  0 0 0 0 .5  0 0 0 0 .52  0 0 0 .35 0"/></filter>
+    <rect width="100%" height="100%" filter="url(#d1g)"/>
+  </svg>
+
+  <div style="position:absolute;right:-64px;top:-40px;width:200px;height:200px;perspective:600px;opacity:.9">
+    <div style="width:200px;height:200px;animation:d1-coin 14s linear infinite;transform-style:preserve-3d">
+      <svg width="200" height="200" viewBox="0 0 100 100" aria-hidden="true">
+        <defs>
+          <radialGradient id="d1c" cx=".32" cy=".28" r=".95"><stop offset="0" stop-color="#f3f4f6"/><stop offset=".4" stop-color="#9da1a8"/><stop offset=".78" stop-color="#4f5359"/><stop offset="1" stop-color="#202226"/></radialGradient>
+          <filter id="d1cn"><feTurbulence type="fractalNoise" baseFrequency="2.2" numOctaves="2" result="t"/><feColorMatrix in="t" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .5 0"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+          <path id="d1r" d="M50 50 m-38 0 a38 38 0 1 1 76 0 a38 38 0 1 1 -76 0"/>
+        </defs>
+        <circle cx="50" cy="50" r="48" fill="url(#d1c)"/>
+        <circle cx="50" cy="50" r="48" fill="#000" filter="url(#d1cn)"/>
+        <circle cx="50" cy="50" r="44.5" fill="none" stroke="#2c2f34" stroke-width="1"/>
+        <circle cx="50" cy="50" r="30" fill="none" stroke="#2c2f34" stroke-width=".8"/>
+        <text font-family="Cinzel" font-weight="700" font-size="7.5" fill="#2c2f34" letter-spacing="2"><textPath href="#d1r">REEL'S TOOLS · STUDIO UTILITY · Nº 001 ·</textPath></text>
+        <text x="50" y="62" text-anchor="middle" font-family="Pirata One" font-size="34" fill="#25272b" stroke="#f1f2f4" stroke-width=".5">RT</text>
+      </svg>
+    </div>
+  </div>
+
+  <div style="position:relative;padding:54px 22px 0">
+    <div style="font-family:Cinzel,serif;font-weight:900;font-size:34px;line-height:.92;letter-spacing:.04em;background:linear-gradient(180deg,#ffffff,#8f949c 60%,#d9dbe0);-webkit-background-clip:text;background-clip:text;color:transparent">REEL'S<br>TOOLS</div>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:10px;font-size:9px;letter-spacing:.32em;color:#7d828b"><span style="width:28px;height:1px;background:#7d828b"></span>STUDIO UTILITY · Nº 001</div>
+  </div>
+
+  <div style="position:absolute;left:-6px;right:-40px;top:200px;height:250px;transform:rotate(-2deg);border-radius:4px 0 0 18px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,0.8),0 30px 60px rgba(0,0,0,0.8)">
+    <svg aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%">
+      <defs>
+        <linearGradient id="d1p" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d4d7dc"/><stop offset=".35" stop-color="#8d9198"/><stop offset=".6" stop-color="#bfc2c8"/><stop offset="1" stop-color="#6c7077"/></linearGradient>
+        <filter id="d1b" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.004 0.9" numOctaves="2" seed="4"/><feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .22 0"/></filter>
+        <filter id="d1s"><feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="2"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .35 0"/></filter>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#d1p)"/>
+      <rect width="100%" height="100%" filter="url(#d1b)"/>
+      <rect width="100%" height="100%" filter="url(#d1s)"/>
+      <path d="M30 40 L180 62 M210 30 L330 18 M60 200 L150 214 M250 170 L400 190" stroke="rgba(255,255,255,0.45)" stroke-width=".6"/>
+      <path d="M31 41 L181 63 M61 201 L151 215" stroke="rgba(0,0,0,0.35)" stroke-width=".6"/>
+    </svg>
+    <div style="position:absolute;top:0;bottom:0;width:30%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.45),transparent);mix-blend-mode:overlay;animation:d1-spec 5.5s ease-in-out infinite"></div>
+    <div style="position:relative;padding:20px 28px">
+      <div style="display:flex;justify-content:space-between;width:330px"><span class="d1-deboss" style="font-family:Cinzel,serif;font-weight:700;font-size:11px;letter-spacing:.34em">01 — TEMPO</span><span class="d1-deboss" style="font-size:10px;letter-spacing:.2em">BPM</span></div>
+      <div class="d1-deboss" style="font-family:Cinzel,serif;font-weight:900;font-size:170px;line-height:.95;letter-spacing:-.03em;margin-left:-6px">{{bpm}}</div>
+    </div>
+  </div>
+
+  <div class="d1-wax" style="position:absolute;left:250px;top:400px;width:84px;height:84px;border-radius:47% 53% 50% 48% / 52% 46% 54% 48%;animation:d1-stamp {{beatS}} ease-out infinite;z-index:3">
+    <svg width="84" height="84" viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="28" fill="none" stroke="#5e0d09" stroke-opacity=".55" stroke-width="2"/><text x="42" y="54" text-anchor="middle" font-family="Pirata One" font-size="36" fill="#5e0d09" opacity=".8">R</text></svg>
+  </div>
+
+  <div style="position:absolute;left:22px;top:476px;display:flex;gap:7px">
+    <sc-for list="{{presets}}" as="p" hint-placeholder-count="5">
+      <button type="button" onClick="{{p.pick}}" style="{{p.style}}">{{p.label}}</button>
+    </sc-for>
+  </div>
+
+  <div style="position:absolute;left:22px;right:22px;top:548px">
+    <div style="display:flex;align-items:baseline;gap:10px;font-family:Cinzel,serif;font-size:10px;letter-spacing:.3em;color:#7d828b"><span>02 — DELAYS</span><span style="flex:1;height:1px;background:rgba(255,255,255,0.12)"></span><span>MS</span></div>
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+      <div style="{{r.style}}"><span style="font-family:Cinzel,serif;font-size:12px;color:#7d828b;letter-spacing:.14em">{{r.k}}</span><span style="font-weight:600;font-size:17px;text-shadow:0 -1px 0 #000">{{r.v}}</span></div>
+    </sc-for>
+  </div>
+
+  <nav aria-label="Outils" style="position:absolute;left:0;right:0;bottom:0;height:84px;padding:0 14px 20px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:end;gap:6px;background:linear-gradient(transparent,#0a0a0b 40%)">
+    <a href="#" style="position:relative;display:grid;place-items:center;height:46px;text-decoration:none;font-family:Cinzel,serif;font-weight:700;font-size:10px;letter-spacing:.16em;color:#f3e2df;border-radius:23px" class="d1-wax">TEMPO</a>
+    <a href="#" style="display:grid;place-items:center;height:46px;text-decoration:none;font-family:Cinzel,serif;font-weight:700;font-size:10px;letter-spacing:.16em;color:#9ea3ab;border-top:1px solid rgba(255,255,255,0.12)">TON</a>
+    <a href="#" style="display:grid;place-items:center;height:46px;text-decoration:none;font-family:Cinzel,serif;font-weight:700;font-size:10px;letter-spacing:.16em;color:#9ea3ab;border-top:1px solid rgba(255,255,255,0.12)">ANALYSE</a>
+    <a href="#" style="display:grid;place-items:center;height:46px;text-decoration:none;font-family:Cinzel,serif;font-weight:700;font-size:10px;letter-spacing:.16em;color:#9ea3ab;border-top:1px solid rgba(255,255,255,0.12)">SPLITS</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p){ super(p); this.state = { bpm: 140 }; }
+  renderVals() {
+    var bpm = this.state.bpm, beat = 60000 / bpm, self = this;
+    var f = function (x) { return x.toFixed(1).replace('.', ','); };
+    var presets = [70, 90, 120, 140, 160].map(function (b) {
+      var on = b === bpm;
+      return { label: String(b), pick: function () { self.setState({ bpm: b }); },
+        style: 'width:44px;height:44px;border-radius:50%;font-family:IBM Plex Mono,monospace;font-weight:600;font-size:12px;cursor:pointer;border:0;' +
+          (on ? 'color:#f3e2df;background:radial-gradient(circle at 35% 30%,#e0574a,#a3231b 50%,#5e0d09);box-shadow:inset -2px -3px 6px rgba(0,0,0,0.5),0 6px 12px rgba(0,0,0,0.6)'
+              : 'color:#2b2d31;background:radial-gradient(circle at 35% 30%,#eceef1,#9da1a8 55%,#5d6168);box-shadow:inset 0 1px 0 rgba(255,255,255,0.7),0 4px 10px rgba(0,0,0,0.6)') };
+    });
+    var data = [['1/4', beat], ['1/8 ·', beat * 0.75], ['1/16 T', beat / 6], ['DECAY 1 MES.', beat * 4 - beat / 8]];
+    var rows = data.map(function (d, i) {
+      return { k: d[0], v: f(d[1]), style: 'display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.08);margin-left:' + [0, 18, 6, 26][i] + 'px' };
+    });
+    return { bpm: String(bpm), beatS: (beat / 1000).toFixed(3) + 's', presets: presets, rows: rows };
+  }
+}
+</script>
+</body>
+</html>
