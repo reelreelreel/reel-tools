@@ -147,12 +147,8 @@ function woodCanvas(seed, base, dark, w = 1024, h = 1024, rings = 0) {
 const walnutTex = ctex(woodCanvas(3, "#4a2c19", "#1a0c05"), true);
 const walnutMat = new THREE.MeshPhysicalMaterial({ map: walnutTex, roughness: .5, clearcoat: .5, clearcoatRoughness: .35 });
 
-// ================= desk =================
-const [dc] = [woodCanvas(17, "#2a1a10", "#0b0502", 2048, 1024, 5)];
-const deskMat = new THREE.MeshPhysicalMaterial({ map: ctex(dc, true), roughness: .62, clearcoat: .35, clearcoatRoughness: .6 });
-const desk = new THREE.Mesh(new THREE.BoxGeometry(2.6, .04, 2.3), deskMat); desk.position.y = -.02; desk.receiveShadow = true; scene.add(desk);
-// floor far below (dark) so edges fall off
-const floor = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), new THREE.MeshStandardMaterial({ color: 0x050403, roughness: 1 })); floor.rotation.x = -Math.PI / 2; floor.position.y = -.75; scene.add(floor);
+// (room built later, after the machines)
+
 
 // ================= state =================
 let bpm = store.get("bpm", 140);
@@ -366,11 +362,124 @@ shadow(book);
 const cup = new THREE.Mesh(new THREE.LatheGeometry([[0, 0], [.034, 0], [.038, .005], [.04, .09], [.037, .09], [.035, .008], [0, .008]].map(([a, b]) => new THREE.Vector2(a, b)), 64), new THREE.MeshPhysicalMaterial({ color: 0x1b1b1d, roughness: .25, clearcoat: .9 })); shadow(cup);
 const coffee = new THREE.Mesh(new THREE.CircleGeometry(.035, 48), new THREE.MeshPhysicalMaterial({ color: 0x1a0d05, roughness: .1, clearcoat: 1 })); coffee.rotation.x = -Math.PI / 2; coffee.position.y = .075; cup.add(coffee);
 
+// ================= room : L-shaped desk, credenza, floor, rug =================
+const [dc] = [woodCanvas(17, "#2a1a10", "#0b0502", 2048, 1024, 5)];
+const deskMat = new THREE.MeshPhysicalMaterial({ map: ctex(dc, true), roughness: .62, clearcoat: .35, clearcoatRoughness: .6 });
+const room = new THREE.Group(); scene.add(room);
+function slab(w, d, x, z, y = 0, mat = deskMat, t = .04) { const m = new THREE.Mesh(new RoundedBoxGeometry(w, t, d, 2, .006), mat); m.position.set(x, y - t / 2, z); m.receiveShadow = true; m.castShadow = true; room.add(m); return m; }
+slab(2.3, .85, 0, -.05);                 // main desk
+slab(.85, 1.55, -1.6, .3);               // left wing (L)
+const credMat = new THREE.MeshPhysicalMaterial({ color: 0x0e0e0f, roughness: .45, clearcoat: .3 });
+slab(.8, 1.35, 1.62, .25, -.12, credMat, .05); // right credenza (lower)
+const [fc2, fx2] = cv(1024, 1024); fx2.fillStyle = "#1a1714"; fx2.fillRect(0, 0, 1024, 1024); { const r = rnd(5); for (let i = 0; i < 26000; i++) { fx2.fillStyle = `rgba(${r() > .5 ? "255,240,220" : "0,0,0"},${r() * .05})`; fx2.fillRect(r() * 1024, r() * 1024, 2, 2); } }
+const floorT = ctex(fc2, true); floorT.wrapS = floorT.wrapT = THREE.RepeatWrapping; floorT.repeat.set(4, 4);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), new THREE.MeshStandardMaterial({ map: floorT, roughness: 1, color: 0x6a625a })); floor.rotation.x = -Math.PI / 2; floor.position.y = -.75; floor.receiveShadow = true; scene.add(floor);
+// persian-ish rug (procedural)
+const [rgc, rgx] = cv(1024, 768); rgx.fillStyle = "#3a1410"; rgx.fillRect(0, 0, 1024, 768);
+rgx.strokeStyle = "#c9a46a"; rgx.lineWidth = 10; rgx.strokeRect(40, 40, 944, 688); rgx.strokeStyle = "#1c2a3a"; rgx.lineWidth = 26; rgx.strokeRect(80, 80, 864, 608);
+rgx.fillStyle = "#1c2a3a"; rgx.beginPath(); rgx.ellipse(512, 384, 230, 150, 0, 0, 7); rgx.fill(); rgx.strokeStyle = "#c9a46a"; rgx.lineWidth = 6; rgx.beginPath(); rgx.ellipse(512, 384, 200, 125, 0, 0, 7); rgx.stroke();
+{ const r = rnd(12); rgx.lineWidth = 3; for (let ring = 0; ring < 3; ring++) for (let i = 0; i < 28; i++) { const a = i / 28 * 6.283, d = 250 + ring * 55; const px = 512 + Math.cos(a) * d * 1.35, py = 384 + Math.sin(a) * d * .78; rgx.strokeStyle = ["#a88a5a", "#5a1f16", "#26364a"][ring]; rgx.save(); rgx.translate(px, py); rgx.rotate(a); rgx.beginPath(); rgx.moveTo(-10, 0); rgx.lineTo(0, -8); rgx.lineTo(10, 0); rgx.lineTo(0, 8); rgx.closePath(); rgx.stroke(); rgx.restore(); }
+  for (let i = 0; i < 9000; i++) { rgx.fillStyle = `rgba(${r() > .5 ? "0,0,0" : "200,170,120"},${r() * .12})`; rgx.fillRect(r() * 1024, r() * 768, 3, 1); }
+  const vg = rgx.createRadialGradient(512, 384, 120, 512, 384, 620); vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(0,0,0,.45)"); rgx.fillStyle = vg; rgx.fillRect(0, 0, 1024, 768); }
+grime(rgx, 1024, 768, 13, 4);
+const rug = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.95), new THREE.MeshStandardMaterial({ map: ctex(rgc, true), roughness: 1, color: 0x9a8f86 })); rug.rotation.x = -Math.PI / 2; rug.position.set(0, -.748, .9); rug.receiveShadow = true; scene.add(rug);
+// ----- desk legs hint (dark blocks under edges, mostly hidden)
+// ----- studio monitors (angled to the seat)
+function speaker(x, z, ry) {
+  const g = new THREE.Group();
+  const cab = new THREE.Mesh(new RoundedBoxGeometry(.2, .32, .26, 4, .012), new THREE.MeshPhysicalMaterial({ color: 0x141414, roughness: .55, clearcoat: .25 })); cab.position.y = .16 + .03; g.add(cab);
+  const pad = new THREE.Mesh(new RoundedBoxGeometry(.22, .03, .27, 2, .006), new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: .95 })); pad.position.y = .015; g.add(pad);
+  const cone = new THREE.Mesh(new THREE.CircleGeometry(.075, 48), new THREE.MeshPhysicalMaterial({ color: 0xd8cfae, roughness: .7 })); cone.position.set(0, .14, .1305); g.add(cone);
+  const tw = new THREE.Mesh(new THREE.SphereGeometry(.022, 24, 12, 0, 7, 0, 1.2), chromeMat); tw.rotation.x = Math.PI / 2; tw.position.set(0, .27, .13); g.add(tw);
+  const led = new THREE.Mesh(new THREE.CircleGeometry(.004, 16), glowMat(0x4dff7a, 2)); led.position.set(.07, .05, .131); g.add(led);
+  g.position.set(x, 0, z); g.rotation.y = ry; shadow(g); room.add(g); return g;
+}
+speaker(-.92, -.28, .45); speaker(.92, -.28, -.45);
+// ----- computer display (thin, on a stand) + glow
+const disp = new THREE.Group();
+const dscreen = new THREE.Mesh(new RoundedBoxGeometry(.62, .37, .025, 3, .008), new THREE.MeshPhysicalMaterial({ color: 0x0b0b0c, roughness: .35, clearcoat: .4 })); dscreen.position.y = .32; disp.add(dscreen);
+const [scc, scx] = cv(1024, 600); scx.fillStyle = "#0b0d10"; scx.fillRect(0, 0, 1024, 600);
+// a DAW-like arrangement (generic): tracks with clips
+for (let i = 0; i < 9; i++) { scx.fillStyle = "#15181d"; scx.fillRect(0, 40 + i * 58, 1024, 54); for (let j = 0; j < 7; j++) if ((i * 7 + j) % 3) { scx.fillStyle = ["#b3241a", "#d9a429", "#3d7dd9", "#4dbf7a", "#9a5bd1"][i % 5]; scx.globalAlpha = .55; scx.fillRect(140 + j * 120 + (i % 2) * 30, 46 + i * 58, 100, 42); scx.globalAlpha = 1; } }
+scx.fillStyle = "#e8e2d6"; scx.fillRect(560, 30, 2, 560);
+const glowScreen = new THREE.Mesh(new THREE.PlaneGeometry(.59, .34), glowMat(0xffffff, .55)); glowScreen.material.emissiveMap = ctex(scc, true); glowScreen.position.set(0, .32, .0131); disp.add(glowScreen);
+const neck = new THREE.Mesh(new THREE.BoxGeometry(.04, .22, .02), chromeMat); neck.position.set(0, .12, -.03); disp.add(neck);
+const foot = new THREE.Mesh(new RoundedBoxGeometry(.24, .012, .18, 2, .004), chromeMat); foot.position.set(0, .006, -.03); disp.add(foot);
+disp.position.set(0, 0, -.33); shadow(disp); room.add(disp);
+// ----- audio interface + drum pad controller
+function boxDevice(w, h, d, color, x, z, ry, draw) {
+  const g = new THREE.Group();
+  const b = new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 3, .005), new THREE.MeshPhysicalMaterial({ color, roughness: .45, clearcoat: .2 })); b.position.y = h / 2; g.add(b);
+  if (draw) { const p = panel(w - .01, d - .01, draw, { metal: .3, rough: .55, res: 1024, side: color }); p.position.y = h + .001; g.add(p); }
+  g.position.set(x, 0, z); g.rotation.y = ry; shadow(g); room.add(g); return g;
+}
+const iface = boxDevice(.3, .05, .17, 0x1a1a1b, .62, -.18, -.05, (x, P, W, H) => { x.fillStyle = "#1d1d1f"; x.fillRect(0, 0, W, H); silk(x, "INTERFACE  ·  8 IN / 8 OUT", P(.01), H * .15, 30, "rgba(220,216,208,.7)"); for (let i = 0; i < 8; i++) { x.fillStyle = i < 5 ? "#4dff7a" : "#2a2a2a"; x.fillRect(P(.02 + i * .012), H * .45, P(.008), H * .1); } x.fillStyle = "#0a0a0a"; x.beginPath(); x.arc(P(.22), H * .55, P(.035), 0, 7); x.fill(); });
+{ const k = aluKnob(.03, .02); k.position.set(.62 + .065, .051, -.18 + .005); room.add(k); }
+const pads = boxDevice(.26, .03, .26, 0x161617, .6, .2, -.12, (x, P, W, H) => { x.fillStyle = "#18181a"; x.fillRect(0, 0, W, H); silk(x, "PAD 16", P(.012), H * .06, 34, "rgba(220,216,208,.75)"); });
+for (let i = 0; i < 16; i++) { const p = new THREE.Mesh(new RoundedBoxGeometry(.048, .01, .048, 2, .004), new THREE.MeshPhysicalMaterial({ color: 0x3a3a3c, roughness: .85, emissive: i === 5 || i === 10 ? 0xff3d22 : 0x000000, emissiveIntensity: .35 })); p.position.set(-.09 + (i % 4) * .058, .033, -.075 + Math.floor(i / 4) * .058); pads.add(p); }
+// ----- headphones resting on desk
+const hp = new THREE.Group();
+const band2 = new THREE.Mesh(new THREE.TorusGeometry(.085, .012, 12, 48, Math.PI * 1.1), new THREE.MeshPhysicalMaterial({ color: 0x111111, roughness: .4 })); band2.rotation.x = -Math.PI / 2; band2.position.y = .02; hp.add(band2);
+for (const s of [-1, 1]) { const cup2 = new THREE.Mesh(new THREE.CylinderGeometry(.048, .05, .035, 40), new THREE.MeshPhysicalMaterial({ color: 0x1a1a1a, roughness: .5, clearcoat: .3 })); cup2.position.set(s * .085, .018, .02); hp.add(cup2); const pad2 = new THREE.Mesh(new THREE.TorusGeometry(.035, .012, 12, 32), new THREE.MeshStandardMaterial({ color: 0x090909, roughness: .9 })); pad2.rotation.x = Math.PI / 2; pad2.position.set(s * .085, .037, .02); hp.add(pad2); }
+hp.position.set(-.62, 0, .22); hp.rotation.y = .5; shadow(hp); room.add(hp);
+// ----- desk lamp (articulated) on the left back corner
+const lampG = new THREE.Group();
+const lampMat = new THREE.MeshPhysicalMaterial({ color: 0x1a1a1a, roughness: .4, clearcoat: .4 });
+const lb = new THREE.Mesh(new THREE.CylinderGeometry(.08, .09, .025, 40), lampMat); lb.position.y = .012; lampG.add(lb);
+const a1 = new THREE.Mesh(new THREE.CylinderGeometry(.008, .008, .45, 12), chromeMat); a1.position.set(.08, .22, .0); a1.rotation.z = -.4; lampG.add(a1);
+const a2 = new THREE.Mesh(new THREE.CylinderGeometry(.008, .008, .4, 12), chromeMat); a2.position.set(.32, .48, 0); a2.rotation.z = -1.3; lampG.add(a2);
+const shade = new THREE.Mesh(new THREE.ConeGeometry(.09, .14, 40, 1, true), new THREE.MeshPhysicalMaterial({ color: 0x1a1a1a, roughness: .35, side: THREE.DoubleSide })); shade.position.set(.52, .45, 0); shade.rotation.z = .6; lampG.add(shade);
+const bulb = new THREE.Mesh(new THREE.SphereGeometry(.03, 20, 12), glowMat(0xffc27a, 3)); bulb.position.set(.5, .42, 0); lampG.add(bulb);
+lampG.position.set(-1.98, 0, -.52); lampG.rotation.y = .12; shadow(lampG); room.add(lampG);
+// ----- mic on boom arm (from back of main desk)
+const boom = new THREE.Group();
+const clamp = new THREE.Mesh(new THREE.BoxGeometry(.04, .06, .05), lampMat); clamp.position.y = .03; boom.add(clamp);
+const b1 = new THREE.Mesh(new THREE.CylinderGeometry(.009, .009, .5, 12), lampMat); b1.position.set(0, .26, .1); b1.rotation.x = .45; boom.add(b1);
+const b2 = new THREE.Mesh(new THREE.CylinderGeometry(.008, .008, .55, 12), lampMat); b2.position.set(0, .45, .42); b2.rotation.x = 1.45; boom.add(b2);
+const mic = new THREE.Mesh(new THREE.CylinderGeometry(.03, .026, .16, 32), new THREE.MeshPhysicalMaterial({ color: 0xbdb8ae, metalness: 1, roughness: .35 })); mic.position.set(0, .4, .7); mic.rotation.x = .2; boom.add(mic);
+const grille = new THREE.Mesh(new THREE.SphereGeometry(.031, 24, 12, 0, 7, 0, 1.5), new THREE.MeshPhysicalMaterial({ color: 0x8f8a82, metalness: 1, roughness: .55 })); grille.position.set(0, .48, .69); boom.add(grille);
+boom.position.set(-.45, 0, -.45); boom.rotation.y = .25; shadow(boom); room.add(boom);
+// ----- chair (top view: seat + backrest + star base) on the rug
+const chair = new THREE.Group();
+const seat = new THREE.Mesh(new RoundedBoxGeometry(.5, .08, .48, 4, .03), new THREE.MeshStandardMaterial({ color: 0x1c1813, roughness: .88 })); seat.position.y = -.27; chair.add(seat);
+const back = new THREE.Mesh(new RoundedBoxGeometry(.48, .55, .07, 4, .03), seat.material); back.position.set(0, -.02, .27); back.rotation.x = -.12; chair.add(back);
+for (let i = 0; i < 5; i++) { const leg = new THREE.Mesh(new THREE.BoxGeometry(.04, .03, .32), lampMat); leg.rotation.y = i * 1.2566; leg.position.set(Math.sin(i * 1.2566) * .16, -.69, Math.cos(i * 1.2566) * .16); chair.add(leg); }
+chair.position.set(0, 0, .95); chair.rotation.y = .12; shadow(chair); scene.add(chair);
+// ----- record crate on the floor (right) + cassettes near the tape
+const crate = new THREE.Group();
+const crateBox = new THREE.Mesh(new THREE.BoxGeometry(.36, .33, .36), new THREE.MeshPhysicalMaterial({ map: walnutTex, roughness: .7, color: 0x8a6a50 })); crateBox.position.y = .165; crate.add(crateBox);
+for (let i = 0; i < 18; i++) { const sl = new THREE.Mesh(new THREE.BoxGeometry(.32, .315, .004), new THREE.MeshStandardMaterial({ color: [0x111111, 0xb3241a, 0xe0d6c0, 0x1c2a3a, 0xd9a429][i % 5], roughness: .8 })); sl.position.set(0, .2, -.16 + i * .018); sl.rotation.x = -.15 + (i % 3) * .05; crate.add(sl); }
+crate.position.set(1.55, -.75, 1.15); crate.rotation.y = -.2; shadow(crate); scene.add(crate);
+for (let i = 0; i < 4; i++) { const c = new THREE.Mesh(new RoundedBoxGeometry(.11, .017, .07, 2, .003), new THREE.MeshPhysicalMaterial({ color: [0x9a9284, 0x111111, 0x8a6a24, 0x9a9284][i], roughness: .8 })); c.position.set(1.32 + i * .02, -.12 + .009 + i * .017, .95 + i * .01); c.rotation.y = .3 + i * .25; shadow(c); room.add(c); }
+// ----- plant in the back-left corner (floor)
+const plant = new THREE.Group();
+const pot = new THREE.Mesh(new THREE.CylinderGeometry(.16, .12, .34, 40), new THREE.MeshPhysicalMaterial({ color: 0x7a3e26, roughness: .85 })); pot.position.y = .17; plant.add(pot);
+const leafMat = new THREE.MeshPhysicalMaterial({ color: 0x1f3a1f, roughness: .55, side: THREE.DoubleSide, sheen: .4, sheenColor: new THREE.Color(0x335533) });
+{ const r = rnd(33); for (let i = 0; i < 14; i++) { const leaf = new THREE.Mesh(new THREE.CircleGeometry(.12, 16, 0, Math.PI), leafMat); leaf.scale.set(1, .45, 1); const a = r() * 7; leaf.position.set(Math.cos(a) * .12, .45 + r() * .25, Math.sin(a) * .12); leaf.rotation.set(-1 + r() * .6, a, r()); plant.add(leaf); } }
+plant.position.set(-2.25, -.75, -.6); shadow(plant); scene.add(plant);
+
+// ----- guitar lying on a floor stand (right back)
+const gtr = new THREE.Group();
+{ const sh = new THREE.Shape(); sh.moveTo(0, -.22); sh.bezierCurveTo(.19, -.22, .2, -.04, .11, .02); sh.bezierCurveTo(.16, .09, .14, .2, 0, .2); sh.bezierCurveTo(-.14, .2, -.16, .09, -.11, .02); sh.bezierCurveTo(-.2, -.04, -.19, -.22, 0, -.22);
+  const body = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: .06, bevelEnabled: true, bevelSize: .008, bevelThickness: .008, bevelSegments: 3 }), new THREE.MeshPhysicalMaterial({ color: 0x5a1a10, roughness: .35, clearcoat: .8, clearcoatRoughness: .25 })); body.rotation.x = -Math.PI / 2; gtr.add(body);
+  const guard = new THREE.Mesh(new THREE.CircleGeometry(.05, 32), new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: .5 })); guard.rotation.x = -Math.PI / 2; guard.position.set(.0, .071, -.03); gtr.add(guard);
+  const hole = new THREE.Mesh(new THREE.CircleGeometry(.035, 32), new THREE.MeshStandardMaterial({ color: 0x020202 })); hole.rotation.x = -Math.PI / 2; hole.position.set(0, .0715, .02); gtr.add(hole);
+  const neck2 = new THREE.Mesh(new THREE.BoxGeometry(.045, .025, .42), walnutMat ? new THREE.MeshPhysicalMaterial({ map: walnutTex, roughness: .5 }) : chromeMat); neck2.position.set(0, .06, -.4); gtr.add(neck2);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(.07, .02, .12), new THREE.MeshPhysicalMaterial({ color: 0x0a0a0a, roughness: .3, clearcoat: .6 })); head.position.set(0, .06, -.66); gtr.add(head);
+  for (let i = 0; i < 6; i++) { const st = new THREE.Mesh(new THREE.CylinderGeometry(.0007, .0007, .82, 4), chromeMat); st.rotation.x = Math.PI / 2; st.position.set(-.012 + i * .0048, .075, -.25); gtr.add(st); } }
+gtr.position.set(-1.75, -.72, 1.45); gtr.rotation.y = -1.1; shadow(gtr); scene.add(gtr);
+// ----- second plant (tall, front right corner)
+const plant2 = plant.clone(); plant2.scale.setScalar(1.25); plant2.position.set(2.3, -.75, -.45); plant2.rotation.y = 2; scene.add(plant2);
+// ----- stack of records on the floor near the left wing
+for (let i = 0; i < 6; i++) { const rs = new THREE.Mesh(new THREE.BoxGeometry(.31, .006, .31), new THREE.MeshStandardMaterial({ color: [0x111111, 0x8f887a, 0x6a1b12, 0x1c2a3a, 0x8a6a24, 0x111111][i], roughness: .85 })); rs.position.set(-1.0, -.747 + i * .006, 1.45); rs.rotation.y = .3 + i * .17; shadow(rs); scene.add(rs); }
+// ----- cables snaking behind the desk and on the floor
+const cableMat = new THREE.MeshStandardMaterial({ color: 0x0b0b0b, roughness: .55 });
+[[[-1.3, .005, -.3], [-.9, .005, -.42], [-.3, .005, -.43], [.4, .005, -.4], [.7, .005, -.25]], [[.62, .005, -.27], [.9, .005, -.44], [1.25, -.05, -.4], [1.4, -.115, -.2]], [[-.05, .005, -.4], [-.2, -.2, -.5], [-.1, -.74, -.4], [.6, -.745, -.1], [1.0, -.745, .4]]].forEach((pts) => { const t = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(...p))), 64, .006, 8), cableMat); t.castShadow = true; room.add(t); });
+// ----- sticky notes + pencil near the synth
+[[-.32, .4, .1, 0xf2d64b], [-.22, .44, -.15, 0xf28aa0]].forEach(([x, z, r, c]) => { const n = new THREE.Mesh(new THREE.BoxGeometry(.075, .0012, .075), new THREE.MeshStandardMaterial({ color: c, roughness: .95 }).clone()); n.material.color.multiplyScalar(.6); n.position.set(x, .0006, z); n.rotation.y = r; n.receiveShadow = true; room.add(n); });
+
 // ================= layout (landscape / portrait) =================
-const L = {
-  wide: { rack: [-.62, -.3, .1], scope: [-.12, -.36, 0], modular: [.4, -.3, -.15], synth: [-.38, .17, 0], tt: [.38, .18, -.12], tape: [.88, -.24, .2], book: [.86, .28, -.35], cup: [-.02, -.05, 0] },
-  tall: { rack: [-.1, -.93, .04], scope: [.27, -.56, -.12], modular: [-.22, -.55, .08], synth: [0, -.13, 0], tt: [-.21, .33, -.04], tape: [.27, .36, .12], book: [.3, .78, -.3], cup: [-.3, .74, 0] }
-};
+const L = { rack: [-1.6, -.15, .95, 0], modular: [-1.6, .42, 1.2, 0], scope: [-1.52, .88, 1.45, 0], synth: [0, .12, 0, 0], tt: [1.6, -.12, -1.25, -.12], tape: [1.6, .5, -1.35, -.12], book: [.36, .4, -.25, 0], cup: [-.42, .36, 0, 0] };
 const nodes = { rack: rackG, scope, modular, synth, tt, tape, book, cup };
 Object.values(nodes).forEach((n) => scene.add(n));
 const tagMap = { rack: "m:tempo", scope: "m:scope", modular: "m:modular", synth: "m:synth", tt: "m:tt", tape: "m:tape", book: "m:book" };
@@ -381,15 +490,16 @@ tempo.traverse((o) => { if (o.isMesh) o.userData.machine = "tempo"; });
 let layoutMode = "wide";
 function place() {
   layoutMode = camera.aspect < .85 ? "tall" : "wide";
-  for (const [k, [x, z, ry]] of Object.entries(L[layoutMode])) { nodes[k].position.set(x, 0, z); nodes[k].rotation.y = ry; }
+  for (const [k, [x, z, ry, y]] of Object.entries(L)) { nodes[k].position.set(x, y, z); nodes[k].rotation.y = ry; }
   scene.updateMatrixWorld(true);
 }
 
 // ================= lights =================
-const lamp = new THREE.SpotLight(0xffa456, 1.6, 4, .75, .75, 1.3);
+const lamp = new THREE.SpotLight(0xffa456, 2.0, 4, .95, .7, 1.4);
+const roomWarm = new THREE.PointLight(0xffb070, .6, 6, 1.6); roomWarm.position.set(-.4, 1.4, .3); scene.add(roomWarm);
 lamp.castShadow = true; lamp.shadow.mapSize.set(2048, 2048); lamp.shadow.bias = -.0002; lamp.shadow.radius = 6;
 scene.add(lamp, lamp.target);
-const cold = new THREE.SpotLight(0x6f86b9, .3, 5, .8, .9, 1.4); scene.add(cold, cold.target);
+const cold = new THREE.SpotLight(0x6f86b9, .5, 6, .8, .9, 1.4); scene.add(cold, cold.target);
 const glowGreen = new THREE.PointLight(0x5dff80, .05, .3, 2); scope.add(glowGreen); glowGreen.position.set(0, .12, -.05);
 const glowAmber = new THREE.PointLight(0xffa040, .2, .5, 2); scene.add(glowAmber);
 
@@ -402,7 +512,7 @@ function shotPose(name) {
   const up = new THREE.Vector3(0, 1, 0);
   const viaNormal = (obj, local, n, hw, hh, m = 1.12) => { const c = worldPoint(obj, local); const nn = worldNormal(obj, n); return { pos: c.clone().add(nn.multiplyScalar(fitDist(hw * m, hh * m))), look: c }; };
   switch (name) {
-    case "overview": { const t = layoutMode === "tall"; const hw = t ? .62 : 1.12, hh = t ? 1.15 : .6; const d = fitDist(hw, hh); const tiltBack = t ? .12 : .18; return { pos: new THREE.Vector3(0, d, d * tiltBack), look: new THREE.Vector3(0, 0, t ? -.08 : -.02) }; }
+    case "overview": { const t = layoutMode === "tall"; const hw = t ? 1.3 : 2.25, hh = t ? 2.25 : 1.3; const d = fitDist(hw, hh); return { pos: new THREE.Vector3(-.15 + (t ? -d * .1 : 0), d, .55 + (t ? 0 : d * .12)), look: new THREE.Vector3(-.15, -.2, .55) }; }
     case "tempo": return viaNormal(tempo, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 1), RW / 2, .06);
     case "loudness": return viaNormal(loud, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 1), RW / 2, .06);
     case "scope": return viaNormal(scope, new THREE.Vector3(0, .045, 0), new THREE.Vector3(0, 1, .3), .14, .17);
@@ -428,8 +538,8 @@ function layout() {
   camera.aspect = w / h; camera.fov = camera.aspect < .85 ? 44 : 34; camera.updateProjectionMatrix();
   place();
   // lamp from the top-left, slightly behind
-  lamp.position.set(-1.8, 2.3, .1); lamp.target.position.set(0, 0, 0);
-  cold.position.set(1.8, 2.2, 1.2); cold.target.position.set(.2, 0, 0);
+  lamp.position.set(-1.5, .75, -.55); lamp.target.position.set(-.9, 0, .25);
+  cold.position.set(2.2, 2.6, 1.6); cold.target.position.set(.3, 0, .2);
   glowAmber.position.copy(worldPoint(loud, new THREE.Vector3(0, 0, .12)));
 }
 addEventListener("resize", layout); layout();
@@ -491,7 +601,7 @@ $("boot").classList.add("off"); setTimeout(hideHint, 7000);
 
 // ================= loop =================
 const clock = new THREE.Clock(); const tmp = new THREE.Vector3(); let lastScope = 0;
-const UP_TOP = new THREE.Vector3(0, 0, -1), UP_Y = new THREE.Vector3(0, 1, 0); const camUp = (current === "overview" ? UP_TOP : UP_Y).clone();
+const UP_TOP = new THREE.Vector3(0, 0, -1), UP_Y = new THREE.Vector3(0, 1, 0), UP_SIDE = new THREE.Vector3(1, 0, 0); const camUp = (current === "overview" ? (layoutMode === "tall" ? UP_SIDE : UP_TOP) : UP_Y).clone();
 function frame() {
   const t = clock.getElapsedTime();
   const target = shotPose(current); const k = reduced ? 1 : .06;
@@ -499,7 +609,7 @@ function frame() {
   par.x += (pointer.x - par.x) * .05; par.y += (pointer.y - par.y) * .05;
   const amp = current === "overview" ? .05 : .015, dr = reduced ? 0 : 1;
   camera.position.copy(cam.pos).add(tmp.set(par.x * amp + Math.sin(t * .31) * .004 * dr, 0, par.y * amp * .6 + Math.sin(t * .23) * .003 * dr));
-  camUp.lerp(current === "overview" ? UP_TOP : UP_Y, k).normalize(); camera.up.copy(camUp);
+  camUp.lerp(current === "overview" ? (layoutMode === "tall" ? UP_SIDE : UP_TOP) : UP_Y, k).normalize(); camera.up.copy(camUp);
   camera.lookAt(cam.look);
   bokeh.uniforms.focus.value = camera.position.distanceTo(cam.look);
   bokeh.uniforms.aperture.value = current === "overview" ? .004 : .016;
