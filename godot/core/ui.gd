@@ -2,9 +2,9 @@ class_name AppUI
 extends CanvasLayer
 ## Interface de l'appli : volontairement simple et neutre (police système, gris translucide),
 ## commune à tous les studios — la D.A reste dans les studios.
-##   · barre des machines en bas (clic = y aller, chiffres 1–7 au clavier)
-##   · bouton réglages en haut à droite : studio, personnalisation, sons, fenêtre, raccourcis
-##   · recherche rapide (Cmd+K ou /) pour sauter à une machine
+##   · petites étiquettes posées en face de chaque machine dans la vue d'ensemble (clic = y aller,
+##     chiffres 1–7 au clavier) ; en gros plan elles disparaissent
+##   · deux petites icônes en haut à droite : recherche rapide (Cmd+K ou /) et réglages (Cmd+,)
 ##   · petites confirmations (toast), ex. « Copié »
 
 const SHOTS := [
@@ -35,8 +35,10 @@ const LAMP_COLORS := [
 
 var main: Node
 var font: Font
-var bar: PanelContainer
-var bar_buttons := {}
+var tags := {}            # plan -> Button posé sur la machine
+var _tag_anchor := {}     # plan -> point 3D (dessus de la machine)
+var _tags_alpha := 0.0
+var _shot := "overview"
 var settings: PanelContainer
 var search: PanelContainer
 var search_edit: LineEdit
@@ -60,7 +62,7 @@ func _init(m: Node) -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.theme = th
 	add_child(root)
-	_build_bar(root)
+	_build_tags(root)
 	_build_gear(root)
 	_build_settings(root)
 	_build_search(root)
@@ -130,67 +132,134 @@ func _label(txt: String, size := 13, alpha := 1.0) -> Label:
 	return l
 
 
-# ---------------------------------------------------------------- barre des machines
-func _build_bar(root: Control) -> void:
-	bar = PanelContainer.new()
-	bar.add_theme_stylebox_override("panel", _box(Color(.11, .11, .11, .7), 12, 5))
-	bar.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	bar.offset_bottom = -14
-	root.add_child(bar)
-	var hb := HBoxContainer.new()
-	hb.add_theme_constant_override("separation", 2)
-	bar.add_child(hb)
-	for i in SHOTS.size():
+# ---------------------------------------------------------------- étiquettes des machines
+func _build_tags(root: Control) -> void:
+	for i in range(1, SHOTS.size()):
 		var b := Button.new()
 		b.text = SHOTS[i][1]
-		b.tooltip_text = "%s  (touche %d)" % [SHOTS[i][1], i + 1] if i > 0 else "Vue d'ensemble  (Échap)"
+		b.tooltip_text = "%s  (touche %d)" % [SHOTS[i][1], i + 1]
 		b.focus_mode = Control.FOCUS_NONE
 		b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		b.add_theme_font_size_override("font_size", 11)
+		b.add_theme_stylebox_override("normal", _box(Color(.08, .08, .08, .55), 6, 0))
+		b.add_theme_stylebox_override("hover", _box(Color(.08, .08, .08, .85), 6, 0))
+		b.add_theme_stylebox_override("pressed", _box(Color(.2, .2, .2, .9), 6, 0))
+		for sb in ["normal", "hover", "pressed"]:
+			var st := b.get_theme_stylebox(sb) as StyleBoxFlat
+			st.content_margin_left = 7
+			st.content_margin_right = 7
+			st.content_margin_top = 2
+			st.content_margin_bottom = 3
 		var shot: String = SHOTS[i][0]
 		b.pressed.connect(func(): main.go(shot))
-		hb.add_child(b)
-		bar_buttons[shot] = b
+		b.modulate.a = 0.0
+		root.add_child(b)
+		tags[shot] = b
 
 
-## Appelé par main à chaque changement de plan : met en avant la machine affichée.
+## Boîte englobante (repère local) de chaque machine, calculée une fois.
+func _bounds(shot: String):
+	if _tag_anchor.has(shot):
+		return _tag_anchor[shot]
+	var node: Node3D = main.studio.modules.get(shot)
+	if node == null or not node.is_inside_tree():
+		return null
+	var bb := Mk.local_aabb(node)
+	if shot == "export":  # le tableau seul (centré sur son origine)
+		bb = AABB(Vector3(-Export7080.BW / 2, -Export7080.BH / 2, 0), Vector3(Export7080.BW, Export7080.BH, .03))
+	_tag_anchor[shot] = [node, bb]
+	return _tag_anchor[shot]
+
+
+## Position écran de l'étiquette : centrée au-dessus de la machine telle qu'on la voit.
+func _screen_anchor(cam: Camera3D, shot: String) -> Vector2:
+	var info = _bounds(shot)
+	if info == null:
+		return Vector2.INF
+	var node: Node3D = info[0]
+	var bb: AABB = info[1]
+	var xs := []
+	var top := INF
+	for i in 8:
+		var c := node.to_global(bb.get_endpoint(i))
+		if cam.is_position_behind(c):
+			return Vector2.INF
+		var sp := cam.unproject_position(c)
+		xs.append(sp.x)
+		top = minf(top, sp.y)
+	# centre de la partie visible (une machine coupée par le bord garde son étiquette dessus)
+	var w := get_viewport().get_visible_rect().size.x
+	return Vector2((clampf(xs.min(), 0, w) + clampf(xs.max(), 0, w)) / 2.0, top)
+
+
+## Appelé par main à chaque changement de plan.
 func on_shot(shot: String) -> void:
-	for k in bar_buttons:
-		var b: Button = bar_buttons[k]
-		var on: bool = k == shot
-		b.add_theme_stylebox_override("normal", _box(Color(1, 1, 1, .16 if on else 0.0), 7, 6))
-		b.modulate.a = 1.0 if on else .72
+	_shot = shot
+
+
+func _process(delta: float) -> void:
+	if main == null or main.cam == null or not main.ready_done:
+		return
+	var want := 1.0 if _shot == "overview" and not search.visible else 0.0
+	_tags_alpha = move_toward(_tags_alpha, want, delta * (3.0 if want > 0 else 6.0))
+	var cam: Camera3D = main.cam
+	var vs := get_viewport().get_visible_rect().size
+	for shot in tags:
+		var b: Button = tags[shot]
+		var sp := _screen_anchor(cam, shot) if _tags_alpha > .01 else Vector2.INF
+		var vis := sp != Vector2.INF
+		b.visible = vis
+		if not vis:
+			continue
+		b.size = b.get_combined_minimum_size()
+		var pos := sp - Vector2(b.size.x / 2, b.size.y + 6)
+		pos.x = clampf(pos.x, 8, vs.x - b.size.x - 8)
+		pos.y = clampf(pos.y, 52, vs.y - b.size.y - 8)
+		b.position = pos.round()
+		b.modulate.a = _tags_alpha
 
 
 # ---------------------------------------------------------------- réglages
 func _build_gear(root: Control) -> void:
-	var g := Button.new()
-	g.text = "Réglages"
-	g.tooltip_text = "Réglages  (Cmd+,)"
-	g.focus_mode = Control.FOCUS_NONE
-	g.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	g.add_theme_stylebox_override("normal", _box(Color(.11, .11, .11, .7), 9, 7))
-	g.add_theme_stylebox_override("hover", _box(Color(.18, .18, .18, .85), 9, 7))
-	g.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	g.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	g.offset_right = -14
-	g.offset_top = 14
-	g.pressed.connect(toggle_settings)
-	root.add_child(g)
-	var s := Button.new()
-	s.text = "Rechercher"
-	s.tooltip_text = "Aller à une machine  (Cmd+K)"
-	s.focus_mode = Control.FOCUS_NONE
-	s.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	s.add_theme_stylebox_override("normal", _box(Color(.11, .11, .11, .7), 9, 7))
-	s.add_theme_stylebox_override("hover", _box(Color(.18, .18, .18, .85), 9, 7))
-	s.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	s.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	s.offset_right = -110
-	s.offset_top = 14
-	s.pressed.connect(open_search)
-	root.add_child(s)
+	var specs := [["gear", "Réglages  (Cmd+,)", -14, toggle_settings], ["search", "Aller à une machine  (Cmd+K)", -52, open_search]]
+	for sp in specs:
+		var g := IconButton.new()
+		g.kind = sp[0]
+		g.tooltip_text = sp[1]
+		g.custom_minimum_size = Vector2(30, 30)
+		g.focus_mode = Control.FOCUS_NONE
+		g.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		g.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		g.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+		g.offset_right = sp[2]
+		g.offset_top = 12
+		g.pressed.connect(sp[3])
+		root.add_child(g)
+
+
+## Petit bouton rond avec une icône dessinée (loupe ou engrenage), très discret.
+class IconButton extends Button:
+	var kind := "gear"
+
+	func _init() -> void:
+		flat = true
+		mouse_entered.connect(queue_redraw)
+		mouse_exited.connect(queue_redraw)
+
+	func _draw() -> void:
+		var hov := is_hovered()
+		var c := size / 2
+		draw_circle(c, 14.0, Color(.08, .08, .08, .7 if hov else .45))
+		var ink := Color(1, 1, 1, .95 if hov else .7)
+		if kind == "search":
+			draw_arc(c + Vector2(-1.5, -1.5), 5.0, 0, TAU, 24, ink, 1.6, true)
+			draw_line(c + Vector2(2.2, 2.2), c + Vector2(6, 6), ink, 1.8, true)
+		else:
+			for i in 8:
+				var a := i * TAU / 8
+				draw_line(c + Vector2(cos(a), sin(a)) * 4.5, c + Vector2(cos(a), sin(a)) * 7.5, ink, 2.4, true)
+			draw_arc(c, 5.0, 0, TAU, 24, ink, 2.2, true)
+			draw_circle(c, 1.8, ink)
 
 
 func _section(v: VBoxContainer, title: String) -> void:
@@ -207,8 +276,8 @@ func _build_settings(root: Control) -> void:
 	settings.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	settings.offset_left = -300
 	settings.offset_right = -14
-	settings.offset_top = 56
-	settings.offset_bottom = -64
+	settings.offset_top = 50
+	settings.offset_bottom = -14
 	settings.visible = false
 	root.add_child(settings)
 	var sc := ScrollContainer.new()
