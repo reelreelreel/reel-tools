@@ -16,6 +16,7 @@ var attrs: CameraAttributesPractical
 var overlay: Overlay
 var ui: AppUI
 var hover_module := ""  # machine sous la souris (pour son étiquette)
+const MAX_3D_HEIGHT := 1080.0  # au-delà, la 3D est rendue en 1080 puis agrandie (FSR)
 var current := "overview"
 var cam_pos := Vector3.ZERO
 var cam_look := Vector3.ZERO
@@ -94,6 +95,14 @@ func _aspect() -> float:
 
 func _update_fov() -> void:
 	studio.setup_camera(cam, _aspect())
+	# image 3D plafonnée à 1080 lignes (ex. écran Retina) : nette mais légère ; l'interface reste en pleine définition
+	var vp := get_viewport()
+	var h := vp.get_visible_rect().size.y
+	var sc := clampf(MAX_3D_HEIGHT / maxf(h, 1.0), .5, 1.0)
+	if not is_equal_approx(vp.scaling_3d_scale, sc):
+		vp.scaling_3d_mode = Viewport.SCALING_3D_MODE_FSR if sc < 1.0 else Viewport.SCALING_3D_MODE_BILINEAR
+		vp.fsr_sharpness = .3
+		vp.scaling_3d_scale = sc
 
 
 # ---------------------------------------------------------------- navigation

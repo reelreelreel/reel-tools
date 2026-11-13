@@ -50,7 +50,6 @@ func _init(e: TempoEngine) -> void:
 	engine = e
 	name = "Studio7080"
 	_build_environment()
-	var wood_n := Mk.normal_from_texture("res://assets/textures/hardwood2_diffuse.jpg", 2.5)
 	_wood = Mk.pbr("dark_wood", .9, {"tint": Mk.c(0xc8a090), "rough": .85, "clearcoat": .35, "clearcoat_rough": .35})
 	_build_floor_ceiling()
 	_build_window_wall()

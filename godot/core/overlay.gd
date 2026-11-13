@@ -20,8 +20,9 @@ func _init() -> void:
 
 	hint = _label("CLIQUE UNE MACHINE  ·  ÉCHAP POUR REVENIR", 11, Color(.925, .894, .839, .7))
 	hint.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	hint.offset_top = -44
-	hint.offset_bottom = -20
+	var k := maxf(1.0, DisplayServer.screen_get_scale())
+	hint.offset_top = -44 * k
+	hint.offset_bottom = -20 * k
 	add_child(hint)
 
 	var bg := ColorRect.new()
@@ -43,7 +44,7 @@ func _label(txt: String, size: int, col: Color) -> Label:
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var ls := LabelSettings.new()
 	ls.font = Tex.font("archivo", 600)
-	ls.font_size = size
+	ls.font_size = int(size * maxf(1.0, DisplayServer.screen_get_scale()))
 	ls.font_color = col
 	l.label_settings = ls
 	# espacement façon letter-spacing .3em

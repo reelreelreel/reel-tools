@@ -19,8 +19,9 @@ Tex="*res://core/tex.gd"
 
 [display]
 
-window/size/viewport_width=1280
-window/size/viewport_height=800
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/size/mode=2
 window/size/resizable=true
 window/dpi/allow_hidpi=true
 window/stretch/mode="disabled"
@@ -41,9 +42,11 @@ common/physics_ticks_per_second=60
 
 renderer/rendering_method="forward_plus"
 anti_aliasing/quality/msaa_3d=2
-anti_aliasing/quality/screen_space_aa=0
+anti_aliasing/quality/screen_space_aa=2
+anti_aliasing/quality/use_debanding=true
 lights_and_shadows/directional_shadow/soft_shadow_filter_quality=3
 lights_and_shadows/positional_shadow/soft_shadow_filter_quality=3
 lights_and_shadows/positional_shadow/atlas_size=8192
 environment/defaults/default_clear_color=Color(0.039, 0.0235, 0.0157, 1)
-textures/default_filters/anisotropic_filtering_level=3
+textures/default_filters/anisotropic_filtering_level=4
+textures/vram_compression/import_s3tc_bptc=true

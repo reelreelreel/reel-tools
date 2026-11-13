@@ -34,6 +34,8 @@ const LAMP_COLORS := [
 
 var main: Node
 var font: Font
+var root: Control
+var ui_scale := 1.0  # 2 sur un écran Retina : l'interface garde sa taille, la 3D est rendue en pleine définition
 var tags := {}            # plan -> Button posé sur la machine
 var _tag_anchor := {}     # plan -> point 3D (dessus de la machine)
 var _tag_alpha := {}
@@ -56,9 +58,10 @@ func _init(m: Node) -> void:
 	sf.antialiasing = TextServer.FONT_ANTIALIASING_GRAY
 	font = sf
 	var th := _theme()
-	var root := Control.new()
-	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ui_scale = maxf(1.0, DisplayServer.screen_get_scale())
+	root = Control.new()
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.scale = Vector2(ui_scale, ui_scale)
 	root.theme = th
 	add_child(root)
 	_build_tags(root)
@@ -197,17 +200,18 @@ func on_shot(shot: String) -> void:
 
 
 func _process(delta: float) -> void:
+	root.size = get_viewport().get_visible_rect().size / ui_scale
 	if main == null or main.cam == null or not main.ready_done:
 		return
 	var cam: Camera3D = main.cam
-	var vs := get_viewport().get_visible_rect().size
+	var vs := root.size
 	var wide := _shot == "overview" and not search.visible
 	for shot in tags:
 		var b: Button = tags[shot]
 		var want := 1.0 if wide and (main.hover_module == shot or b.is_hovered()) else 0.0
 		var al: float = move_toward(_tag_alpha.get(shot, 0.0), want, delta * (6.0 if want > 0 else 4.0))
 		_tag_alpha[shot] = al
-		var sp := _screen_anchor(cam, shot) if al > .01 else Vector2.INF
+		var sp := _screen_anchor(cam, shot) / ui_scale if al > .01 else Vector2.INF
 		var vis := sp != Vector2.INF
 		b.visible = vis
 		if not vis:

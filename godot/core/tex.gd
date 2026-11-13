@@ -37,7 +37,12 @@ func font(fam: String, weight := 700) -> Font:
 	if _fonts.has(key):
 		return _fonts[key]
 	var f := FontVariation.new()
-	f.base_font = load(FONT_FILES[fam])
+	var ff: FontFile = load(FONT_FILES[fam])
+	# MSDF : le texte reste net quelle que soit la taille (textures dessinées en suréchantillonnage)
+	ff.multichannel_signed_distance_field = true
+	ff.msdf_pixel_range = 16
+	ff.msdf_size = 64
+	f.base_font = ff
 	if fam != "mono":
 		var ts := TextServerManager.get_primary_interface()
 		f.variation_opentype = {ts.name_to_tag("wght"): weight}
@@ -46,14 +51,23 @@ func font(fam: String, weight := 700) -> Font:
 
 
 # ---------------------------------------------------------------- canvases
+## Les textures dessinées sont rendues en HD : on dessine dans les mêmes coordonnées (w, h),
+## mais la toile réelle est SUPERSAMPLE fois plus grande (plafonnée à 4096 px).
+const SUPERSAMPLE := 2.0
+
+
 func _viewport(w: int, h: int, fn: Callable, transparent := false) -> Array:
 	var vp := SubViewport.new()
-	vp.size = Vector2i(w, h)
+	var k := minf(SUPERSAMPLE, 4096.0 / maxf(w, h))
+	k = maxf(k, 1.0)
+	vp.size = Vector2i(roundi(w * k), roundi(h * k))
+	vp.use_hdr_2d = false
 	vp.disable_3d = true
 	vp.transparent_bg = transparent
-	vp.msaa_2d = Viewport.MSAA_4X
+	vp.msaa_2d = Viewport.MSAA_DISABLED  # le suréchantillonnage lisse déjà les bords (et coûte bien moins de mémoire)
 	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
 	var p := Painter.new()
+	p.scale = Vector2(vp.size) / Vector2(w, h)
 	p.fn = fn
 	p.w = w
 	p.h = h
