@@ -46,11 +46,11 @@ func font(fam: String, weight := 700) -> Font:
 
 
 # ---------------------------------------------------------------- canvases
-func _viewport(w: int, h: int, fn: Callable) -> Array:
+func _viewport(w: int, h: int, fn: Callable, transparent := false) -> Array:
 	var vp := SubViewport.new()
 	vp.size = Vector2i(w, h)
 	vp.disable_3d = true
-	vp.transparent_bg = false
+	vp.transparent_bg = transparent
 	vp.msaa_2d = Viewport.MSAA_4X
 	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
 	var p := Painter.new()
@@ -63,11 +63,11 @@ func _viewport(w: int, h: int, fn: Callable) -> Array:
 
 
 ## Texture fixe : renvoie tout de suite une texture (vide), remplie par flush().
-func canvas(w: int, h: int, fn: Callable) -> ImageTexture:
+func canvas(w: int, h: int, fn: Callable, transparent := false) -> ImageTexture:
 	var img := Image.create(4, 4, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0.3, 0.3, 0.3))
+	img.fill(Color(0.3, 0.3, 0.3, 0.0 if transparent else 1.0))
 	var tex := ImageTexture.create_from_image(img)
-	var vp_p := _viewport(w, h, fn)
+	var vp_p := _viewport(w, h, fn, transparent)
 	_jobs.append([vp_p[0], tex])
 	return tex
 
