@@ -508,3 +508,76 @@ static func add_pick(root: Node3D, action: String, layer := 1, grow := 0.0) -> S
 ## Zone cliquable de commande (couche 2) posée dès que le nœud entre dans la scène.
 static func add_pick_later(root: Node3D, action: String, grow := 0.0) -> void:
 	root.ready.connect(func(): add_pick(root, action, 2, grow), CONNECT_ONE_SHOT)
+
+
+## Ellipsoïde (sphère étirée dans le maillage, pas par l'échelle du nœud : la fourrure garde la même longueur).
+static func ellipsoid(sx: float, sy: float, sz: float, segs := 32, rings := 16) -> ArrayMesh:
+	var sm := sphere(1.0, segs, rings)
+	var arr := sm.get_mesh_arrays()
+	var v: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+	var n: PackedVector3Array = arr[Mesh.ARRAY_NORMAL]
+	var s := Vector3(sx, sy, sz)
+	for i in v.size():
+		v[i] = v[i] * s
+		n[i] = (n[i] / s).normalized()
+	arr[Mesh.ARRAY_VERTEX] = v
+	arr[Mesh.ARRAY_NORMAL] = n
+	arr[Mesh.ARRAY_TANGENT] = null
+	var am := ArrayMesh.new()
+	am.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arr)
+	return am
+
+
+
+## Carte de normales tirée d'une image (relief du bois à partir de sa texture couleur).
+static func normal_from_texture(path: String, strength := 3.0) -> Texture2D:
+	var key := "n:" + path
+	if not _cache.has(key):
+		var img: Image = (load(path) as Texture2D).get_image()
+		if img.is_compressed():
+			img.decompress()
+		img.convert(Image.FORMAT_RGBA8)
+		_cache[key] = Tex.normal_from_bump(img, strength)
+	return _cache[key]
+
+
+## Bruit en niveaux de gris (variations de brillance : traces, usure).
+static func noise_tex(freq := .02, size := 512, octaves := 4) -> NoiseTexture2D:
+	var key := "noise:%f:%d" % [freq, octaves]
+	if not _cache.has(key):
+		var nt := NoiseTexture2D.new()
+		nt.width = size
+		nt.height = size
+		nt.seamless = true
+		var fn := FastNoiseLite.new()
+		fn.frequency = freq
+		fn.fractal_octaves = octaves
+		nt.noise = fn
+		_cache[key] = nt
+	return _cache[key]
+
+
+## Rend un matériau plus vrai : relief + brillance irrégulière (usure, traces de doigts).
+static func weather(m: StandardMaterial3D, normal: Texture2D = null, normal_scale := .6, rough_var := .25) -> StandardMaterial3D:
+	if normal:
+		m.normal_enabled = true
+		m.normal_texture = normal
+		m.normal_scale = normal_scale
+	m.roughness_texture = noise_tex(.03)
+	m.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+	m.roughness = clampf(m.roughness + rough_var, 0.0, 1.0)
+	return m
+
+
+## Rainures verticales des lames de lambris (51,2 px par lame sur 2048 px, comme la texture couleur).
+static func boards_normal() -> Texture2D:
+	if not _cache.has("boards_n"):
+		var img := Image.create(512, 64, false, Image.FORMAT_L8)
+		for x in 512:
+			var f := fmod(x, 12.8)
+			var v := 1.0 if f < 11.6 else .1
+			v -= .08 * (f / 12.8)
+			for y in 64:
+				img.set_pixel(x, y, Color(v, v, v))
+		_cache["boards_n"] = Tex.normal_from_bump(img, 5.0)
+	return _cache["boards_n"]

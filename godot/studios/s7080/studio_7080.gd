@@ -29,7 +29,7 @@ const B_FLOOR := -0.78
 const B_WOOD_TOP := 0.44
 
 ## Plans caméra (glisser / flèches) : la vue fixe de Blender puis un plan par module.
-var order: Array = ["overview", "tempo", "tuner", "analyse", "freq", "export"]
+var order: Array = ["overview", "tempo", "tuner", "analyse", "freq", "export", "chat"]
 ## Modules jouables : nom -> nœud (on_action, on_drag_start, on_drag, on_wheel, on_key, animate)
 var modules := {}
 var tempo: Tempo7080
@@ -37,6 +37,7 @@ var tuner: Tuner7080
 var analyzer: Analyzer7080
 var freq: Freq7080
 var export: Export7080
+var cat: Cat7080
 var deco: Deco7080
 
 var engine: TempoEngine
@@ -50,7 +51,8 @@ func _init(e: TempoEngine) -> void:
 	engine = e
 	name = "Studio7080"
 	_build_environment()
-	_wood = Mk.mat(Mk.c(0x8a4426), .5, 0.0, {"map": load("res://assets/textures/hardwood2_diffuse.jpg"), "clearcoat": .35, "clearcoat_rough": .4})
+	var wood_n := Mk.normal_from_texture("res://assets/textures/hardwood2_diffuse.jpg", 2.5)
+	_wood = Mk.weather(Mk.mat(Mk.c(0x8a4426), .42, 0.0, {"map": load("res://assets/textures/hardwood2_diffuse.jpg"), "clearcoat": .4, "clearcoat_rough": .35}), wood_n, .5, .2)
 	_build_floor_ceiling()
 	_build_window_wall()
 	_build_right_wall()
@@ -96,6 +98,12 @@ func _init(e: TempoEngine) -> void:
 	export.rotation.y = PI / 2
 	add_child(export)
 	modules["export"] = export
+	# le compagnon : chat roux couché sur son coussin, sur le retour du bureau
+	cat = Cat7080.new(engine)
+	cat.position = Vector3(.27, DESK_TOP, -1.3)
+	cat.rotation.y = 1.85
+	add_child(cat)
+	modules["chat"] = cat
 	# petite applique douce au-dessus du tableau
 	var lamp := SpotLight3D.new()
 	lamp.light_color = Mk.c(0xffd2a8)
@@ -127,14 +135,23 @@ func _build_environment() -> void:
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Mk.c(0x403a34)
-	env.ambient_light_energy = 0.6
+	env.ambient_light_energy = 0.25
+	# éclairage indirect : la lumière rebondit sur les murs, le bois, le tapis (rendu Forward+)
+	env.sdfgi_enabled = true
+	env.sdfgi_use_occlusion = true
+	env.sdfgi_cascades = 4
+	env.sdfgi_min_cell_size = 0.05
+	env.sdfgi_bounce_feedback = 0.6
+	env.sdfgi_energy = 1.4
+	env.sdfgi_y_scale = Environment.SDFGI_Y_SCALE_100_PERCENT
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
-	env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	env.tonemap_exposure = 1.0
-	env.tonemap_white = 6.0
+	env.tonemap_mode = Environment.TONE_MAPPER_AGX
+	env.tonemap_exposure = 1.25
+	env.tonemap_white = 12.0
 	env.ssao_enabled = true
-	env.ssao_radius = 0.6
-	env.ssao_intensity = 1.6
+	env.ssao_radius = 0.45
+	env.ssao_intensity = 1.2
+	env.ssao_detail = 0.8
 	env.ssil_enabled = true
 	env.ssil_radius = 1.5
 	env.ssr_enabled = false
@@ -321,7 +338,8 @@ func _carpet_mat() -> StandardMaterial3D:
 # ---------------------------------------------------------------- pièce
 func _build_floor_ceiling() -> void:
 	# parquet
-	var parquet := Mk.mat(Mk.c(0x8a6040), .55, 0.0, {"map": load("res://assets/textures/hardwood2_diffuse.jpg"), "clearcoat": .3, "clearcoat_rough": .45})
+	var parquet := Mk.weather(Mk.mat(Mk.c(0x8a6040), .45, 0.0, {"map": load("res://assets/textures/hardwood2_diffuse.jpg"), "clearcoat": .3, "clearcoat_rough": .45}),
+		Mk.normal_from_texture("res://assets/textures/hardwood2_diffuse.jpg", 2.5), .7, .25)
 	parquet.uv1_scale = Vector3(4.0, 5.0, 1)
 	var fl := Mk.mi(Mk.plane(5.0, 6.5), parquet, Vector3(2.0, 0, -2.6), self)
 	fl.name = "Floor"
@@ -416,7 +434,7 @@ func _persian_rug() -> StandardMaterial3D:
 
 ## Mur à vitre (z = 0, face vers -Z) : lambris de bois vertical sur toute la hauteur.
 func _build_window_wall() -> void:
-	var boards := Mk.mat(Mk.c(0xcfa585), .7, 0.0, {"map": _boards(), "clearcoat": .15})
+	var boards := Mk.weather(Mk.mat(Mk.c(0xcfa585), .55, 0.0, {"map": _boards(), "clearcoat": .2}), Mk.boards_normal(), 1.0, .2)
 	var w := Node3D.new()
 	w.name = "WindowWall"
 	w.rotation.y = PI  # repère local : x = -x monde, normale +Z = -Z monde
@@ -434,7 +452,7 @@ func _build_right_wall() -> void:
 	w.name = "RightWall"
 	w.rotation.y = PI / 2  # local x = -z monde
 	add_child(w)
-	var boards := Mk.mat(Mk.c(0xcfa585), .7, 0.0, {"map": _boards(), "clearcoat": .15})
+	var boards := Mk.weather(Mk.mat(Mk.c(0xcfa585), .55, 0.0, {"map": _boards(), "clearcoat": .2}), Mk.boards_normal(), 1.0, .2)
 	Mk.mi(_wall_mesh([[0, 0, ROOM.z, WAINSCOT]], 3.0, 2.0), boards, Vector3.ZERO, w)
 	var cork := _cork_mat()
 	cork.uv1_scale = Vector3(2.5, 1, 1)
@@ -587,16 +605,30 @@ func _rack_panel_mat(kind: String, units: int) -> Material:
 	var key := "%s%d" % [kind, units]
 	if _rack_mats.has(key):
 		return _rack_mats[key]
+	var silver := units == 2
 	var tex := Tex.canvas(1024, int(1024 * units * .04445 / .483), func(ci, w, h):
-		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0x161616) if kind == "vent" else Mk.c(0x9a958d))
+		var base := Mk.c(0x8e8a84) if silver and kind != "vent" else Mk.c(0x1a1a1a)
+		ci.draw_rect(Rect2(0, 0, w, h), base)
 		Tex.brushed(ci, w, h, 60 + units, .06, 1500)
+		var ink := Color(.08, .08, .08, .85) if silver else Color(.85, .82, .76, .75)
 		if kind == "vent":
 			var x := 120.0
 			while x < w - 120:
 				ci.draw_rect(Rect2(x, h * .25, 10, h * .5), Color(0, 0, 0, .9))
 				x += 22
-		Tex.grime(ci, w, h, 61 + units, .5))
-	var m := Mk.mat(Color.WHITE, .5, .6, {"map": tex})
+		else:
+			# appareil : nom, potards, LED, interrupteur
+			Tex.silk(ci, ["RT-C2  COMPRESSOR", "RT-EQ3  PARAMETRIC", "RT-D7  DELAY"][units % 3], 70, h * .25, 22, ink)
+			for i in 6:
+				var c := Vector2(320 + i * 95, h * .55)
+				ci.draw_circle(c, h * .2, Color(0, 0, 0, .5))
+				for k in 11:
+					var a := deg_to_rad(-135 + k * 27)
+					ci.draw_line(c + Vector2(sin(a), -cos(a)) * h * .24, c + Vector2(sin(a), -cos(a)) * h * .28, ink, 2.0)
+			ci.draw_circle(Vector2(900, h * .5), 7, Color(1, .2, .1, .9))
+			ci.draw_rect(Rect2(60, h * .5, 60, h * .3), Color(0, 0, 0, .7))
+		Tex.grime(ci, w, h, 61 + units, .8))
+	var m := Mk.weather(Mk.mat(Color.WHITE, .4, .7, {"map": tex}), Mk.scratch_normal(), .2, .15)
 	_rack_mats[key] = m
 	return m
 
@@ -809,6 +841,8 @@ func _aim(n: Node3D, from: Vector3, to: Vector3) -> void:
 # ---------------------------------------------------------------- caméra
 ## Renvoie [position, point visé, orientation] : la caméra fixe de la scène Blender.
 func shot_pose(shot: String, cam: Camera3D, aspect: float) -> Array:
+	if shot == "chat":
+		return [cat.to_global(Vector3(.16, .3, .62)), cat.to_global(Vector3(0, .13, .06))]
 	if shot == "export":
 		return _via(export, Vector3(0, 0, .03), Vector3(0, 0, 1), Export7080.BW / 2, Export7080.BH / 2, cam, aspect, 1.12)
 	if shot == "freq":
@@ -845,6 +879,15 @@ func setup_camera(cam: Camera3D, aspect: float) -> void:
 	else:
 		cam.keep_aspect = Camera3D.KEEP_WIDTH
 		cam.fov = rad_to_deg(2.0 * atan(tan(CAM_YFOV / 2.0) * 16.0 / 9.0))
+
+
+## Appelé quand on change de plan : le chat regarde la machine, les modules sont prévenus.
+func on_shot(shot: String, cam: Camera3D, aspect: float) -> void:
+	if shot != "overview" and shot != "chat":
+		cat.look_at_point(shot_pose(shot, cam, aspect)[1])
+	for m in modules.values():
+		if m.has_method("on_shot_changed"):
+			m.on_shot_changed(shot)
 
 
 func animate(t: float, dt: float, reduced: bool) -> void:

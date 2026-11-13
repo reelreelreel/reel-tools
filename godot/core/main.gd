@@ -66,6 +66,7 @@ func _ready() -> void:
 	if _args.has("selftest"):
 		_selftest()
 	elif _args.has("screenshot"):
+		studio.cat.no_blink = true
 		_screenshot_and_quit()
 
 
@@ -81,6 +82,7 @@ func _update_fov() -> void:
 # ---------------------------------------------------------------- navigation
 func go(shot: String) -> void:
 	current = shot
+	studio.on_shot(shot, cam, _aspect())
 	Store.set_v("shot", shot)
 	overlay.hide_hint()
 
@@ -261,6 +263,8 @@ func _screenshot_and_quit() -> void:
 		for i in frames:
 			await get_tree().process_frame
 		await RenderingServer.frame_post_draw
+		if _args.has("debugcat"):
+			print("yeux ", studio.cat.eyes[0].scale, " awake ", studio.cat.awake, " t ", t)
 		var img := get_viewport().get_texture().get_image()
 		var path: String = _args.screenshot
 		if path.ends_with("/"):
@@ -347,6 +351,16 @@ func _selftest() -> void:
 	print("archives : rouvre -> ", ex.artist, " - ", ex.title, " v", ex.version, " | archives = ", ex.history.map(func(h): return h.title))
 	ex.order = Export7080.DEFAULT_ORDER.duplicate()
 	ex._refresh()
+	var ct: Node3D = studio.cat
+	print("pick chat (plan large) -> ", pick(cam.unproject_position(ct.to_global(Vector3(0, .12, 0)))).action)
+	go("chat")
+	_type(ct, "Mozart")
+	_type(ct, "\n")
+	ct.on_action("pet")
+	print("chat : nom = ", ct.cat_name, " | ronron = ", ct.purr, " | sauvé = ", Store.get_v("cat_name", ""))
+	go("tempo")
+	print("chat regarde le tempo jusqu'à t+", snappedf(ct.look_until - Time.get_ticks_msec() / 1000.0, .1), " s")
+	go("overview")
 	var an: Node3D = studio.analyzer
 	print("pick analyseur (plan large) -> ", pick(cam.unproject_position(an.to_global(Vector3(0, .09, 0)))).action)
 	for f in ["house_128_Am.wav", "trap_140_Fsm.mp3", "boom_92_D.wav"]:

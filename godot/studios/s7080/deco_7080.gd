@@ -15,7 +15,7 @@ var _brass: StandardMaterial3D
 
 func _init() -> void:
 	name = "Deco7080"
-	_leather_brown = Mk.mat(Mk.c(0x6e3a1e), .45, 0.0, {"clearcoat": .4, "clearcoat_rough": .35})
+	_leather_brown = Mk.weather(Mk.mat(Mk.c(0x6a3820), .5, 0.0, {"clearcoat": .25, "clearcoat_rough": .5}), _grain(), .5, .15)
 	_walnut = Mk.mat(Mk.c(0x6a4028), .55, 0.0, {"map": Mk.walnut_tex(), "clearcoat": .3})
 	_black = Mk.mat(Mk.c(0x121212), .45, .1)
 	_chrome = Mk.chrome_mat()
@@ -166,6 +166,21 @@ func _nearfields() -> void:
 var _badges := {}
 
 
+## Grain du cuir (petites bosses irrégulières).
+func _grain() -> Texture2D:
+	var nt := NoiseTexture2D.new()
+	nt.width = 512
+	nt.height = 512
+	nt.seamless = true
+	nt.as_normal_map = true
+	nt.bump_strength = 3.0
+	var fn := FastNoiseLite.new()
+	fn.noise_type = FastNoiseLite.TYPE_CELLULAR
+	fn.frequency = .09
+	nt.noise = fn
+	return nt
+
+
 ## Petite plaque ou étiquette avec du texte.
 func _badge_mat(txt: String, bg: Color, ink: Color, fam := "archivo") -> StandardMaterial3D:
 	var key := txt + str(bg) + fam
@@ -241,7 +256,8 @@ func _tufted_leather() -> StandardMaterial3D:
 			var dg := minf(absf(fmod(x + y, 256.0) - 128.0), absf(fmod(x - y + 512.0, 256.0) - 128.0))
 			v -= .12 * exp(-pow(128.0 - dg, 2) / 30.0)
 			img.set_pixel(x, y, Color(v, v, v))
-	var m := Mk.mat(Mk.c(0x6e3a1e), .42, 0.0, {"normal": Tex.normal_from_bump(img, 5.0), "normal_scale": 1.0, "clearcoat": .45, "clearcoat_rough": .35})
+	var m := Mk.mat(Mk.c(0x6a3820), .55, 0.0, {"normal": Tex.normal_from_bump(img, 5.0), "normal_scale": 1.0, "clearcoat": .22, "clearcoat_rough": .5})
+	m.roughness_texture = Mk.noise_tex(.03)
 	m.uv1_scale = Vector3(2, 2, 1)
 	return m
 
@@ -251,7 +267,7 @@ func _architect_lamp() -> void:
 	var g := Node3D.new()
 	g.name = "ArchitectLamp"
 	arch_lamp = g
-	_put(g, Vector3(.1, TOP, -1.47), -2.0)
+	_put(g, Vector3(.08, TOP, -1.62), -2.0)
 	Mk.mi(Mk.cyl(.07, .08, .025, 32), _black, Vector3(0, .012, 0), g)
 	var a1 := Mk.mi(Mk.cyl(.007, .007, .5, 10), _chrome, Vector3(0, .26, 0), g)
 	a1.rotation.x = .12
@@ -297,9 +313,9 @@ func _desk_objects() -> void:
 	# (le module Tempo est accolé à droite de la console : voir Tempo7080)
 	# l'angle et le retour restent libres pour les modules : objets en bout de bureau et au fond du retour
 	_phone(Vector3(.31, TOP, -1.68), .5)
-	_notepad(Vector3(.35, TOP, -1.38), .25)
+	_notepad(Vector3(2.62, TOP, -.85), .25)
 	_mug(Vector3(.42, TOP, -.3), .8)
-	_ashtray(Vector3(.42, TOP, -1.17))
+	_ashtray(Vector3(2.6, TOP, -.45))
 	_tape_stack(Vector3(2.6, TOP, -.1), 3)
 	_tape_stack(Vector3(.22, TOP, -.2), 2)
 	# casque posé sur l'assise du fauteuil
