@@ -72,7 +72,7 @@ func _build_environment() -> void:
 	sky.radiance_size = Sky.RADIANCE_SIZE_256
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Mk.c(0x4a3a2e)
+	env.ambient_light_color = Mk.c(0x403a34)
 	env.ambient_light_energy = 0.6
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
@@ -96,7 +96,7 @@ func _build_environment() -> void:
 	env.set_glow_level(3, 0.6)
 	env.set_glow_level(4, 0.4)
 	env.fog_enabled = true
-	env.fog_light_color = Mk.c(0x120a05)
+	env.fog_light_color = Mk.c(0x100c09)
 	env.fog_density = 0.05
 	env.fog_sky_affect = 0.0
 	env.volumetric_fog_enabled = true
@@ -105,7 +105,7 @@ func _build_environment() -> void:
 	env.volumetric_fog_length = 6.0
 	env.volumetric_fog_ambient_inject = 0.0
 	env.adjustment_enabled = true
-	env.adjustment_saturation = 1.05
+	env.adjustment_saturation = 0.86
 	env.adjustment_contrast = 1.05
 	var we := WorldEnvironment.new()
 	we.environment = env
@@ -278,7 +278,7 @@ func _build_floor_ceiling() -> void:
 
 ## Mur à vitre (z = 0, face vers -Z) : lambris de bois vertical sur toute la hauteur.
 func _build_window_wall() -> void:
-	var boards := Mk.mat(Mk.c(0xd8a070), .7, 0.0, {"map": _boards(), "clearcoat": .15})
+	var boards := Mk.mat(Mk.c(0xcfa585), .7, 0.0, {"map": _boards(), "clearcoat": .15})
 	var w := Node3D.new()
 	w.name = "WindowWall"
 	w.rotation.y = PI  # repère local : x = -x monde, normale +Z = -Z monde
@@ -296,7 +296,7 @@ func _build_right_wall() -> void:
 	w.name = "RightWall"
 	w.rotation.y = PI / 2  # local x = -z monde
 	add_child(w)
-	var boards := Mk.mat(Mk.c(0xd8a070), .7, 0.0, {"map": _boards(), "clearcoat": .15})
+	var boards := Mk.mat(Mk.c(0xcfa585), .7, 0.0, {"map": _boards(), "clearcoat": .15})
 	Mk.mi(_wall_mesh([[0, 0, ROOM.z, WAINSCOT]], 3.0, 2.0), boards, Vector3.ZERO, w)
 	var cork := _cork_mat()
 	cork.uv1_scale = Vector3(2.5, 1, 1)
@@ -356,9 +356,26 @@ func _build_desks() -> void:
 			Mk.mi(Mk.box(Vector3(x1 - x0 - .04, h, .02)), dark, Vector3((x0 + x1) / 2, h / 2, -.04), self)
 		else:
 			Mk.mi(Mk.box(Vector3(.02, h, z1 - z0 - .04)), dark, Vector3(x0 + .04, h / 2, (z0 + z1) / 2), self)
+	# rebord rembourré en cuir noir (façon console) sur l'avant du bureau
+	var arm_y := DESK_TOP - .03
+	Mk.mi(Mk.rounded_box(Vector3(2.727 - .55, .075, .11), .035, _leather(2.18), 4), null, Vector3((2.727 + .55) / 2, arm_y, -1.03), self)
+	var ret := Mk.mi(Mk.rounded_box(Vector3(.8, .075, .11), .035, _leather(.8), 4), null, Vector3(.57, arm_y, -1.4), self)
+	ret.rotation.y = PI / 2
 	# joues en bois
 	Mk.mi(Mk.rounded_box(Vector3(.04, DESK_TOP - DESK_T, .98), .006, _wood, 2), null, Vector3(2.70, (DESK_TOP - DESK_T) / 2, -.5), self)
 	Mk.mi(Mk.rounded_box(Vector3(.53, DESK_TOP - DESK_T, .04), .006, _wood, 2), null, Vector3(.28, (DESK_TOP - DESK_T) / 2, -1.77), self)
+
+
+## Cuir noir capitonné en boudins (côtes verticales tous les ~9 cm).
+func _leather(length: float) -> StandardMaterial3D:
+	var img := Image.create(256, 16, false, Image.FORMAT_L8)
+	for x in 256:
+		var v := sin(float(x) / 256.0 * PI)
+		for y in 16:
+			img.set_pixel(x, y, Color(v, v, v))
+	var m := Mk.mat(Mk.c(0x0e0c0b), .42, 0.0, {"normal": Tex.normal_from_bump(img, 6.0), "normal_scale": 1.0, "clearcoat": .35, "clearcoat_rough": .45})
+	m.uv1_scale = Vector3(length / .09, 1, 1)
+	return m
 
 
 # ---------------------------------------------------------------- lumières
@@ -372,7 +389,7 @@ func _build_lights() -> void:
 		var bulb := Mk.mi(Mk.disc(.035, 24), can_mat, Vector3(p.x, ROOM.y - .011, p.z), self)
 		bulb.rotation.x = PI
 		var sp := SpotLight3D.new()
-		sp.light_color = Mk.c(0xffc890)
+		sp.light_color = Mk.c(0xffdcb8)
 		sp.light_energy = 3.2
 		sp.spot_range = 3.0
 		sp.spot_angle = 34.0
@@ -384,7 +401,7 @@ func _build_lights() -> void:
 	# rasants sur le liège du mur de droite
 	for z in [-2.2, -3.4]:
 		var ww := SpotLight3D.new()
-		ww.light_color = Mk.c(0xffa860)
+		ww.light_color = Mk.c(0xffcfa0)
 		ww.light_energy = 1.4
 		ww.spot_range = 2.0
 		ww.spot_angle = 40.0
@@ -393,7 +410,7 @@ func _build_lights() -> void:
 	# rasants sur le lambris de part et d'autre de la vitre
 	for x in [.25, 2.75]:
 		var lw := SpotLight3D.new()
-		lw.light_color = Mk.c(0xffc080)
+		lw.light_color = Mk.c(0xffd2a8)
 		lw.light_energy = 1.6
 		lw.spot_range = 2.4
 		lw.spot_angle = 38.0
@@ -401,7 +418,7 @@ func _build_lights() -> void:
 		add_child(lw)
 	# remplissage doux côté caméra
 	var fill := OmniLight3D.new()
-	fill.light_color = Mk.c(0xffc8a0)
+	fill.light_color = Mk.c(0xffe0c8)
 	fill.light_energy = 1.0
 	fill.omni_range = 6.0
 	fill.position = Vector3(2.6, 1.6, -3.2)
