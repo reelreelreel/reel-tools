@@ -22,7 +22,9 @@ var cam_pos := Vector3.ZERO
 var cam_look := Vector3.ZERO
 var pointer := Vector2.ZERO
 var par := Vector2.ZERO
-var swipe = null  # {pos, t, a}
+var swipe = null  # {pos, t, a, turned}
+var yaw := 0.0       # cap visé de la vue 360° (le studio suit en douceur)
+var pitch := -.12
 var drag = null   # {mod}
 var t := 0.0
 var reduced := false
@@ -40,6 +42,7 @@ func _ready() -> void:
 	studio = Studio7080.new(engine)
 	add_child(studio)
 	cam = Camera3D.new()
+	cam.cull_mask = 0xFFFFF & ~(1 << 9)  # couche 10 = ce que l'on « porte » (le fauteuil où l'on est assis)
 	cam.near = 0.02
 	cam.far = 30.0
 	attrs = CameraAttributesPractical.new()
@@ -57,6 +60,12 @@ func _ready() -> void:
 	current = _args.get("shot", Store.get_v("shot", "overview"))
 	if not studio.order.has(current):
 		current = "overview"
+	yaw = float(_args.get("yaw", Store.get_v("yaw", 0.0)))
+	if _args.has("yaw"):
+		yaw = deg_to_rad(float(_args.yaw))
+	pitch = deg_to_rad(float(_args.get("pitch", "-7")))
+	studio.look_yaw = yaw
+	studio.look_pitch = pitch
 	get_window().files_dropped.connect(_on_files_dropped)
 	await Tex.flush()
 	if _args.has("sample") and studio.modules.has("tuner"):
@@ -107,11 +116,20 @@ func _update_fov() -> void:
 
 # ---------------------------------------------------------------- navigation
 func go(shot: String) -> void:
+	# en revenant à la vue d'ensemble, on regarde la machine qu'on vient de quitter
+	if shot != "overview" and studio.modules.has(shot):
+		yaw = _unwrap(studio.yaw_to(studio.modules[shot].global_position), yaw)
+		Store.set_v("yaw", yaw)
 	current = shot
 	studio.on_shot(shot, cam, _aspect())
 	Store.set_v("shot", shot)
 	overlay.hide_hint()
 	ui.on_shot(shot)
+
+
+## Angle équivalent à a, le plus proche de ref (pour tourner par le plus court chemin).
+func _unwrap(a: float, ref: float) -> float:
+	return ref + wrapf(a - ref, -PI, PI)
 
 
 func step(dir: int) -> void:
@@ -141,6 +159,14 @@ func _unhandled_input(e: InputEvent) -> void:
 		if drag != null:
 			drag.mod.on_drag(e.relative, e.shift_pressed)
 			return
+		# vue 360° : glisser dans la vue d'ensemble = tourner la tête
+		if swipe != null and current == "overview" and (e.button_mask & MOUSE_BUTTON_MASK_LEFT):
+			if swipe.turned or (e.position - swipe.pos).length() > 6.0:
+				swipe.turned = true
+				var k := deg_to_rad(cam.fov) / get_viewport().get_visible_rect().size.y
+				yaw += e.relative.x * k
+				pitch = clampf(pitch + e.relative.y * k, -.75, .6)
+				return
 		var hover: String = pick(e.position).action
 		Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND if hover != "" else Input.CURSOR_ARROW)
 		hover_module = hover.substr(2) if hover.begins_with("m:") else (hover.get_slice(":", 0) if hover.contains(":") else "")
@@ -184,7 +210,7 @@ func _mouse_button(e: InputEventMouseButton) -> void:
 		return
 	if e.pressed:
 		var a: String = pick(e.position).action
-		swipe = {"pos": e.position, "t": Time.get_ticks_msec(), "a": a}
+		swipe = {"pos": e.position, "t": Time.get_ticks_msec(), "a": a, "turned": false}
 		var sp := _split(a)
 		if not sp.is_empty() and sp[2] == current:
 			if sp[0].has_method("on_press"):
@@ -201,13 +227,16 @@ func _mouse_button(e: InputEventMouseButton) -> void:
 	var dpos: Vector2 = e.position - swipe.pos
 	var dt: int = Time.get_ticks_msec() - swipe.t
 	var a: String = swipe.a
+	var turned: bool = swipe.turned
 	swipe = null
 	if was_drag:
 		return
+	if turned:
+		Store.set_v("yaw", yaw)
+		return
 	var big := maxf(absf(dpos.x), absf(dpos.y))
-	if big > 50 and dt < 700:
-		var v := -dpos.y if absf(dpos.y) > absf(dpos.x) else -dpos.x
-		step(1 if v > 0 else -1)
+	if big > 50 and dt < 700 and current != "overview":
+		go("overview")  # balayer en gros plan = revenir dans la pièce
 		return
 	if big > 12:
 		return
@@ -261,10 +290,13 @@ func _key(e: InputEventKey) -> void:
 		return
 	if k == KEY_ESCAPE:
 		go("overview")
-	if k == KEY_PAGEDOWN or k == KEY_RIGHT:
-		step(1)
-	if k == KEY_PAGEUP or k == KEY_LEFT:
-		step(-1)
+	if k == KEY_PAGEDOWN or k == KEY_PAGEUP:
+		step(1 if k == KEY_PAGEDOWN else -1)
+	if k == KEY_LEFT or k == KEY_RIGHT:
+		if current != "overview":
+			go("overview")
+		yaw += (PI / 4) * (1 if k == KEY_LEFT else -1)
+		Store.set_v("yaw", yaw)
 
 
 # ---------------------------------------------------------------- boucle
@@ -273,6 +305,9 @@ func _process(delta: float) -> void:
 	if not ready_done:
 		return
 	_update_fov()
+	var ky := 1.0 if reduced else 1.0 - pow(1.0 - .18, delta * 60.0)
+	studio.look_yaw = lerpf(studio.look_yaw, yaw, ky)
+	studio.look_pitch = lerpf(studio.look_pitch, pitch, ky)
 	var target := studio.shot_pose(current, cam, _aspect())
 	if _args.has("cam"):  # caméra libre pour les vérifs : --cam=x,y,z --look=x,y,z
 		target = [_vec(_args.cam), _vec(_args.get("look", "0,0,0"))]
@@ -282,13 +317,10 @@ func _process(delta: float) -> void:
 	cam_pos = cam_pos.lerp(target[0], k)
 	cam_look = cam_look.lerp(target[1], k)
 	par += (pointer - par) * (1.0 - pow(.95, delta * 60.0))
-	var amp := .05 if current == "overview" else .015
+	var amp := 0.0 if current == "overview" else .015
 	var dr := 0.0 if reduced else 1.0
 	cam.position = cam_pos + Vector3(par.x * amp + sin(t * .31) * .006 * dr, -par.y * amp * .5 + sin(t * .23) * .004 * dr, 0)
-	if target.size() > 2 and not _args.has("cam"):
-		cam.basis = target[2]  # orientation exacte de la caméra Blender
-	else:
-		cam.look_at(cam_look, Vector3.UP)
+	cam.look_at(cam_look, Vector3.UP)
 	var focus := cam.position.distance_to(cam_look)
 	var wide := current == "overview"
 	attrs.dof_blur_far_distance = focus * (1.12 if wide else 1.06)
@@ -305,6 +337,8 @@ func _screenshot_and_quit() -> void:
 	var shots: Array = _args.get("shots", current).split(",")
 	for s in shots:
 		current = s
+		studio.look_yaw = yaw
+		studio.look_pitch = pitch
 		var p := studio.shot_pose(current, cam, _aspect())
 		cam_pos = p[0]
 		cam_look = p[1]
@@ -327,11 +361,18 @@ func _vec(txt: String) -> Vector3:
 
 
 ## Vérif automatique des modules : clic depuis le plan large, puis chaque commande en gros plan.
+## Depuis le fauteuil, tourne la tête vers un point puis vise-le (test de clic en vue d'ensemble).
+func _wide_pick(p: Vector3) -> String:
+	cam.position = Studio7080.EYE
+	cam.look_at(p, Vector3.UP)
+	return pick(cam.unproject_position(p)).action
+
+
 func _selftest() -> void:
 	for i in 3:
 		await get_tree().process_frame
 	var tp: Node3D = studio.tempo
-	print("pick tempo (plan large) -> ", pick(cam.unproject_position(tp.global_position + Vector3(0, .1, 0))).action)
+	print("pick tempo (plan large) -> ", _wide_pick(tp.global_position + Vector3(0, .1, 0)))
 	go("tempo")
 	var p := studio.shot_pose("tempo", cam, _aspect())
 	cam.position = p[0]
@@ -353,14 +394,14 @@ func _selftest() -> void:
 	tp.on_action("copy")
 	print("presse-papiers : ", DisplayServer.clipboard_get())
 	var tu: Node3D = studio.tuner
-	print("pick accordeur (plan large) -> ", pick(cam.unproject_position(tu.to_global(Vector3(0, .09, 0)))).action)
+	print("pick accordeur (plan large) -> ", _wide_pick(tu.to_global(Vector3(0, .09, 0))))
 	for f in ["g1", "c2_24bit_stereo_48k", "fs1_plus20c", "d2_minus30"]:
 		tu.load_sample("/tmp/808/%s.wav" % f)
 		print("accordeur ", f, " -> ", tu.result.note, tu.result.octave, " %.1f Hz %+.0f c" % [tu.result.hz, tu.result.cents])
 	tu.on_files(PackedStringArray(["/tmp/x.mp3"]))
 	print("mp3 absent -> ", tu.result)
 	var fq: Node3D = studio.freq
-	print("pick synthé (plan large) -> ", pick(cam.unproject_position(fq.to_global(Vector3(0, .08, 0)))).action)
+	print("pick synthé (plan large) -> ", _wide_pick(fq.to_global(Vector3(0, .08, 0))))
 	fq.on_action("key:9")
 	print("touche A : ", NoteFreq.label(fq.midi), " ", "%.2f Hz" % fq.freq)
 	fq._set_a4(432.0)
@@ -370,7 +411,7 @@ func _selftest() -> void:
 	var dsc := NoteFreq.describe(100.0)
 	print("100 Hz -> ", dsc.note, dsc.octave, " %+.0f c" % dsc.cents, "  (LED : ", NoteFreq.label(fq.midi), ")")
 	var ex: Node3D = studio.export
-	print("pick tableau (plan large) -> ", pick(cam.unproject_position(ex.global_position)).action)
+	print("pick tableau (plan large) -> ", _wide_pick(ex.global_position))
 	ex.history = []
 	ex.order = Export7080.DEFAULT_ORDER.duplicate()
 	ex.artist = "Artiste"
@@ -399,7 +440,7 @@ func _selftest() -> void:
 	ex._refresh()
 	go("overview")
 	var an: Node3D = studio.analyzer
-	print("pick analyseur (plan large) -> ", pick(cam.unproject_position(an.to_global(Vector3(0, .09, 0)))).action)
+	print("pick analyseur (plan large) -> ", _wide_pick(an.to_global(Vector3(0, .09, 0))))
 	for f in ["house_128_Am.wav", "trap_140_Fsm.mp3", "boom_92_D.wav"]:
 		an.load_track("/tmp/tracks/" + f)
 		an.wait_done()

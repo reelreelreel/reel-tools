@@ -117,7 +117,7 @@ func _big_speakers() -> void:
 		tape.rotation.y = .05
 		# étrier : platine vissée sur le dessus + tige vers le plafond
 		Mk.mi(Mk.rounded_box(Vector3(.16, .008, .12), .002, bracket, 1), null, Vector3(.06, .334, -.15), root)
-		var rod := Mk.mi(Mk.cyl(.012, .012, .5, 10), bracket, Vector3(s[0], 1.85, -.2), self)
+		var rod := Mk.mi(Mk.cyl(.012, .012, 2.3 - 1.86, 10), bracket, Vector3(s[0], (2.3 + 1.86) / 2, -.2), self)
 		rod.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
@@ -316,7 +316,7 @@ func _badge_mat(txt: String, bg: Color, ink: Color, fam := "archivo") -> Standar
 func _chair() -> void:
 	var c := Node3D.new()
 	c.name = "Chair"
-	_put(c, Vector3(1.85, 0, -1.55), .45)
+	_put(c, Vector3(1.75, 0, -1.6), 0.0)
 	var alu := Mk.mat(Mk.c(0xc8c6c2), .22, 1.0, {"normal": Mk.scratch_normal(), "normal_scale": .15})
 	var plastic := Mk.mat(Mk.c(0x161514), .55, 0.0)
 	var pad := _leather_brown
@@ -393,6 +393,9 @@ func _chair() -> void:
 		Mk.mi(Mk.rounded_box(Vector3(.062, .036, .32), .016, pad, 3), null, Vector3(x, .675, -.02), c)
 		for ez in [-.18, .14]:
 			Mk.mi(Mk.rounded_box(Vector3(.05, .018, .02), .006, alu, 2), null, Vector3(x, .652, ez), c)
+	# on est assis dedans : le fauteuil est sur la couche 10, que la caméra ne voit pas (il garde son ombre)
+	for v in c.find_children("*", "VisualInstance3D", true, false):
+		(v as VisualInstance3D).layers = 1 << 9
 
 
 ## Positions des boutons d'un capitonnage en losanges (rangées décalées).
@@ -431,7 +434,7 @@ func _architect_lamp() -> void:
 	var g := Node3D.new()
 	g.name = "ArchitectLamp"
 	arch_lamp = g
-	_put(g, Vector3(.08, TOP, -1.62), -2.0)
+	_put(g, Vector3(3.52, TOP, -2.2), PI / 2 + .6)
 	Mk.mi(Mk.cyl(.07, .08, .025, 32), _black, Vector3(0, .012, 0), g)
 	var a1 := Mk.mi(Mk.cyl(.007, .007, .5, 10), _chrome, Vector3(0, .26, 0), g)
 	a1.rotation.x = .12
@@ -467,7 +470,7 @@ func set_lamp_color(c: Color) -> void:
 func _floor_lamp() -> void:
 	var g := Node3D.new()
 	g.name = "FloorLamp"
-	_put(g, Vector3(.3, 0, -2.75))
+	_put(g, Vector3(.3, 0, -3.9))
 	Mk.mi(Mk.cyl(.15, .16, .03, 32), _brass, Vector3(0, .015, 0), g)
 	Mk.mi(Mk.cyl(.012, .012, 1.4, 10), _brass, Vector3(0, .72, 0), g)
 	_lamp_shade = Mk.mat(Mk.c(0xe8d2a8), .9, 0.0, {"emission": Mk.c(0xffb060), "energy": 1.8, "cull_off": true})
@@ -489,14 +492,14 @@ func _desk_objects() -> void:
 	_console(Vector3(1.7, TOP, -.57), PI, 1.6, .74, 20)
 	# (le module Tempo est accolé à droite de la console : voir Tempo7080)
 	# l'angle et le retour restent libres pour les modules : objets en bout de bureau et au fond du retour
-	_phone(Vector3(.31, TOP, -1.68), .5)
+	_phone(Vector3(3.3, TOP, -1.95), -PI / 2 - .4)
 	_notepad(Vector3(2.62, TOP, -.85), .25)
-	_mug(Vector3(.42, TOP, -.3), .8)
-	_ashtray(Vector3(2.6, TOP, -.45))
-	_tape_stack(Vector3(2.6, TOP, -.1), 3)
-	_tape_stack(Vector3(.22, TOP, -.2), 2)
-	# casque posé sur l'assise du fauteuil
-	_headphones(Vector3(1.85, .535, -1.52), .8)
+	_mug(Vector3(.78, TOP, -.82), .8)
+	_ashtray(Vector3(2.92, TOP, -.25))
+	_tape_stack(Vector3(2.9, TOP, -.62), 3)
+	_tape_stack(Vector3(.7, TOP, -.15), 2)
+	# casque posé au bout du bureau, près du Tempo
+	_headphones(Vector3(2.92, TOP + .01, -.92), 2.2)
 
 
 ## Console de mixage posée sur le retour, tournée vers la pièce (+X) : 10 tranches + section master,
@@ -869,11 +872,11 @@ func _nab_reel(at: Vector3, rot: float) -> void:
 func _floor_objects() -> void:
 	# câble XLR enroulé
 	for i in 4:
-		var r := Mk.mi(Mk.torus_ring(.17 + i * .006, .005), _black, Vector3(2.35 + i * .01, .006 + i * .004, -1.25 + i * .008), self)
+		var r := Mk.mi(Mk.torus_ring(.17 + i * .006, .005), _black, Vector3(2.75 + i * .01, .006 + i * .004, -2.9 + i * .008), self)
 		r.rotation = Vector3(0.04 * i, 0, .03)
 	# caisse de disques
 	var crate := Node3D.new()
-	_put(crate, Vector3(2.88, 0, -1.25), .1)
+	_put(crate, Vector3(3.3, 0, -2.75), PI / 2 + .1)
 	var wood := Mk.mat(Mk.c(0x8a6038), .7)
 	Mk.mi(Mk.box(Vector3(.34, .02, .34)), wood, Vector3(0, .01, 0), crate)
 	for sx in [-1, 1]:
@@ -884,7 +887,7 @@ func _floor_objects() -> void:
 		var sl := Mk.mi(Mk.box(Vector3(.31, .31, .004)), Mk.mat(Mk.c(cols[i]), .7), Vector3(0, .17, -.13 + i * .035), crate)
 		sl.rotation.x = -.25
 	# bandes posées par terre contre le meuble
-	_tape_stack(Vector3(2.85, 0, -.75), 3)
+	_tape_stack(Vector3(1.55, 0, -3.85), 3)
 	_pouf()
 	_toolbox()
 
@@ -893,7 +896,7 @@ func _floor_objects() -> void:
 func _pouf() -> void:
 	var g := Node3D.new()
 	g.name = "Pouf"
-	_put(g, Vector3(2.62, 0, -2.05), .4)
+	_put(g, Vector3(2.65, 0, -3.25), .4)
 	var fab := Mk.pbr("floral_jacquard", .35, {"tint": Mk.c(0xb8b0c0)})
 	var prof := [[0.0, .02]]
 	for i in 13:
@@ -912,7 +915,7 @@ func _pouf() -> void:
 func _toolbox() -> void:
 	var g := Node3D.new()
 	g.name = "Toolbox"
-	_put(g, Vector3(2.78, 0, -1.62), -.35)
+	_put(g, Vector3(.55, 0, -3.35), 1.2)
 	var tole := Mk.pbr("green_metal_rust", .5, {"metal": .55, "rough": .9})
 	var steel := Mk.mat(Mk.c(0x8a8680), .4, 1.0)
 	Mk.mi(Mk.rounded_box(Vector3(.46, .17, .22), .008, tole, 2), null, Vector3(0, .09, 0), g)
@@ -936,7 +939,7 @@ func _plant() -> void:
 	var g := Node3D.new()
 	plant = g
 	g.name = "Plant"
-	_put(g, Vector3(2.86, 0, -.15))
+	_put(g, Vector3(3.3, 0, -3.25))
 	Mk.mi(Mk.lathe([[0, 0], [.12, 0], [.16, .3], [.17, .3], [.17, .32], [0, .32]], 32), Mk.mat(Mk.c(0xa8522a), .8), Vector3.ZERO, g)
 	Mk.mi(Mk.disc(.16, 24), Mk.mat(Mk.c(0x2a1a10), 1.0), Vector3(0, .3, 0), g)
 	var leaf := Mk.mat(Mk.c(0x2e4a1e), .5, 0.0, {"clearcoat": .4, "cull_off": true})
@@ -955,11 +958,12 @@ func _plant() -> void:
 
 # ---------------------------------------------------------------- cadres sur le mur en liège
 func _wall_frames() -> void:
-	var items := [[-2.75, 1.48, Mk.c(0xd4a838)], [-3.45, 1.42, Mk.c(0xc8c8cc)]]
+	# [position, rotation y, couleur du disque] : mur gauche après le synthé, mur droit après la vitre
+	var items := [[Vector3(3.57, 1.5, -2.85), -PI / 2, Mk.c(0xd4a838)], [Vector3(3.57, 1.45, -3.55), -PI / 2, Mk.c(0xc8c8cc)], [Vector3(.03, 1.5, -3.85), PI / 2, Mk.c(0xd4a838)]]
 	for it in items:
 		var g := Node3D.new()
-		g.position = Vector3(.03, it[1], it[0])
-		g.rotation.y = PI / 2
+		g.position = it[0]
+		g.rotation.y = it[1]
 		add_child(g)
 		Mk.mi(Mk.rounded_box(Vector3(.4, .5, .03), .004, Mk.mat(Mk.c(0x0b0908), .35, 0.0, {"clearcoat": .6})), null, Vector3.ZERO, g)
 		Mk.mi(Mk.quad(.36, .46), Mk.mat(Mk.c(0x1a1512), .9), Vector3(0, 0, .0155), g)

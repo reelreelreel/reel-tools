@@ -12,9 +12,12 @@ Tout est généré par le code : modèles 3D, textures sérigraphiées, écrans.
 ## Commandes
 | | |
 |---|---|
-| Clic sur une machine | zoom sur la machine |
-| Clic dans le vide / Échap | plan large |
-| Glisser, ← → ou PageUp / PageDown | machine précédente / suivante |
+| Glisser dans la pièce | tourner la tête à 360° depuis le fauteuil |
+| ← → | tourner d'un huitième de tour |
+| Clic sur une machine (ou touches 1–6) | zoom sur la machine |
+| Clic dans le vide / balayer / Échap | revenir dans la pièce |
+| PageUp / PageDown | machine précédente / suivante |
+| Cmd+K ou / · Cmd+, | rechercher une machine · réglages |
 | F (ou Cmd+F) | plein écran |
 | T | garder la fenêtre au premier plan (à côté du DAW) |
 
