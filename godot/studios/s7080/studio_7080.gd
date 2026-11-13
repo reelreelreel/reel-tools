@@ -579,6 +579,34 @@ func _build_lights() -> void:
 		sp.light_volumetric_fog_energy = .6
 		_aim(sp, Vector3(p.x, ROOM.y - .02, p.z), Vector3(p.x - .05, 0, p.z + .05))
 		add_child(sp)
+	# rampe de spots orientables au plafond, le long de la vitre
+	var black := Mk.mat(Mk.c(0x141414), .45, .4)
+	var rail_z := -.5
+	Mk.mi(Mk.box(Vector3(2.6, .025, .035)), black, Vector3(1.55, ROOM.y - .0125, rail_z), self)
+	for x in [.55, 1.15, 1.85, 2.5]:
+		var head := Node3D.new()
+		head.position = Vector3(x, ROOM.y - .025, rail_z)
+		add_child(head)
+		Mk.mi(Mk.cyl(.008, .008, .05, 8), black, Vector3(0, -.025, 0), head)
+		var can := Node3D.new()
+		can.position = Vector3(0, -.06, 0)
+		head.add_child(can)
+		var target := Vector3(x + (1.55 - x) * .15, DESK_TOP, -.55)
+		can.basis = Basis.looking_at(target - head.position - can.position, Vector3.UP)
+		var body := Mk.mi(Mk.cyl(.032, .038, .1, 24, false), Mk.mat(Mk.c(0x1a1a1a), .35, .6, {"cull_off": true}), Vector3(0, 0, -.02), can)
+		body.rotation.x = PI / 2
+		var lens := Mk.mi(Mk.disc(.03, 24), Mk.glow(Mk.c(0xffd2a0), 6.0), Vector3(0, 0, -.068), can)
+		lens.rotation.x = -PI / 2
+		var ts := SpotLight3D.new()
+		ts.light_color = Mk.c(0xffd8b0)
+		ts.light_energy = 1.8
+		ts.spot_range = 2.6
+		ts.spot_angle = 22.0
+		ts.spot_angle_attenuation = 1.2
+		ts.shadow_enabled = true
+		ts.light_volumetric_fog_energy = 1.0
+		ts.position = Vector3(0, 0, -.08)
+		can.add_child(ts)
 	# rasants sur le liège du mur de droite
 	for z in [-2.2, -3.4]:
 		var ww := SpotLight3D.new()
