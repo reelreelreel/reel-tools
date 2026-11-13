@@ -35,9 +35,13 @@ vont à l'analyse, les courts à l'accordeur. Les MP3 / AIFF sont convertis avec
 fréquence (et la note est jouée) ; OCT − / + (ou Z / X) ; mode HZ → NOTE : potard FREQ (glisser / molette) ou
 taper des chiffres + Entrée → note la plus proche + cents ; curseur LA4 = diapason 430–450 Hz ; PLAY / Espace.
 
-**Export** (tableau en liège au mur de droite) : fiche SESSION (clic sur Artiste / Titre puis taper,
-Entrée = ligne suivante ; clic ou molette sur Fréquence ; pastilles v− / v+), post-it MIX et MASTER avec le
-nom de fichier « Artiste - Titre [Mix] 48kHz v3 » : clic = copié dans le presse-papiers + coché « exporté ».
+**Export** (tableau en liège au mur de droite) :
+- fiche SESSION : clic sur Artiste / Titre puis taper (Entrée = ligne suivante) ; clic ou molette sur Version,
+  Fréquence (44.1 / 48 / 88.2 / 96 kHz) et Format (WAV 16 / 24 / 32f, AIFF 24, MP3 320) ; pastilles v− / v+ ;
+- étiquettes ORDRE DU NOM : glisser une étiquette sur une autre pour changer l'ordre des éléments du nom ;
+- post-it MIX et MASTER : nom prêt à coller (« Artiste - Titre [Mix] 48kHz 24bit v3 » par défaut) ; clic = copié
+  dans le presse-papiers + coché « exporté » ;
+- ARCHIVES : pastille « + » = nouvelle session (l'ancienne part dans la pile) ; clic sur une fiche de la pile = la rouvrir.
 
 Le BPM, la note et le dernier plan sont gardés en local (`user://reel_tools.cfg`).
 

@@ -92,10 +92,19 @@ func _init(e: TempoEngine) -> void:
 	modules["freq"] = freq
 	# module Export : tableau en liège accroché au mur de droite, après le synthé
 	export = Export7080.new(Mk.mat(Mk.c(0x6a4028), .55, 0.0, {"map": Mk.walnut_tex(), "clearcoat": .3}))
-	export.position = Vector3(.002, 1.5, -1.78)
+	export.position = Vector3(.002, 1.5, -1.9)
 	export.rotation.y = PI / 2
 	add_child(export)
 	modules["export"] = export
+	# petite applique douce au-dessus du tableau
+	var lamp := SpotLight3D.new()
+	lamp.light_color = Mk.c(0xffd2a8)
+	lamp.light_energy = .7
+	lamp.spot_range = 1.4
+	lamp.spot_angle = 45.0
+	lamp.spot_angle_attenuation = 1.6
+	_aim(lamp, Vector3(.45, 1.95, -1.9), Vector3(0, 1.45, -1.9))
+	add_child(lamp)
 
 
 func _ready() -> void:
@@ -653,7 +662,7 @@ func _build_lights() -> void:
 		ts.position = Vector3(0, 0, -.08)
 		can.add_child(ts)
 	# rasants sur le liège du mur de droite
-	for z in [-2.2, -3.4]:
+	for z in [-2.95, -3.7]:
 		var ww := SpotLight3D.new()
 		ww.light_color = Mk.c(0xffcfa0)
 		ww.light_energy = 1.4
@@ -841,6 +850,7 @@ func setup_camera(cam: Camera3D, aspect: float) -> void:
 func animate(t: float, dt: float, reduced: bool) -> void:
 	# habillage par plan (comme au cinéma) : la plante gêne le gros plan sur le Tempo
 	deco.plant.visible = get_parent().current != "tempo"
+	deco.arch_lamp.visible = get_parent().current != "export"
 	# les enceintes de proximité restent visibles autour de l'accordeur
 	for m in modules.values():
 		m.animate(t, dt, reduced)

@@ -250,6 +250,7 @@ func _tufted_leather() -> StandardMaterial3D:
 func _architect_lamp() -> void:
 	var g := Node3D.new()
 	g.name = "ArchitectLamp"
+	arch_lamp = g
 	_put(g, Vector3(.1, TOP, -1.47), -2.0)
 	Mk.mi(Mk.cyl(.07, .08, .025, 32), _black, Vector3(0, .012, 0), g)
 	var a1 := Mk.mi(Mk.cyl(.007, .007, .5, 10), _chrome, Vector3(0, .26, 0), g)
@@ -579,6 +580,7 @@ func _floor_objects() -> void:
 
 
 var plant: Node3D
+var arch_lamp: Node3D
 
 
 func _plant() -> void:
@@ -604,7 +606,7 @@ func _plant() -> void:
 
 # ---------------------------------------------------------------- cadres sur le mur en liège
 func _wall_frames() -> void:
-	var items := [[-2.35, 1.48, Mk.c(0xd4a838)], [-3.2, 1.42, Mk.c(0xc8c8cc)]]
+	var items := [[-2.75, 1.48, Mk.c(0xd4a838)], [-3.45, 1.42, Mk.c(0xc8c8cc)]]
 	for it in items:
 		var g := Node3D.new()
 		g.position = Vector3(.03, it[1], it[0])

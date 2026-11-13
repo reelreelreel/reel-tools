@@ -163,6 +163,8 @@ func _mouse_button(e: InputEventMouseButton) -> void:
 				drag = {"mod": sp[0]}
 		return
 	var was_drag := drag != null
+	if was_drag and drag.mod.has_method("on_drop"):
+		drag.mod.on_drop(pick(e.position).action)
 	drag = null
 	if swipe == null:
 		return
@@ -319,25 +321,32 @@ func _selftest() -> void:
 	print("100 Hz -> ", dsc.note, dsc.octave, " %+.0f c" % dsc.cents, "  (LED : ", NoteFreq.label(fq.midi), ")")
 	var ex: Node3D = studio.export
 	print("pick tableau (plan large) -> ", pick(cam.unproject_position(ex.global_position)).action)
+	ex.history = []
+	ex.order = Export7080.DEFAULT_ORDER.duplicate()
 	ex.artist = "Artiste"
 	ex.title = "Titre"
 	ex.version = 2
 	ex.on_action("field:artist")
-	for ch in "Ninho":
-		var ev := InputEventKey.new()
-		ev.unicode = ch.unicode_at(0)
-		ex.on_key(ev)
-	var ent := InputEventKey.new()
-	ent.keycode = KEY_ENTER
-	ex.on_key(ent)
-	for ch in "Jefe":
-		var ev := InputEventKey.new()
-		ev.unicode = ch.unicode_at(0)
-		ex.on_key(ev)
-	ex.on_key(ent)
+	_type(ex, "Ninho")
+	_type(ex, "\n")
+	_type(ex, "Jefe")
+	_type(ex, "\n")
 	ex.on_action("v_up")
+	ex.on_action("format")
 	ex.on_action("copy:Mix")
 	print("export Mix -> ", DisplayServer.clipboard_get(), " | coché : ", ex.done)
+	ex.on_press("tag:5")
+	ex.on_drop("export:tag:0")
+	print("ordre (v en premier) -> ", ex.filename("Master"))
+	ex.on_action("new")
+	_type(ex, "SDM")
+	_type(ex, "\n")
+	_type(ex, "Bolide")
+	_type(ex, "\n")
+	ex.on_action("hist:3")
+	print("archives : rouvre -> ", ex.artist, " - ", ex.title, " v", ex.version, " | archives = ", ex.history.map(func(h): return h.title))
+	ex.order = Export7080.DEFAULT_ORDER.duplicate()
+	ex._refresh()
 	var an: Node3D = studio.analyzer
 	print("pick analyseur (plan large) -> ", pick(cam.unproject_position(an.to_global(Vector3(0, .09, 0)))).action)
 	for f in ["house_128_Am.wav", "trap_140_Fsm.mp3", "boom_92_D.wav"]:
@@ -346,3 +355,15 @@ func _selftest() -> void:
 		print("analyse ", f, " -> ", an.result.bpm.bpm, " ", an.result.bpm.alts, " ", an.result.key.best.short, " ", an.result.key.best.long)
 	go("overview")
 	get_tree().quit()
+
+
+func _type(mod: Node, txt: String) -> void:
+	if txt == "\n":
+		var ent := InputEventKey.new()
+		ent.keycode = KEY_ENTER
+		mod.on_key(ent)
+		return
+	for ch in txt:
+		var ev := InputEventKey.new()
+		ev.unicode = ch.unicode_at(0)
+		mod.on_key(ev)
