@@ -293,12 +293,13 @@ func _floor_lamp() -> void:
 func _desk_objects() -> void:
 	# grande console sur le bureau principal, face à l'ingé (avant vers -Z)
 	_console(Vector3(1.7, TOP, -.57), PI, 1.6, .74, 20)
+	# (le module Tempo est accolé à droite de la console : voir Tempo7080)
 	# l'angle et le retour restent libres pour les modules : objets en bout de bureau et au fond du retour
 	_phone(Vector3(.27, TOP, -1.6), .5)
 	_notepad(Vector3(.3, TOP, -1.28), .25)
-	_mug(Vector3(2.6, TOP, -.5), .8)
-	_ashtray(Vector3(2.6, TOP, -.85))
-	_tape_stack(Vector3(2.6, TOP, -.17), 3)
+	_mug(Vector3(.42, TOP, -.38), .8)
+	_ashtray(Vector3(.3, TOP, -1.05))
+	_tape_stack(Vector3(2.6, TOP, -.1), 3)
 	_tape_stack(Vector3(.22, TOP, -.2), 2)
 	# casque posé sur l'assise du fauteuil
 	_headphones(Vector3(1.85, .475, -1.5), .8)
@@ -577,8 +578,12 @@ func _floor_objects() -> void:
 	_tape_stack(Vector3(2.85, 0, -.75), 3)
 
 
+var plant: Node3D
+
+
 func _plant() -> void:
 	var g := Node3D.new()
+	plant = g
 	g.name = "Plant"
 	_put(g, Vector3(2.86, 0, -.15))
 	Mk.mi(Mk.lathe([[0, 0], [.12, 0], [.16, .3], [.17, .3], [.17, .32], [0, .32]], 32), Mk.mat(Mk.c(0xa8522a), .8), Vector3.ZERO, g)

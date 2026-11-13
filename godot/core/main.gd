@@ -1,8 +1,9 @@
 extends Node3D
 ## REEL'S TOOLS — point d'entrée : monte le studio, la caméra, et gère clic / glisser / clavier.
 ##
-## Phase décor : pas de machines pour l'instant (elles seront redessinées et remises une par une).
+## Modules : clic sur une machine = zoom ; ses commandes ont des actions « module:commande ».
 ## Raccourcis : Échap = plan large · ←/→ ou PageUp/PageDown = plan précédent/suivant
+## Tempo : Espace = tap, ↑/↓ = BPM (Maj = 0,1), N = note, C = copier les ms
 ## F ou Cmd+F = plein écran · T = garder la fenêtre au premier plan (à côté du DAW)
 ##
 ## Options de lancement (après « -- ») : --shot=tempo  --screenshot=chemin.png (ou dossier/ + --shots=a,b)  --frames=N
@@ -18,6 +19,7 @@ var cam_look := Vector3.ZERO
 var pointer := Vector2.ZERO
 var par := Vector2.ZERO
 var swipe = null  # {pos, t, a}
+var drag = null   # {mod}
 var t := 0.0
 var reduced := false
 var ready_done := false
@@ -55,7 +57,9 @@ func _ready() -> void:
 	cam_look = p[1]
 	ready_done = true
 	overlay.boot_done()
-	if _args.has("screenshot"):
+	if _args.has("selftest"):
+		_selftest()
+	elif _args.has("screenshot"):
 		_screenshot_and_quit()
 
 
@@ -99,6 +103,9 @@ func _unhandled_input(e: InputEvent) -> void:
 	if e is InputEventMouseMotion:
 		var vs := get_viewport().get_visible_rect().size
 		pointer = e.position / vs - Vector2(.5, .5)
+		if drag != null:
+			drag.mod.on_drag(e.relative, e.shift_pressed)
+			return
 		var hover: String = pick(e.position).action
 		Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND if hover != "" else Input.CURSOR_ARROW)
 	elif e is InputEventMouseButton:
@@ -107,24 +114,54 @@ func _unhandled_input(e: InputEvent) -> void:
 		_key(e)
 
 
+## « tempo:knob » -> [module, "knob"] si le module existe, sinon []
+func _split(a: String) -> Array:
+	var i := a.find(":")
+	if i <= 0 or a.begins_with("m:"):
+		return []
+	var mod := a.substr(0, i)
+	return [studio.modules[mod], a.substr(i + 1), mod] if studio.modules.has(mod) else []
+
+
 func _mouse_button(e: InputEventMouseButton) -> void:
+	if e.button_index == MOUSE_BUTTON_WHEEL_UP or e.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+		if e.pressed:
+			var sp := _split(pick(e.position).action)
+			if not sp.is_empty() and sp[2] == current:
+				sp[0].on_wheel(sp[1], 1.0 if e.button_index == MOUSE_BUTTON_WHEEL_UP else -1.0, e.shift_pressed)
+		return
 	if e.button_index != MOUSE_BUTTON_LEFT:
 		return
 	if e.pressed:
-		swipe = {"pos": e.position, "t": Time.get_ticks_msec(), "a": pick(e.position).action}
+		var a: String = pick(e.position).action
+		swipe = {"pos": e.position, "t": Time.get_ticks_msec(), "a": a}
+		var sp := _split(a)
+		if not sp.is_empty() and sp[2] == current and sp[0].on_drag_start(sp[1]):
+			drag = {"mod": sp[0]}
 		return
+	var was_drag := drag != null
+	drag = null
 	if swipe == null:
 		return
 	var dpos: Vector2 = e.position - swipe.pos
 	var dt: int = Time.get_ticks_msec() - swipe.t
 	var a: String = swipe.a
 	swipe = null
+	if was_drag:
+		return
 	var big := maxf(absf(dpos.x), absf(dpos.y))
 	if big > 50 and dt < 700:
 		var v := -dpos.y if absf(dpos.y) > absf(dpos.x) else -dpos.x
 		step(1 if v > 0 else -1)
 		return
 	if big > 12:
+		return
+	var sp := _split(a)
+	if not sp.is_empty():
+		if sp[2] == current:
+			sp[0].on_action(sp[1])
+		else:
+			go(sp[2])
 		return
 	if a.begins_with("m:"):
 		var m := a.substr(2)
@@ -144,6 +181,8 @@ func _key(e: InputEventKey) -> void:
 	if k == KEY_T:
 		var on := not DisplayServer.window_get_flag(DisplayServer.WINDOW_FLAG_ALWAYS_ON_TOP)
 		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_ALWAYS_ON_TOP, on)
+		return
+	if studio.modules.has(current) and studio.modules[current].on_key(e):
 		return
 	if k == KEY_ESCAPE:
 		go("overview")
@@ -210,3 +249,33 @@ func _screenshot_and_quit() -> void:
 func _vec(txt: String) -> Vector3:
 	var p := txt.split(",")
 	return Vector3(float(p[0]), float(p[1]), float(p[2]))
+
+
+## Vérif automatique des modules : clic depuis le plan large, puis chaque commande en gros plan.
+func _selftest() -> void:
+	for i in 3:
+		await get_tree().process_frame
+	var tp: Node3D = studio.tempo
+	print("pick tempo (plan large) -> ", pick(cam.unproject_position(tp.global_position + Vector3(0, .1, 0))).action)
+	go("tempo")
+	var p := studio.shot_pose("tempo", cam, _aspect())
+	cam.position = p[0]
+	cam.look_at(p[1])
+	for i in 3:
+		await get_tree().process_frame
+	for n in ["TempoKnob", "NoteSelector", "TapPad"]:
+		var node: Node3D = tp.deck.get_node(n)
+		print("pick ", n, " -> ", pick(cam.unproject_position(node.global_position)).action)
+	var b0 := engine.bpm
+	tp.on_action("double")
+	print("x2 : ", b0, " -> ", engine.bpm)
+	tp.on_action("half")
+	tp.on_drag(Vector2(0, -50), false)
+	print("glisser +50 px : ", engine.bpm)
+	engine.set_bpm(b0)
+	tp.on_action("note")
+	print("note : ", engine.note_label(), " = ", engine.note_ms(), " ms")
+	tp.on_action("copy")
+	print("presse-papiers : ", DisplayServer.clipboard_get())
+	go("overview")
+	get_tree().quit()

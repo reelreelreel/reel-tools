@@ -1,6 +1,6 @@
 # REEL'S TOOLS — appli Godot (Mac)
 
-Le studio 70/80 reconstruit dans Godot 4 d'après le prototype three.js (`prototypes/studio-face/`).
+Le studio 70/80 (régie pro) dans Godot 4, cadrage repris de la scène Blender `assets/reference_blender_vue.glb`.
 Tout est généré par le code : modèles 3D, textures sérigraphiées, écrans. Seules deux textures CC0
 (bois de l'établi, rayures) et trois polices libres (OFL) sont des fichiers.
 
@@ -18,9 +18,9 @@ Tout est généré par le code : modèles 3D, textures sérigraphiées, écrans.
 | F (ou Cmd+F) | plein écran |
 | T | garder la fenêtre au premier plan (à côté du DAW) |
 
-**RT-140 (Tempo)**, une fois zoomé : glisser ou molette sur le gros potard (Maj = 0,1 BPM), ↑/↓,
-Espace ou pad TAP pour taper le tempo, sélecteur NOTE (ou touche N), ÷2 / ×2,
-clic sur l'afficheur vert = copie la valeur en ms dans le presse-papiers.
+**Module Tempo** (section accolée à droite de la console) : clic dessus pour zoomer, puis glisser ou
+molette sur le gros potard (Maj = fin), ↑/↓, pad TAP ou Espace, sélecteur NOTE (clic, molette ou N),
+÷2 / ×2, clic sur l'afficheur des ms (ou C) = copie de la valeur dans le presse-papiers.
 
 Le BPM, la note et le dernier plan sont gardés en local (`user://reel_tools.cfg`).
 

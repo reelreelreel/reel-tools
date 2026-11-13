@@ -503,3 +503,8 @@ static func add_pick(root: Node3D, action: String, layer := 1, grow := 0.0) -> S
 	body.add_child(cs)
 	root.add_child(body)
 	return body
+
+
+## Zone cliquable de commande (couche 2) posée dès que le nœud entre dans la scène.
+static func add_pick_later(root: Node3D, action: String, grow := 0.0) -> void:
+	root.ready.connect(func(): add_pick(root, action, 2, grow), CONNECT_ONE_SHOT)

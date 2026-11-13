@@ -28,8 +28,12 @@ const BOOTH_ORIGIN := Vector3(1.05, .78, -.74)
 const B_FLOOR := -0.78
 const B_WOOD_TOP := 0.44
 
-## Plans caméra (glisser / flèches). Pour l'instant : la vue fixe de Blender.
-var order: Array = ["overview"]
+## Plans caméra (glisser / flèches) : la vue fixe de Blender puis un plan par module.
+var order: Array = ["overview", "tempo"]
+## Modules jouables : nom -> nœud (on_action, on_drag_start, on_drag, on_wheel, on_key, animate)
+var modules := {}
+var tempo: Tempo7080
+var deco: Deco7080
 
 var engine: TempoEngine
 var env: Environment
@@ -51,7 +55,14 @@ func _init(e: TempoEngine) -> void:
 	_build_booth(Mk.mat(Mk.c(0x6a4a34), .7, 0.0, {"map": Mk.walnut_tex()}))
 	_build_desks()
 	_build_lights()
-	add_child(Deco7080.new())
+	deco = Deco7080.new()
+	add_child(deco)
+	# module Tempo : section accolée à la console (bout droit du bureau principal)
+	tempo = Tempo7080.new(engine, Mk.mat(Mk.c(0x6a4028), .55, 0.0, {"map": Mk.walnut_tex(), "clearcoat": .3}))
+	tempo.position = Vector3(1.7 + 1.6 / 2 + .025 + Tempo7080.W / 2, DESK_TOP, -.57)
+	tempo.rotation.y = PI
+	add_child(tempo)
+	modules["tempo"] = tempo
 
 
 func _ready() -> void:
@@ -755,9 +766,25 @@ func _aim(n: Node3D, from: Vector3, to: Vector3) -> void:
 
 # ---------------------------------------------------------------- caméra
 ## Renvoie [position, point visé, orientation] : la caméra fixe de la scène Blender.
-func shot_pose(_shot: String, _cam: Camera3D, _aspect: float) -> Array:
+func shot_pose(shot: String, cam: Camera3D, aspect: float) -> Array:
+	if shot == "tempo":
+		return _via(tempo.deck, Vector3(0, 0, .0), Vector3(0, 1, .55), Tempo7080.W / 2, tempo.plen / 2, cam, aspect, 1.08)
 	var b := Basis(CAM_QUAT)
 	return [CAM_POS, CAM_POS - b.z * CAM_FOCUS, b]
+
+
+func _fit(cam: Camera3D, aspect: float, half_w: float, half_h: float) -> float:
+	var v := tan(deg_to_rad(cam.fov) / 2.0)
+	if cam.keep_aspect == Camera3D.KEEP_WIDTH:
+		v = tan(deg_to_rad(cam.fov) / 2.0) / aspect
+	return maxf(half_h / v, half_w / (v * aspect))
+
+
+## Plan rapproché sur un nœud : centre local + normale locale, cadré sur une demi-largeur / demi-hauteur.
+func _via(obj: Node3D, local: Vector3, n: Vector3, hw: float, hh: float, cam: Camera3D, aspect: float, m := 1.12) -> Array:
+	var c := obj.to_global(local)
+	var nn := (obj.global_basis * n).normalized()
+	return [c + nn * _fit(cam, aspect, hw * m, hh * m), c]
 
 
 ## Réglage d'objectif : on garde le champ horizontal de Blender quand la fenêtre est plus étroite que 16:9.
@@ -770,5 +797,8 @@ func setup_camera(cam: Camera3D, aspect: float) -> void:
 		cam.fov = rad_to_deg(2.0 * atan(tan(CAM_YFOV / 2.0) * 16.0 / 9.0))
 
 
-func animate(_t: float, _dt: float, _reduced: bool) -> void:
-	pass
+func animate(t: float, dt: float, reduced: bool) -> void:
+	# habillage par plan (comme au cinéma) : la plante gêne le gros plan sur le Tempo
+	deco.plant.visible = get_parent().current != "tempo"
+	for m in modules.values():
+		m.animate(t, dt, reduced)
