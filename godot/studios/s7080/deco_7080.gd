@@ -114,12 +114,12 @@ func _big_speakers() -> void:
 ## Enceintes de proximité sur le bureau : caisson noir, baffle en retrait, membrane blanche,
 ## vis, dôme d'aigu protégé, évent, plaque, bornier et câble à l'arrière.
 func _nearfields() -> void:
-	var listener := Vector3(1.6, 1.15, -1.7)
+	var listener := Vector3(1.7, 1.15, -1.6)
 	var cone := Mk.mat(Mk.c(0xe8e4da), .7)
 	var cab := Mk.mat(Mk.c(0x141414), .4, 0.0, {"clearcoat": .3})
-	for x in [.85, 2.3]:
+	for x in [1.08, 2.32]:
 		var root := Node3D.new()
-		var pos := Vector3(x, TOP, -.28)
+		var pos := Vector3(x, TOP + .245, -.2)
 		var to := listener - pos
 		root.position = pos
 		root.rotation.y = atan2(to.x, to.z)
@@ -161,7 +161,7 @@ func _nearfields() -> void:
 		tape.rotation.y = -.08
 		Mk.mi(Mk.rounded_box(Vector3(.05, .03, .006), .002, _black), null, Vector3(0, .07, -.102), root)
 		var back := pos + root.basis * Vector3(0, .07, -.1)
-		Mk.mi(Mk.tube([back, back + Vector3(0, -.02, .08), Vector3(back.x, TOP + .005, -.02), Vector3(back.x + .05, .4, -.04)], .004, 24, 6), _black, Vector3.ZERO, self)
+		Mk.mi(Mk.tube([back, back + Vector3(0, -.03, .06), Vector3(back.x, TOP + .1, -.03), Vector3(back.x + .05, .4, -.04)], .004, 24, 6), _black, Vector3.ZERO, self)
 
 var _badges := {}
 
@@ -185,7 +185,7 @@ func _badge_mat(txt: String, bg: Color, ink: Color, fam := "archivo") -> Standar
 func _chair() -> void:
 	var c := Node3D.new()
 	c.name = "Chair"
-	_put(c, Vector3(1.12, 0, -1.72), 2.75)
+	_put(c, Vector3(1.85, 0, -1.55), .45)
 	c.scale = Vector3.ONE * .86
 	var tuft := _tufted_leather()
 	var btn := Mk.mat(Mk.c(0x3e1d0e), .45, 0.0, {"clearcoat": .5})
@@ -291,31 +291,26 @@ func _floor_lamp() -> void:
 
 # ---------------------------------------------------------------- objets sur le bureau
 func _desk_objects() -> void:
-	_console(Vector3(.27, TOP, -1.37))
-	_phone(Vector3(2.5, TOP, -.66), -.4)
-	_mug(Vector3(2.12, TOP, -.88), .8)
-	_mug(Vector3(.32, TOP, -.45), 2.4)
-	_ashtray(Vector3(1.95, TOP, -.62))
-	_notepad(Vector3(1.85, TOP, -.8), .25)
-	_headphones(Vector3(1.22, TOP, -.78), -.4)
-	_tape_stack(Vector3(.24, TOP, -.25), 3)
-	_tape_stack(Vector3(2.0, TOP, -.22), 2)
-	# feuilles de session éparpillées
-	var paper := Mk.mat(Mk.c(0xe8e2d0), .9)
-	for p in [[1.55, -.72, .1], [1.62, -.68, -.15], [1.3, -.55, .4]]:
-		var q := Mk.mi(Mk.plane(.21, .29), paper, Vector3(p[0], TOP + .002, p[1]), self)
-		q.rotation.y = p[2]
+	# grande console sur le bureau principal, face à l'ingé (avant vers -Z)
+	_console(Vector3(1.7, TOP, -.57), PI, 1.6, .74, 20)
+	# l'angle et le retour restent libres pour les modules : objets en bout de bureau et au fond du retour
+	_phone(Vector3(.27, TOP, -1.6), .5)
+	_notepad(Vector3(.3, TOP, -1.28), .25)
+	_mug(Vector3(2.6, TOP, -.5), .8)
+	_ashtray(Vector3(2.6, TOP, -.85))
+	_tape_stack(Vector3(2.6, TOP, -.17), 3)
+	_tape_stack(Vector3(.22, TOP, -.2), 2)
+	# casque posé sur l'assise du fauteuil
+	_headphones(Vector3(1.85, .475, -1.5), .8)
 
 
 ## Console de mixage posée sur le retour, tournée vers la pièce (+X) : 10 tranches + section master,
 ## pupitre incliné sérigraphié, potards EQ/aux/pan, boutons mute/solo éclairés, faders, scribble,
 ## pont de VU + baie de patch avec cordons, câbles qui partent derrière.
-func _console(at: Vector3) -> void:
+func _console(at: Vector3, rot: float, L: float, D: float, n: int) -> void:
 	var g := Node3D.new()
 	g.name = "MixConsole"
-	_put(g, at, PI / 2)  # avant (local +Z) vers +X
-	var L := .8
-	var D := .5
+	_put(g, at, rot)  # avant de la console = +Z local
 	var body := Mk.mat(Mk.c(0x2a2622), .5, .3)
 	# caisse en biseau (plus haute à l'arrière), joues en noyer
 	var prof := PackedVector2Array([Vector2(-D / 2, 0), Vector2(D / 2, 0), Vector2(D / 2, .045), Vector2(-D / 2, .12)])
@@ -325,8 +320,7 @@ func _console(at: Vector3) -> void:
 		var cheek := Mk.mi(Mk.prism(PackedVector2Array([Vector2(-D / 2 - .01, 0), Vector2(D / 2 + .01, 0), Vector2(D / 2 + .01, .06), Vector2(-D / 2 - .01, .2), Vector2(-D / 2 + .05, .2)]), .025), _walnut, Vector3(sx * (L / 2 + .0125) + .0125, 0, 0), g)
 		cheek.rotation.y = -PI / 2
 	# pupitre incliné
-	var n := 10            # tranches
-	var master_w := .14    # section master à droite
+	var master_w := .2     # section master à droite
 	var sw := (L - .02 - master_w) / n
 	var slope := atan2(.12 - .045, D)
 	var plen := sqrt(D * D + pow(.12 - .045, 2))
@@ -353,9 +347,9 @@ func _console(at: Vector3) -> void:
 			for k in rows.size():
 				Tex.silk(ci, rows[k], x0 + pw / 2, V.call(row_v.call(k)) + 26, 10, Color(.9, .88, .82, .55), "center", 600)
 			# bande de scribble avec le nom de la piste
-			var names := ["KICK", "SNARE", "HH", "BASS", "GTR", "KEYS", "VOX", "VOX 2", "FX", "VERB"]
+			var names := ["KICK", "SNARE", "HH", "TOMS", "OH L", "OH R", "BASS", "GTR 1", "GTR 2", "KEYS", "PIANO", "ORGAN", "VOX", "VOX 2", "CHOEURS", "CUIVRES", "PERC", "FX", "VERB", "DELAY"]
 			ci.draw_rect(Rect2(x0 + pw * .08, h * .70, pw * .84, h * .045), Mk.c(0xe8e0c8))
-			Tex.silk(ci, names[i], x0 + pw / 2, h * .722, 20, Color(.1, .1, .3, .85), "center", 600, "caveat")
+			Tex.silk(ci, names[i % names.size()], x0 + pw / 2, h * .722, 18, Color(.1, .1, .3, .85), "center", 600, "caveat")
 			# rainure de fader + graduations
 			ci.draw_rect(Rect2(x0 + pw / 2 - 3, h * .78, 6, h * .19), Color(0, 0, 0, .85))
 			for k in 9:
@@ -422,7 +416,10 @@ func _console(at: Vector3) -> void:
 			ci.draw_line(Vector2(128, 190) + Vector2(cos(a), sin(a)) * 150, Vector2(128, 190) + Vector2(cos(a), sin(a)) * 162, Mk.c(0xb3241a) if k > 7 else Mk.c(0x1a1a1a), 2.0, true)
 		Tex.silk(ci, "VU", 128, 120, 26, Mk.c(0x1a1a1a), "center"))
 	var vu_mat := Mk.mat(Color.WHITE, .8, 0.0, {"map": vu, "emission": Mk.c(0xffb060), "energy": .35, "emission_tex": vu})
-	for vx in [-.27, -.14, .14, .27]:
+	var vus := []
+	for k in 6:
+		vus.append(-L * .36 + k * L * .144)
+	for vx in vus:
 		Mk.mi(Mk.rounded_box(Vector3(.115, .075, .008), .003, _black, 1), null, Vector3(vx, .01, .024), bridge)
 		Mk.mi(Mk.quad(.1, .062), vu_mat, Vector3(vx, .01, .0285), bridge)
 		var nd := Mk.mi(Mk.box(Vector3(.001, .05, .001)), _black, Vector3(vx - .008, .0, .029), bridge)
@@ -432,7 +429,7 @@ func _console(at: Vector3) -> void:
 		for i in 10:
 			var on := i < 6 + col
 			var m := Mk.glow(Mk.c(0x40ff60) if i < 7 else (Mk.c(0xffc020) if i < 9 else Mk.c(0xff3020)), 1.6 if on else .08)
-			Mk.mi(Mk.box(Vector3(.008, .004, .003)), m, Vector3(-.012 + col * .024, -.03 + i * .007, .026), bridge)
+			Mk.mi(Mk.box(Vector3(.008, .004, .003)), m, Vector3(L * .43 - .012 + col * .024, -.03 + i * .007, .026), bridge)
 	# baie de patch sur le dessus du pont
 	var patch := Node3D.new()
 	patch.position = Vector3(0, .062, .0)
@@ -442,7 +439,7 @@ func _console(at: Vector3) -> void:
 	var jack := Mk.cyl(.0032, .0032, .004, 10)
 	var jm := Mk.mat(Mk.c(0x050505), .6)
 	for row in 2:
-		for i in 24:
+		for i in int((L - .08) / .03):
 			var j := Mk.mi(jack, jm, Vector3(-L / 2 + .04 + i * .03, -.009 + row * .018, .003), patch)
 			j.rotation.x = PI / 2
 	# cordons de patch
