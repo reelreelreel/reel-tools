@@ -29,10 +29,11 @@ const B_FLOOR := -0.78
 const B_WOOD_TOP := 0.44
 
 ## Plans caméra (glisser / flèches) : la vue fixe de Blender puis un plan par module.
-var order: Array = ["overview", "tempo"]
+var order: Array = ["overview", "tempo", "tuner"]
 ## Modules jouables : nom -> nœud (on_action, on_drag_start, on_drag, on_wheel, on_key, animate)
 var modules := {}
 var tempo: Tempo7080
+var tuner: Tuner7080
 var deco: Deco7080
 
 var engine: TempoEngine
@@ -63,6 +64,12 @@ func _init(e: TempoEngine) -> void:
 	tempo.rotation.y = PI
 	add_child(tempo)
 	modules["tempo"] = tempo
+	# module Accordeur 808 : petit boîtier posé au centre du pont de la console
+	tuner = Tuner7080.new(Mk.mat(Mk.c(0x6a4028), .55, 0.0, {"map": Mk.walnut_tex(), "clearcoat": .3}))
+	tuner.position = Vector3(1.7, DESK_TOP + .245, -.25)
+	tuner.basis = Basis(Vector3.UP, PI) * Basis(Vector3.RIGHT, -.15)
+	add_child(tuner)
+	modules["tuner"] = tuner
 
 
 func _ready() -> void:
@@ -767,6 +774,8 @@ func _aim(n: Node3D, from: Vector3, to: Vector3) -> void:
 # ---------------------------------------------------------------- caméra
 ## Renvoie [position, point visé, orientation] : la caméra fixe de la scène Blender.
 func shot_pose(shot: String, cam: Camera3D, aspect: float) -> Array:
+	if shot == "tuner":
+		return _via(tuner, Vector3(0, Tuner7080.H / 2, 0), Vector3(0, .25, 1), Tuner7080.W / 2, Tuner7080.H / 2, cam, aspect, 1.25)
 	if shot == "tempo":
 		return _via(tempo.deck, Vector3(0, 0, .0), Vector3(0, 1, .55), Tempo7080.W / 2, tempo.plen / 2, cam, aspect, 1.08)
 	var b := Basis(CAM_QUAT)
@@ -800,5 +809,6 @@ func setup_camera(cam: Camera3D, aspect: float) -> void:
 func animate(t: float, dt: float, reduced: bool) -> void:
 	# habillage par plan (comme au cinéma) : la plante gêne le gros plan sur le Tempo
 	deco.plant.visible = get_parent().current != "tempo"
+	# les enceintes de proximité restent visibles autour de l'accordeur
 	for m in modules.values():
 		m.animate(t, dt, reduced)

@@ -22,6 +22,10 @@ Tout est généré par le code : modèles 3D, textures sérigraphiées, écrans.
 molette sur le gros potard (Maj = fin), ↑/↓, pad TAP ou Espace, sélecteur NOTE (clic, molette ou N),
 ÷2 / ×2, clic sur l'afficheur des ms (ou C) = copie de la valeur dans le presse-papiers.
 
+**Accordeur 808** (petit boîtier sur le pont de la console) : glisse un WAV de 808 / kick sur la fenêtre
+(ou clic sur CHARGER, ou L) : l'aiguille donne l'écart en cents, la lampe de la note s'allume, l'octave et la
+fréquence s'affichent.
+
 Le BPM, la note et le dernier plan sont gardés en local (`user://reel_tools.cfg`).
 
 ## Organisation

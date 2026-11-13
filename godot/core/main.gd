@@ -50,7 +50,10 @@ func _ready() -> void:
 	current = _args.get("shot", Store.get_v("shot", "overview"))
 	if not studio.order.has(current):
 		current = "overview"
+	get_window().files_dropped.connect(_on_files_dropped)
 	await Tex.flush()
+	if _args.has("sample") and studio.modules.has("tuner"):
+		studio.modules.tuner.load_sample(_args.sample)
 	_update_fov()
 	var p := studio.shot_pose(current, cam, _aspect())
 	cam_pos = p[0]
@@ -112,6 +115,13 @@ func _unhandled_input(e: InputEvent) -> void:
 		_mouse_button(e)
 	elif e is InputEventKey and e.pressed:
 		_key(e)
+
+
+## Fichier glissé sur la fenêtre : on l'envoie à l'accordeur et on zoome dessus.
+func _on_files_dropped(files: PackedStringArray) -> void:
+	if studio.modules.has("tuner"):
+		studio.modules.tuner.on_files(files)
+		go("tuner")
 
 
 ## « tempo:knob » -> [module, "knob"] si le module existe, sinon []
@@ -277,5 +287,12 @@ func _selftest() -> void:
 	print("note : ", engine.note_label(), " = ", engine.note_ms(), " ms")
 	tp.on_action("copy")
 	print("presse-papiers : ", DisplayServer.clipboard_get())
+	var tu: Node3D = studio.tuner
+	print("pick accordeur (plan large) -> ", pick(cam.unproject_position(tu.to_global(Vector3(0, .09, 0)))).action)
+	for f in ["g1", "c2_24bit_stereo_48k", "fs1_plus20c", "d2_minus30"]:
+		tu.load_sample("/tmp/808/%s.wav" % f)
+		print("accordeur ", f, " -> ", tu.result.note, tu.result.octave, " %.1f Hz %+.0f c" % [tu.result.hz, tu.result.cents])
+	tu.on_files(PackedStringArray(["/tmp/x.mp3"]))
+	print("mp3 -> ", tu.result)
 	go("overview")
 	get_tree().quit()
