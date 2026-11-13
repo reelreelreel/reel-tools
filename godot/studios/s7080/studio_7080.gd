@@ -29,13 +29,14 @@ const B_FLOOR := -0.78
 const B_WOOD_TOP := 0.44
 
 ## Plans caméra (glisser / flèches) : la vue fixe de Blender puis un plan par module.
-var order: Array = ["overview", "tempo", "tuner", "analyse", "freq"]
+var order: Array = ["overview", "tempo", "tuner", "analyse", "freq", "export"]
 ## Modules jouables : nom -> nœud (on_action, on_drag_start, on_drag, on_wheel, on_key, animate)
 var modules := {}
 var tempo: Tempo7080
 var tuner: Tuner7080
 var analyzer: Analyzer7080
 var freq: Freq7080
+var export: Export7080
 var deco: Deco7080
 
 var engine: TempoEngine
@@ -89,6 +90,12 @@ func _init(e: TempoEngine) -> void:
 	freq.basis = Basis(Vector3.UP, PI / 2) * Basis(Vector3.RIGHT, .4)
 	add_child(freq)
 	modules["freq"] = freq
+	# module Export : tableau en liège accroché au mur de droite, après le synthé
+	export = Export7080.new(Mk.mat(Mk.c(0x6a4028), .55, 0.0, {"map": Mk.walnut_tex(), "clearcoat": .3}))
+	export.position = Vector3(.002, 1.5, -1.78)
+	export.rotation.y = PI / 2
+	add_child(export)
+	modules["export"] = export
 
 
 func _ready() -> void:
@@ -793,6 +800,8 @@ func _aim(n: Node3D, from: Vector3, to: Vector3) -> void:
 # ---------------------------------------------------------------- caméra
 ## Renvoie [position, point visé, orientation] : la caméra fixe de la scène Blender.
 func shot_pose(shot: String, cam: Camera3D, aspect: float) -> Array:
+	if shot == "export":
+		return _via(export, Vector3(0, 0, .03), Vector3(0, 0, 1), Export7080.BW / 2, Export7080.BH / 2, cam, aspect, 1.12)
 	if shot == "freq":
 		return _via(freq, Vector3(0, Freq7080.H, 0), Vector3(0, 1, .7), Freq7080.L / 2, Freq7080.D / 2, cam, aspect, 1.12)
 	if shot == "analyse":

@@ -317,6 +317,27 @@ func _selftest() -> void:
 	fq._set_freq(100.0)
 	var dsc := NoteFreq.describe(100.0)
 	print("100 Hz -> ", dsc.note, dsc.octave, " %+.0f c" % dsc.cents, "  (LED : ", NoteFreq.label(fq.midi), ")")
+	var ex: Node3D = studio.export
+	print("pick tableau (plan large) -> ", pick(cam.unproject_position(ex.global_position)).action)
+	ex.artist = "Artiste"
+	ex.title = "Titre"
+	ex.version = 2
+	ex.on_action("field:artist")
+	for ch in "Ninho":
+		var ev := InputEventKey.new()
+		ev.unicode = ch.unicode_at(0)
+		ex.on_key(ev)
+	var ent := InputEventKey.new()
+	ent.keycode = KEY_ENTER
+	ex.on_key(ent)
+	for ch in "Jefe":
+		var ev := InputEventKey.new()
+		ev.unicode = ch.unicode_at(0)
+		ex.on_key(ev)
+	ex.on_key(ent)
+	ex.on_action("v_up")
+	ex.on_action("copy:Mix")
+	print("export Mix -> ", DisplayServer.clipboard_get(), " | coché : ", ex.done)
 	var an: Node3D = studio.analyzer
 	print("pick analyseur (plan large) -> ", pick(cam.unproject_position(an.to_global(Vector3(0, .09, 0)))).action)
 	for f in ["house_128_Am.wav", "trap_140_Fsm.mp3", "boom_92_D.wav"]:
