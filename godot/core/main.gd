@@ -2,7 +2,7 @@ extends Node3D
 ## REEL'S TOOLS — point d'entrée : monte le studio, la caméra, et gère clic / glisser / clavier.
 ##
 ## Modules : clic sur une machine = zoom ; ses commandes ont des actions « module:commande ».
-## Raccourcis : Échap = plan large · ←/→ ou PageUp/PageDown = plan précédent/suivant · 1–7 = machines
+## Raccourcis : Échap = plan large · ←/→ ou PageUp/PageDown = plan précédent/suivant · 1–6 = machines
 ## Cmd+K ou / = rechercher · Cmd+, = réglages · M = mode mini
 ## Tempo : Espace = tap, ↑/↓ = BPM (Maj = 0,1), N = note, C = copier les ms
 ## F ou Cmd+F = plein écran · T = garder la fenêtre au premier plan (à côté du DAW)
@@ -74,7 +74,6 @@ func _ready() -> void:
 	if _args.has("selftest"):
 		_selftest()
 	elif _args.has("screenshot"):
-		studio.cat.no_blink = true
 		if _args.get("ui", "") == "settings":
 			ui.toggle_settings()
 		elif _args.get("ui", "") == "search":
@@ -248,7 +247,7 @@ func _key(e: InputEventKey) -> void:
 	if k == KEY_SLASH:
 		ui.open_search()
 		return
-	if k >= KEY_1 and k <= KEY_7 and not cmd:
+	if k >= KEY_1 and k <= KEY_6 and not cmd:
 		go(AppUI.SHOTS[k - KEY_1][0])
 		return
 	if k == KEY_ESCAPE:
@@ -303,8 +302,6 @@ func _screenshot_and_quit() -> void:
 		for i in frames:
 			await get_tree().process_frame
 		await RenderingServer.frame_post_draw
-		if _args.has("debugcat"):
-			print("yeux ", studio.cat.eyes[0].scale, " awake ", studio.cat.awake, " t ", t)
 		var img := get_viewport().get_texture().get_image()
 		var path: String = _args.screenshot
 		if path.ends_with("/"):
@@ -391,15 +388,6 @@ func _selftest() -> void:
 	print("archives : rouvre -> ", ex.artist, " - ", ex.title, " v", ex.version, " | archives = ", ex.history.map(func(h): return h.title))
 	ex.order = Export7080.DEFAULT_ORDER.duplicate()
 	ex._refresh()
-	var ct: Node3D = studio.cat
-	print("pick chat (plan large) -> ", pick(cam.unproject_position(ct.to_global(Vector3(0, .12, 0)))).action)
-	go("chat")
-	_type(ct, "Mozart")
-	_type(ct, "\n")
-	ct.on_action("pet")
-	print("chat : nom = ", ct.cat_name, " | ronron = ", ct.purr, " | sauvé = ", Store.get_v("cat_name", ""))
-	go("tempo")
-	print("chat regarde le tempo jusqu'à t+", snappedf(ct.look_until - Time.get_ticks_msec() / 1000.0, .1), " s")
 	go("overview")
 	var an: Node3D = studio.analyzer
 	print("pick analyseur (plan large) -> ", pick(cam.unproject_position(an.to_global(Vector3(0, .09, 0)))).action)

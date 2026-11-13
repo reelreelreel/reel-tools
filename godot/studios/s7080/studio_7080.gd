@@ -29,7 +29,7 @@ const B_FLOOR := -0.78
 const B_WOOD_TOP := 0.44
 
 ## Plans caméra (glisser / flèches) : la vue fixe de Blender puis un plan par module.
-var order: Array = ["overview", "tempo", "tuner", "analyse", "freq", "export", "chat"]
+var order: Array = ["overview", "tempo", "tuner", "analyse", "freq", "export"]
 ## Modules jouables : nom -> nœud (on_action, on_drag_start, on_drag, on_wheel, on_key, animate)
 var modules := {}
 var tempo: Tempo7080
@@ -37,7 +37,6 @@ var tuner: Tuner7080
 var analyzer: Analyzer7080
 var freq: Freq7080
 var export: Export7080
-var cat: Cat7080
 var deco: Deco7080
 
 var engine: TempoEngine
@@ -98,12 +97,6 @@ func _init(e: TempoEngine) -> void:
 	export.rotation.y = PI / 2
 	add_child(export)
 	modules["export"] = export
-	# le compagnon : chat roux couché sur son coussin, sur le retour du bureau
-	cat = Cat7080.new(engine)
-	cat.position = Vector3(.27, DESK_TOP, -1.3)
-	cat.rotation.y = 1.85
-	add_child(cat)
-	modules["chat"] = cat
 	# petite applique douce au-dessus du tableau
 	var lamp := SpotLight3D.new()
 	lamp.light_color = Mk.c(0xffd2a8)
@@ -116,7 +109,70 @@ func _init(e: TempoEngine) -> void:
 
 
 func _ready() -> void:
-	pass
+	_build_module_spots()
+
+
+# ---------------------------------------------------------------- spots sur les machines
+## Un petit spot au plafond braqué sur chaque machine : discret au repos, il monte quand la souris
+## passe sur la machine (vue d'ensemble) et reste un peu plus fort sur la machine ouverte.
+const SPOT_IDLE := .4
+const SPOT_HOVER := 8.0
+const SPOT_OPEN := 2.5
+var module_spots := {}  # module -> {light, lens, level}
+
+
+func _build_module_spots() -> void:
+	var black := Mk.mat(Mk.c(0x141414), .45, .4)
+	var center := Vector3(1.5, 0, -1.6)
+	for k in modules:
+		var node: Node3D = modules[k]
+		var bb := Mk.local_aabb(node)
+		var target := node.to_global(bb.get_center())
+		var radius := (node.global_basis * (bb.size / 2)).length() * .75
+		var flat := Vector3(center.x - target.x, 0, center.z - target.z)
+		var from := Vector3(target.x, ROOM.y - .08, target.z) + flat.normalized() * minf(.7, flat.length())
+		# petit projecteur noir au plafond
+		var head := Node3D.new()
+		head.name = "Spot_" + k
+		head.position = from
+		add_child(head)
+		Mk.mi(Mk.cyl(.006, .006, .07, 8), black, Vector3(0, .04, 0), head)
+		var can := Node3D.new()
+		head.add_child(can)
+		can.basis = Basis.looking_at(target - from, Vector3.UP)
+		var body := Mk.mi(Mk.cyl(.026, .032, .085, 20, false), Mk.mat(Mk.c(0x161616), .35, .6, {"cull_off": true}), Vector3(0, 0, -.02), can)
+		body.rotation.x = PI / 2
+		body.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var lens_mat := StandardMaterial3D.new()
+		lens_mat.albedo_color = Color(.05, .04, .03)
+		lens_mat.emission_enabled = true
+		lens_mat.emission = Mk.c(0xffd2a0)
+		lens_mat.emission_energy_multiplier = .5
+		var lens := Mk.mi(Mk.disc(.024, 20), lens_mat, Vector3(0, 0, -.061), can)
+		lens.rotation.x = -PI / 2
+		var sp := SpotLight3D.new()
+		sp.light_color = Mk.c(0xffd6aa)
+		sp.light_energy = SPOT_IDLE
+		var dist := from.distance_to(target)
+		sp.spot_range = dist + 1.0
+		sp.spot_angle = clampf(rad_to_deg(atan(radius / dist)) + 3.0, 8.0, 40.0)
+		sp.spot_angle_attenuation = 2.0
+		sp.shadow_enabled = true
+		sp.position = Vector3(0, 0, -.07)
+		can.add_child(sp)
+		module_spots[k] = {"light": sp, "lens": lens_mat, "level": SPOT_IDLE}
+
+
+func _animate_spots(dt: float) -> void:
+	var main := get_parent()
+	var cur: String = main.current
+	var hov: String = main.hover_module if cur == "overview" else ""
+	for k in module_spots:
+		var s: Dictionary = module_spots[k]
+		var want := SPOT_HOVER if k == hov else (SPOT_OPEN if k == cur else SPOT_IDLE)
+		s.level = move_toward(s.level, want, dt * (9.0 if want > s.level else 4.0))
+		s.light.light_energy = s.level
+		s.lens.emission_energy_multiplier = .4 + s.level * .8
 
 
 
@@ -140,18 +196,18 @@ func _build_environment() -> void:
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Mk.c(0x403a34)
-	env.ambient_light_energy = 0.25
+	env.ambient_light_energy = 0.16
 	# éclairage indirect : la lumière rebondit sur les murs, le bois, le tapis (rendu Forward+)
 	env.sdfgi_enabled = true
 	env.sdfgi_use_occlusion = true
 	env.sdfgi_cascades = 4
 	env.sdfgi_min_cell_size = 0.05
 	env.sdfgi_bounce_feedback = 0.6
-	env.sdfgi_energy = 1.4
+	env.sdfgi_energy = 1.1
 	env.sdfgi_y_scale = Environment.SDFGI_Y_SCALE_100_PERCENT
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
-	env.tonemap_exposure = 1.25
+	env.tonemap_exposure = 1.0
 	env.tonemap_white = 12.0
 	env.ssao_enabled = true
 	env.ssao_radius = 0.45
@@ -695,7 +751,7 @@ func _build_lights() -> void:
 		bulb.rotation.x = PI
 		var sp := SpotLight3D.new()
 		sp.light_color = Mk.c(0xffdcb8)
-		sp.light_energy = 3.2
+		sp.light_energy = 1.7
 		sp.spot_range = 3.0
 		sp.spot_angle = 34.0
 		sp.spot_angle_attenuation = 1.4
@@ -723,7 +779,7 @@ func _build_lights() -> void:
 		lens.rotation.x = -PI / 2
 		var ts := SpotLight3D.new()
 		ts.light_color = Mk.c(0xffd8b0)
-		ts.light_energy = 1.1
+		ts.light_energy = .55
 		ts.spot_range = 2.6
 		ts.spot_angle = 22.0
 		ts.spot_angle_attenuation = 1.2
@@ -735,7 +791,7 @@ func _build_lights() -> void:
 	for z in [-2.95, -3.7]:
 		var ww := SpotLight3D.new()
 		ww.light_color = Mk.c(0xffcfa0)
-		ww.light_energy = 1.4
+		ww.light_energy = .5
 		ww.spot_range = 2.0
 		ww.spot_angle = 40.0
 		_aim(ww, Vector3(.35, ROOM.y - .05, z), Vector3(0, 1.2, z))
@@ -744,7 +800,7 @@ func _build_lights() -> void:
 	for x in [.25, 2.75]:
 		var lw := SpotLight3D.new()
 		lw.light_color = Mk.c(0xffd2a8)
-		lw.light_energy = 1.6
+		lw.light_energy = .9
 		lw.spot_range = 2.4
 		lw.spot_angle = 38.0
 		_aim(lw, Vector3(x, ROOM.y - .05, -.35), Vector3(x, .9, 0))
@@ -752,7 +808,7 @@ func _build_lights() -> void:
 	# remplissage doux côté caméra
 	var fill := OmniLight3D.new()
 	fill.light_color = Mk.c(0xffe0c8)
-	fill.light_energy = 1.0
+	fill.light_energy = .5
 	fill.omni_range = 6.0
 	fill.position = Vector3(2.6, 1.6, -3.2)
 	add_child(fill)
@@ -879,8 +935,6 @@ func _aim(n: Node3D, from: Vector3, to: Vector3) -> void:
 # ---------------------------------------------------------------- caméra
 ## Renvoie [position, point visé, orientation] : la caméra fixe de la scène Blender.
 func shot_pose(shot: String, cam: Camera3D, aspect: float) -> Array:
-	if shot == "chat":
-		return [cat.to_global(Vector3(.16, .3, .62)), cat.to_global(Vector3(0, .13, .06))]
 	if shot == "export":
 		return _via(export, Vector3(0, 0, .03), Vector3(0, 0, 1), Export7080.BW / 2, Export7080.BH / 2, cam, aspect, 1.12)
 	if shot == "freq":
@@ -937,10 +991,8 @@ func setup_camera(cam: Camera3D, aspect: float) -> void:
 		cam.fov = rad_to_deg(2.0 * atan(tan(CAM_YFOV / 2.0) * 16.0 / 9.0))
 
 
-## Appelé quand on change de plan : le chat regarde la machine, les modules sont prévenus.
-func on_shot(shot: String, cam: Camera3D, aspect: float) -> void:
-	if shot != "overview" and shot != "chat":
-		cat.look_at_point(shot_pose(shot, cam, aspect)[1])
+## Appelé quand on change de plan : les modules sont prévenus.
+func on_shot(shot: String, _cam: Camera3D, _aspect: float) -> void:
 	for m in modules.values():
 		if m.has_method("on_shot_changed"):
 			m.on_shot_changed(shot)
@@ -950,6 +1002,7 @@ func animate(t: float, dt: float, reduced: bool) -> void:
 	# habillage par plan (comme au cinéma) : la plante gêne le gros plan sur le Tempo
 	deco.plant.visible = get_parent().current != "tempo"
 	deco.arch_lamp.visible = get_parent().current != "export"
+	_animate_spots(dt)
 	# les enceintes de proximité restent visibles autour de l'accordeur
 	for m in modules.values():
 		m.animate(t, dt, reduced)

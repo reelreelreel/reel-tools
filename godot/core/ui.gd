@@ -14,7 +14,6 @@ const SHOTS := [
 	["analyse", "Analyse"],
 	["freq", "Fréquences"],
 	["export", "Export"],
-	["chat", "Chat"],
 ]
 const STUDIOS := [
 	["7080", "Années 70/80", true],
@@ -304,15 +303,6 @@ func _build_settings(root: Control) -> void:
 
 	# personnalisation
 	_section(v, "Personnalisation")
-	v.add_child(_label("Nom du chat", 12, .8))
-	var name_edit := LineEdit.new()
-	name_edit.placeholder_text = "Tape son nom"
-	name_edit.max_length = 12
-	name_edit.text = Store.get_v("cat_name", "")
-	name_edit.text_changed.connect(func(t: String):
-		if main.studio.cat:
-			main.studio.cat.set_cat_name(t))
-	v.add_child(name_edit)
 	v.add_child(_label("Couleur de la lampe", 12, .8))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
@@ -337,7 +327,7 @@ func _build_settings(root: Control) -> void:
 
 	# sons
 	_section(v, "Sons")
-	for bus in [["Machines", "Machines (synthé, lecture des fichiers)"], ["Ambiance", "Ambiance du studio"], ["Animal", "Le chat (ronron)"]]:
+	for bus in [["Machines", "Machines (synthé, lecture des fichiers)"], ["Ambiance", "Ambiance du studio"]]:
 		var cb := CheckButton.new()
 		cb.text = bus[1]
 		cb.focus_mode = Control.FOCUS_NONE
@@ -376,7 +366,7 @@ func _build_settings(root: Control) -> void:
 
 	# raccourcis
 	_section(v, "Raccourcis")
-	for kv in [["1 – 7", "Aller à une machine"], ["← →", "Machine précédente / suivante"], ["Échap", "Vue d'ensemble"], ["Cmd+K", "Rechercher une machine"], ["F  ·  T  ·  M", "Plein écran · Premier plan · Mini"], ["Espace", "Tap tempo (Tempo)"], ["Glisser un fichier", "Accordeur ou Analyse"]]:
+	for kv in [["1 – 6", "Aller à une machine"], ["← →", "Machine précédente / suivante"], ["Échap", "Vue d'ensemble"], ["Cmd+K", "Rechercher une machine"], ["F  ·  T  ·  M", "Plein écran · Premier plan · Mini"], ["Espace", "Tap tempo (Tempo)"], ["Glisser un fichier", "Accordeur ou Analyse"]]:
 		var h := HBoxContainer.new()
 		var k := _label(kv[0], 12, .9)
 		k.custom_minimum_size.x = 110
@@ -432,7 +422,7 @@ func mini_mode() -> void:
 
 # ---------------------------------------------------------------- sons
 func _setup_audio_buses() -> void:
-	for n in ["Machines", "Ambiance", "Animal"]:
+	for n in ["Machines", "Ambiance"]:
 		if AudioServer.get_bus_index(n) == -1:
 			AudioServer.add_bus()
 			var i := AudioServer.bus_count - 1
@@ -440,17 +430,10 @@ func _setup_audio_buses() -> void:
 			AudioServer.set_bus_send(i, "Master")
 
 
-## Range chaque lecteur audio du studio dans son bus (le chat -> Animal, le reste -> Machines).
+## Range chaque lecteur audio du studio dans le bus « Machines ».
 func route_audio(studio: Node) -> void:
 	for p in studio.find_children("*", "AudioStreamPlayer", true, false):
-		var ap := p as AudioStreamPlayer
-		var in_cat := false
-		var n: Node = ap
-		while n != null and n != studio:
-			if n == studio.cat:
-				in_cat = true
-			n = n.get_parent()
-		ap.bus = "Animal" if in_cat else "Machines"
+		(p as AudioStreamPlayer).bus = "Machines"
 
 
 func _mute_bus(n: String, mute: bool) -> void:
@@ -487,7 +470,6 @@ const KEYWORDS := {
 	"analyse": "analyse bpm tonalité tonalite key morceau prod fichier",
 	"freq": "fréquences frequences hz note synthé synthe la 440",
 	"export": "export nom fichier mix master version bounce",
-	"chat": "chat animal nom compagnon",
 }
 
 

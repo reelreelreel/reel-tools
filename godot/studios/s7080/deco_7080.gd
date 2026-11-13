@@ -443,7 +443,7 @@ func _architect_lamp() -> void:
 	Mk.mi(Mk.sphere(.022, 16, 8), Mk.glow(Mk.c(0xffc27a), 3.0), Vector3(0, .45, .35), g)
 	var sp := SpotLight3D.new()
 	sp.light_color = Mk.c(0xffc890)
-	sp.light_energy = .8
+	sp.light_energy = .6
 	sp.spot_range = 1.4
 	sp.spot_angle = 45.0
 	sp.shadow_enabled = true
@@ -476,7 +476,7 @@ func _floor_lamp() -> void:
 	var l := OmniLight3D.new()
 	l.light_color = Mk.c(0xffb870)
 	_lamp_light = l
-	l.light_energy = 1.4
+	l.light_energy = .7
 	l.omni_range = 2.6
 	l.shadow_enabled = true
 	l.position = Vector3(0, 1.42, 0)

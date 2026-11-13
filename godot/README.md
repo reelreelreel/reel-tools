@@ -43,11 +43,6 @@ taper des chiffres + Entrée → note la plus proche + cents ; curseur LA4 = dia
   dans le presse-papiers + coché « exporté » ;
 - ARCHIVES : pastille « + » = nouvelle session (l'ancienne part dans la pile) ; clic sur une fiche de la pile = la rouvrir.
 
-**Le chat** (sur son coussin, sur le retour du bureau) : il bat la mesure avec la queue et hoche la tête
-quand de la musique joue, regarde la machine qu'on ouvre, se réveille / sursaute au son, s'endort au calme.
-Clic dessus = zoom, re-clic = il ronronne. En gros plan, tape son nom (Entrée) : il s'affiche sur sa médaille
-et sur le coussin.
-
 Le BPM, la note et le dernier plan sont gardés en local (`user://reel_tools.cfg`).
 
 ## Organisation
