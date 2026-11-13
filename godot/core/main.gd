@@ -84,6 +84,9 @@ func _ready() -> void:
 	if _args.has("selftest"):
 		_selftest()
 	elif _args.has("screenshot"):
+		if _args.has("faxprint"):
+			studio.fax.on_action("send")
+			studio.fax.printed = Fax7080.PAGE_L - .0005
 		if _args.get("ui", "") == "settings":
 			ui.toggle_settings()
 		elif _args.get("ui", "") == "search":
@@ -285,7 +288,7 @@ func _key(e: InputEventKey) -> void:
 	if k == KEY_SLASH:
 		ui.open_search()
 		return
-	if k >= KEY_1 and k <= KEY_6 and not cmd:
+	if k >= KEY_1 and k <= KEY_7 and not cmd:
 		go(AppUI.SHOTS[k - KEY_1][0])
 		return
 	if k == KEY_ESCAPE:
@@ -445,6 +448,31 @@ func _selftest() -> void:
 		an.load_track("/tmp/tracks/" + f)
 		an.wait_done()
 		print("analyse ", f, " -> ", an.result.bpm.bpm, " ", an.result.bpm.alts, " ", an.result.key.best.short, " ", an.result.key.best.long)
+	# fax d'accords
+	var fx: Fax7080 = studio.fax
+	print("pick fax (plan large) -> ", _wide_pick(fx.to_global(Vector3(0, .07, 0))))
+	go("fax")
+	await get_tree().create_timer(.6).timeout
+	for nm in ["Wheel", "Sound", "Send", "Sheet"]:
+		var probe := {"Wheel": Vector3(fx._wheel_x(2), .07, .054), "Sound": Vector3(fx._key_x(3), .072, .11), "Send": Vector3(.175, .08, .143), "Sheet": Vector3(Fax7080.SHEET_X, .1, Fax7080.D / 2 - .01)}[nm] as Vector3
+		print("pick fax ", nm, " -> ", pick(cam.unproject_position(fx.to_global(probe))).action)
+	fx.on_action("send")
+	print("fax : ", ChordEngine.summary(fx.prog), " | ", fx._wheel_text(0), " ", fx._wheel_text(2), " ", fx.bpm, " BPM")
+	fx.on_press("wheel:2")
+	fx.on_drop("")
+	print("fax : tonalité +1 -> ", fx._wheel_text(2), " | ", ChordEngine.summary(fx.prog))
+	fx.on_action("sound:3")
+	fx.toggle_play()
+	var t0 := Time.get_ticks_msec()
+	while fx._render_job >= 0 and Time.get_ticks_msec() - t0 < 15000:
+		await get_tree().process_frame
+	print("fax : écoute prête en ", Time.get_ticks_msec() - t0, " ms, lecture = ", fx.player.playing)
+	fx._export_to("/tmp/fax_test.mid")
+	print("fax : midi écrit = ", FileAccess.file_exists("/tmp/fax_test.mid"), " (", FileAccess.get_file_as_bytes("/tmp/fax_test.mid").size(), " octets)")
+	fx.crumple()
+	for i in 40:
+		await get_tree().process_frame
+	print("fax : froissée -> nouvelle grille ", ChordEngine.summary(fx.prog), " | boulettes = ", fx.balls.size())
 	go("overview")
 	get_tree().quit()
 

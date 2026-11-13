@@ -33,7 +33,7 @@ const B_FLOOR := -0.78
 const B_WOOD_TOP := 0.44
 
 ## Plans : la vue 360° depuis le fauteuil, puis un gros plan par module.
-var order: Array = ["overview", "tempo", "tuner", "analyse", "freq", "export"]
+var order: Array = ["overview", "tempo", "tuner", "analyse", "freq", "export", "fax"]
 ## Modules jouables : nom -> nœud (on_action, on_drag_start, on_drag, on_wheel, on_key, animate)
 var modules := {}
 var tempo: Tempo7080
@@ -41,6 +41,7 @@ var tuner: Tuner7080
 var analyzer: Analyzer7080
 var freq: Freq7080
 var export: Export7080
+var fax: Fax7080
 var deco: Deco7080
 
 var engine: TempoEngine
@@ -106,6 +107,12 @@ func _init(e: TempoEngine) -> void:
 	export.rotation.y = PI / 2
 	add_child(export)
 	modules["export"] = export
+	# --- gauche : Fax d'accords sur le retour, façade (et feuille) vers le fauteuil
+	fax = Fax7080.new(walnut)
+	fax.position = Vector3(3.31, DESK_TOP, -1.47)
+	fax.rotation.y = -PI / 2
+	add_child(fax)
+	modules["fax"] = fax
 
 
 func _ready() -> void:
@@ -1345,6 +1352,8 @@ func shot_pose(shot: String, cam: Camera3D, aspect: float) -> Array:
 		return _via(analyzer, Vector3(0, .08, .02), Vector3(0, 1, .9), Analyzer7080.W / 2, Analyzer7080.D / 2, cam, aspect, 1.15)
 	if shot == "tuner":
 		return _via(tuner, Vector3(0, Tuner7080.H / 2, 0), Vector3(0, .25, 1), Tuner7080.W / 2, Tuner7080.H / 2, cam, aspect, 1.25)
+	if shot == "fax":
+		return _via(fax, Vector3(0, Fax7080.BASE_H, .06), Vector3(0, 1, .85), Fax7080.W / 2 + .02, Fax7080.D / 2 + .08, cam, aspect, 1.1)
 	if shot == "tempo":
 		return _via(tempo.deck, Vector3(0, 0, .0), Vector3(0, 1, .55), Tempo7080.W / 2, tempo.plen / 2, cam, aspect, 1.08)
 	if DEBUG_SHOTS.has(shot):
@@ -1361,6 +1370,7 @@ const DEBUG_SHOTS := {
 	"v_right": [-PI / 2, -.08],
 	"v_up": [.6, .55],
 	"v_window": [.05, .05],
+	"v_fax": [1.25, -.45],
 }
 
 

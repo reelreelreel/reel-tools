@@ -21,6 +21,12 @@ Tout est généré par le code : modèles 3D, textures sérigraphiées, écrans.
 | F (ou Cmd+F) | plein écran |
 | T | garder la fenêtre au premier plan (à côté du DAW) |
 
+**Module Fax d'accords** (coin compo, sur le retour) : 4 molettes STYLE / BPM / TON. / MES. (glisser,
+molette, ou clic = cran suivant), touches de son RHODES / NAPPE / PAD / GUIT. / PLUCK, ENVOI = la feuille
+s'imprime avec la grille, LECTURE = écoute en boucle (l'afficheur montre l'accord joué). La feuille :
+glisser vers le bas = la froisser (boulette par terre + nouvelle grille) ; tirer vers le haut = la détacher
+et enregistrer le fichier MIDI. Clavier : Entrée envoi, Espace lecture, N nouvelle grille, E export, 1–5 son.
+
 **Module Tempo** (section accolée à droite de la console) : clic dessus pour zoomer, puis glisser ou
 molette sur le gros potard (Maj = fin), ↑/↓, pad TAP ou Espace, sélecteur NOTE (clic, molette ou N),
 ÷2 / ×2, clic sur l'afficheur des ms (ou C) = copie de la valeur dans le presse-papiers.
