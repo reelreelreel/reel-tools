@@ -65,7 +65,7 @@ func _aspect() -> float:
 
 
 func _update_fov() -> void:
-	cam.fov = 44.0 if _aspect() < .85 else 34.0
+	studio.setup_camera(cam, _aspect())
 
 
 # ---------------------------------------------------------------- navigation
@@ -171,7 +171,10 @@ func _process(delta: float) -> void:
 	var amp := .05 if current == "overview" else .015
 	var dr := 0.0 if reduced else 1.0
 	cam.position = cam_pos + Vector3(par.x * amp + sin(t * .31) * .006 * dr, -par.y * amp * .5 + sin(t * .23) * .004 * dr, 0)
-	cam.look_at(cam_look, Vector3.UP)
+	if target.size() > 2 and not _args.has("cam"):
+		cam.basis = target[2]  # orientation exacte de la caméra Blender
+	else:
+		cam.look_at(cam_look, Vector3.UP)
 	var focus := cam.position.distance_to(cam_look)
 	var wide := current == "overview"
 	attrs.dof_blur_far_distance = focus * (1.12 if wide else 1.06)

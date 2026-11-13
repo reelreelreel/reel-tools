@@ -1,49 +1,61 @@
 class_name Studio7080
 extends Node3D
-## Studio 70/80, régie pro : long établi en bois usé, lambris + panneaux acoustiques en tissu, double vitre
-## sur la cabine de prise (floue, lumière chaude), spots au plafond, lampe d'architecte, TV cathodique orange. Vue de trois-quarts face.
+## Studio 70/80, régie pro — disposition et cadrage repris de la scène Blender de Maxime
+## (fichier_3D_perspective.glb) : pièce de 3 x 5 m, 2 m sous plafond, bureau en L contre le mur
+## à vitre (z = 0) et le mur de droite (x = 0), caméra fixe placée dans Blender. Le côté x = 3 est
+## ouvert (la caméra est derrière, comme sur un plateau de tournage).
+##
+## Ambiance (photos de référence) : bois chaud, liège / tissu texturé, lumière tungstène, moquette.
 
-const DESK_W := 3.1
-const DESK_D := 0.95
-const WALL_Z := -0.72
-const WIN := {"x": -.45, "y": .92, "w": 2.1, "h": .8}
+const ROOM := Vector3(3.0, 2.0, 5.0)        # x 0..3, y 0..2, z -5..0
+const WIN := {"x0": .545, "x1": 2.455, "y0": .909, "y1": 1.727}
+const DESK_TOP := .818
+const DESK_T := .091
+const DESKS := [  # [x0, x1, z0, z1]
+	[.591, 2.727, -1.0, 0.0],   # bureau principal contre la vitre
+	[.009, .545, -1.8, 0.0],    # retour contre le mur de droite
+]
+const WAINSCOT := 1.05                       # hauteur du lambris sur le mur de droite
+## Caméra de la scène Blender
+const CAM_POS := Vector3(3.67889142036438, 1.4983093738555908, -3.7742085456848145)
+const CAM_QUAT := Quaternion(-0.02288774773478508, 0.9423389434814453, 0.065894715487957, 0.32730957865715027)
+const CAM_YFOV := 0.5342188949841372         # radians, image 16:9
+const CAM_FOCUS := 3.4                       # distance de mise au point (le bureau)
 
-## Emplacements réservés aux futures machines : [x, z, rotY, y, inclinaison X]
-## (repris du prototype ; les machines seront redessinées et remises une par une)
-const EMPLACEMENTS := {
-	"tape": [-1.12, -.2, .28, .34 + .155, 1.2],
-	"scope": [-.42, -.32, .12, .1 + .13, 1.05],
-	"synth": [-.1, .2, .04, 0, .08],
-	"modular": [-.78, .25, .3, 0, .3],
-	"rack": [1.08, -.25, -.42, .16, 0],
-	"tt": [.95, .2, -.25, 0, 0],
-	"book": [.38, .3, -.3, 0, 0],
-}
-## Plans caméra disponibles (glisser / flèches). Pour l'instant : le plan large du décor.
+## Cabine (repère d'origine, retourné derrière la vitre)
+const BOOTH := {"x0": -2.6, "x1": 1.4, "z0": -1.14, "z1": -3.4, "ceil": 1.9}
+const BOOTH_ORIGIN := Vector3(1.05, .78, -.74)
+const B_FLOOR := -0.78
+const B_WOOD_TOP := 0.44
+
+## Plans caméra (glisser / flèches). Pour l'instant : la vue fixe de Blender.
 var order: Array = ["overview"]
 
 var engine: TempoEngine
-var lamp_g: Node3D
-var lamp: SpotLight3D
-var tv: TexLib.LiveCanvas
-var tv_t := 0.0
 var env: Environment
-var _last_screen := -1.0
+var _weave_n: Texture2D
+var _boards_tex: Texture2D
+var _wood: Material
 
 
 func _init(e: TempoEngine) -> void:
 	engine = e
 	name = "Studio7080"
 	_build_environment()
-	_build_room()
-	var cup := _build_cup()
-	cup.position = Vector3(.64, 0, .36)
-	add_child(cup)
+	_wood = Mk.mat(Mk.c(0x8a5a36), .55, 0.0, {"map": load("res://assets/textures/hardwood2_diffuse.jpg"), "clearcoat": .25, "clearcoat_rough": .5})
+	_build_floor_ceiling()
+	_build_window_wall()
+	_build_right_wall()
+	_build_back_wall()
+	_build_window()
+	_build_booth(Mk.mat(Mk.c(0x6a4a34), .7, 0.0, {"map": Mk.walnut_tex()}))
+	_build_desks()
 	_build_lights()
 
 
 func _ready() -> void:
-	_aim(lamp, lamp_g.to_global(Vector3(0, .44, .36)), Vector3(-.45, 0, .2))
+	pass
+
 
 
 # ---------------------------------------------------------------- environnement & post-traitement
@@ -59,8 +71,9 @@ func _build_environment() -> void:
 	sky.sky_material = pano
 	sky.radiance_size = Sky.RADIANCE_SIZE_256
 	env.sky = sky
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 1.2
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Mk.c(0x4a3a2e)
+	env.ambient_light_energy = 0.6
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.tonemap_exposure = 1.0
@@ -124,50 +137,14 @@ func _reflection_room() -> Image:
 	return img
 
 
-# ---------------------------------------------------------------- la pièce
-func _build_room() -> void:
-	# établi : planches miel usées
-	var wood: Texture2D = load("res://assets/textures/hardwood2_diffuse.jpg")
-	var desk_mat := Mk.mat(Mk.c(0x95663f), .7, 0.0, {"map": wood, "clearcoat": .15, "clearcoat_rough": .6, "uv_scale": Vector3(2.2, .7, 1)})
-	var dark_wood := Mk.mat(Mk.c(0x6a4a34), .7, 0.0, {"map": Mk.walnut_tex()})
-	var desk := Mk.mi(Mk.rounded_box(Vector3(DESK_W, .06, DESK_D), .01, desk_mat, 3), null, Vector3(0, -.03, -.05), self)
-	desk.name = "Desk"
-	Mk.mi(Mk.box(Vector3(DESK_W - .1, .12, .03)), dark_wood, Vector3(0, -.12, DESK_D / 2 - .1), self)
-	for sx in [-1, 1]:
-		Mk.mi(Mk.box(Vector3(.07, .72, .07)), dark_wood, Vector3(sx * (DESK_W / 2 - .1), -.42, .3), self)
-	Mk.mi(Mk.plane(ROOM_X * 2, 6), Mk.mat(Mk.c(0x1c130d), .95), Vector3(0, FLOOR_Y, 1.8), self)
-	_build_wall(dark_wood)
-	_build_window(dark_wood)
-	_build_booth(dark_wood)
-	_build_side_walls(dark_wood)
-	_build_ceiling()
-	_build_frames()
-	_build_wall_washers()
-	_build_tv()
-	_build_lamp()
-	_build_chair()
-
-
-## Lambris jusqu'à cette hauteur (monde), panneaux acoustiques en tissu au-dessus.
-const WOOD_TOP := 0.44
-const ROOM_X := 3.0
-const CEIL_Y := 2.4
-## Cabine de prise derrière la vitre
-const BOOTH := {"x0": -2.6, "x1": 1.4, "z0": -1.14, "z1": -3.4, "ceil": 1.9}
-const FLOOR_Y := -0.78
-
-var _weave_n: Texture2D
-var _boards_tex: Texture2D
-
-
 func _boards() -> Texture2D:
 	if _boards_tex == null:
 		_boards_tex = Tex.canvas(2048, 1024, func(ci, w, h):
-			ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0x2a1a10))
+			ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0x3a2414))
 			var r := Tex.rng(81)
 			for i in 40:
 				var x0 := i * 51.2
-				ci.draw_rect(Rect2(x0, 0, 49, h), Color((60 + r.randf() * 30) / 255.0, (36 + r.randf() * 18) / 255.0, (20 + r.randf() * 10) / 255.0, .55))
+				ci.draw_rect(Rect2(x0, 0, 49, h), Color((125 + r.randf() * 40) / 255.0, (72 + r.randf() * 24) / 255.0, (40 + r.randf() * 16) / 255.0, .85))
 				ci.draw_rect(Rect2(x0 + 49, 0, 2.2, h), Color(0, 0, 0, .6))
 				for k in 30:
 					var gx := x0 + r.randf() * 49.0
@@ -239,59 +216,204 @@ func _acoustic_panel(w: float, h: float, fabric: Color, seed: int, frame_mat: Ma
 const FABRICS := [0x7a4528, 0x5a3420, 0x8a4a24, 0x6b3f22]
 
 
-func _build_wall(dark_wood: Material) -> void:
-	var z := WALL_Z - .02
-	var boards := Mk.mat(Color.WHITE, .8, 0.0, {"map": _boards()})
-	var backing := Mk.mat(Mk.c(0x140c07), .95)
-	# lambris en bas, sur toute la largeur (local du mur : y = monde - .7)
-	var wood := Mk.mi(_wall_mesh([[-ROOM_X, FLOOR_Y - .7, ROOM_X, WOOD_TOP - .7]]), boards, Vector3(0, .7, z), self)
-	wood.name = "WallWood"
-	# fond sombre au-dessus, avec l'ouverture de la vitre
-	var hx0: float = WIN.x - WIN.w / 2
-	var hx1: float = WIN.x + WIN.w / 2
-	var hy0: float = WIN.y - .7 - WIN.h / 2
-	var hy1: float = WIN.y - .7 + WIN.h / 2
-	var y0 := WOOD_TOP - .7
-	var y1 := CEIL_Y - .7
-	Mk.mi(_wall_mesh([[-ROOM_X, y0, hx0, y1], [hx1, y0, ROOM_X, y1], [hx0, y0, hx1, hy0], [hx0, hy1, hx1, y1]]), backing, Vector3(0, .7, z), self)
-	# lisse en bois entre lambris et tissu
-	Mk.mi(Mk.rounded_box(Vector3(ROOM_X * 2, .045, .05), .006, dark_wood, 2), null, Vector3(0, WOOD_TOP, z + .025), self)
-	# panneaux acoustiques de part et d'autre de la vitre
-	var cols_l := [-2.66, -1.96]
-	var cols_r := [1.07, 1.83, 2.59]
-	var rows := [.72, 1.15]
-	var n := 0
-	for cx in cols_l + cols_r:
-		var w := .66 if cols_l.has(cx) else .72
-		for cy in rows:
-			var p := _acoustic_panel(w, .4, Mk.c(FABRICS[n % FABRICS.size()]), 300 + n, dark_wood)
-			p.position = Vector3(cx, cy, z)
-			add_child(p)
-			n += 1
+
+# ---------------------------------------------------------------- textures de la pièce
+func _cork_mat() -> StandardMaterial3D:
+	var tex := Tex.canvas(1024, 1024, func(ci, w, h):
+		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0x8a5c34))
+		var r := Tex.rng(77)
+		for i in 9000:
+			var c := Mk.c(0xb07a44) if r.randf() > .45 else Mk.c(0x5a3a1e)
+			c.a = .25 + r.randf() * .5
+			ci.draw_circle(Vector2(r.randf() * w, r.randf() * h), 1.5 + r.randf() * 5.0, c)
+		Tex.grime(ci, w, h, 78, 2))
+	var nt := NoiseTexture2D.new()
+	nt.width = 512
+	nt.height = 512
+	nt.seamless = true
+	nt.as_normal_map = true
+	nt.bump_strength = 6.0
+	var fn := FastNoiseLite.new()
+	fn.frequency = .08
+	fn.fractal_octaves = 3
+	nt.noise = fn
+	var m := Mk.mat(Color.WHITE, .95, 0.0, {"map": tex, "normal": nt, "normal_scale": .8})
+	return m
 
 
-func _build_window(dark_wood: Material) -> void:
-	var depth := BOOTH.z0 - WALL_Z  # négatif : épaisseur du mur double
-	var d := absf(depth)
-	var zc := WALL_Z - d / 2.0
-	# tableau (épaisseur du mur double) en bois
-	for b in [[WIN.x, WIN.y + WIN.h / 2 + .04, WIN.w + .16, .08], [WIN.x, WIN.y - WIN.h / 2 - .04, WIN.w + .16, .08]]:
-		Mk.mi(Mk.box(Vector3(b[2], b[3], d)), dark_wood, Vector3(b[0], b[1], zc), self)
-	for x in [WIN.x - WIN.w / 2 - .04, WIN.x + WIN.w / 2 + .04]:
-		Mk.mi(Mk.box(Vector3(.08, WIN.h + .16, d)), dark_wood, Vector3(x, WIN.y, zc), self)
-	# appui de fenêtre qui dépasse côté régie
-	Mk.mi(Mk.rounded_box(Vector3(WIN.w + .3, .035, .16), .008, dark_wood, 2), null, Vector3(WIN.x, WIN.y - WIN.h / 2 - .08, WALL_Z + .06), self)
-	# double vitrage : vitre côté régie inclinée (anti-reflets), vitre côté cabine droite
-	var glass := Mk.mat(Mk.c(0x0c0c0c), .04, 0.0, {"alpha": .14, "clearcoat": 1.0})
-	var g1 := Mk.mi(Mk.quad(WIN.w, WIN.h), glass, Vector3(WIN.x, WIN.y, WALL_Z - .06), self)
-	g1.rotation.x = -.09
-	Mk.mi(Mk.quad(WIN.w, WIN.h), glass, Vector3(WIN.x, WIN.y, BOOTH.z0 + .04), self)
+func _carpet_mat() -> StandardMaterial3D:
+	var tex := Tex.canvas(1024, 1024, func(ci, w, h):
+		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0x4a2a16))
+		var r := Tex.rng(91)
+		for i in 20000:
+			var c := Mk.c(0x6e4020) if r.randf() > .5 else Mk.c(0x2e1a0e)
+			c.a = .4
+			ci.draw_rect(Rect2(r.randf() * w, r.randf() * h, 2, 2), c)
+		Tex.grime(ci, w, h, 92, 3))
+	var nt := NoiseTexture2D.new()
+	nt.width = 512
+	nt.height = 512
+	nt.seamless = true
+	nt.as_normal_map = true
+	nt.bump_strength = 4.0
+	var fn := FastNoiseLite.new()
+	fn.frequency = .25
+	nt.noise = fn
+	var m := Mk.mat(Color.WHITE, 1.0, 0.0, {"map": tex, "normal": nt, "normal_scale": .6})
+	m.uv1_scale = Vector3(3, 3, 1)
+	return m
+
+
+# ---------------------------------------------------------------- pièce
+func _build_floor_ceiling() -> void:
+	var fl := Mk.mi(Mk.plane(5.0, 6.5), _carpet_mat(), Vector3(2.0, 0, -2.6), self)
+	fl.name = "Floor"
+	var ceil := Mk.mi(Mk.plane(5.0, 6.5), Mk.mat(Mk.c(0x1a120c), .9), Vector3(2.0, ROOM.y, -2.6), self)
+	ceil.rotation.x = PI
+	ceil.name = "Ceiling"
+	# plinthe sombre au pied des murs
+	Mk.mi(Mk.box(Vector3(.02, .1, ROOM.z)), Mk.mat(Mk.c(0x1a100a), .6), Vector3(.01, .05, -ROOM.z / 2), self)
+	Mk.mi(Mk.box(Vector3(ROOM.x, .1, .02)), Mk.mat(Mk.c(0x1a100a), .6), Vector3(ROOM.x / 2, .05, -.01), self)
+
+
+## Mur à vitre (z = 0, face vers -Z) : lambris de bois vertical sur toute la hauteur.
+func _build_window_wall() -> void:
+	var boards := Mk.mat(Mk.c(0xd8a070), .7, 0.0, {"map": _boards(), "clearcoat": .15})
+	var w := Node3D.new()
+	w.name = "WindowWall"
+	w.rotation.y = PI  # repère local : x = -x monde, normale +Z = -Z monde
+	add_child(w)
+	var X0 := -ROOM.x
+	var hx0: float = -WIN.x1
+	var hx1: float = -WIN.x0
+	var rects := [[X0, 0, hx0, ROOM.y], [hx1, 0, 0, ROOM.y], [hx0, 0, hx1, WIN.y0], [hx0, WIN.y1, hx1, ROOM.y]]
+	Mk.mi(_wall_mesh(rects, 3.0, 2.0), boards, Vector3.ZERO, w)
+
+
+## Mur de droite (x = 0, face vers +X) : lambris en bas, liège / tissu texturé au-dessus.
+func _build_right_wall() -> void:
+	var w := Node3D.new()
+	w.name = "RightWall"
+	w.rotation.y = PI / 2  # local x = -z monde
+	add_child(w)
+	var boards := Mk.mat(Mk.c(0xd8a070), .7, 0.0, {"map": _boards(), "clearcoat": .15})
+	Mk.mi(_wall_mesh([[0, 0, ROOM.z, WAINSCOT]], 3.0, 2.0), boards, Vector3.ZERO, w)
+	var cork := _cork_mat()
+	cork.uv1_scale = Vector3(2.5, 1, 1)
+	Mk.mi(_wall_mesh([[0, WAINSCOT, ROOM.z, ROOM.y]], ROOM.z, ROOM.y - WAINSCOT), cork, Vector3.ZERO, w)
+	# lisse en bois entre lambris et liège
+	Mk.mi(Mk.rounded_box(Vector3(ROOM.z, .05, .035), .006, _wood, 2), null, Vector3(ROOM.z / 2, WAINSCOT, .017), w)
+	# corniche en bois sous le plafond
+	Mk.mi(Mk.rounded_box(Vector3(ROOM.z, .07, .05), .006, _wood, 2), null, Vector3(ROOM.z / 2, ROOM.y - .035, .025), w)
+
+
+func _build_back_wall() -> void:
+	var w := Node3D.new()
+	w.name = "BackWall"
+	w.position = Vector3(0, 0, -ROOM.z)
+	add_child(w)
+	Mk.mi(_wall_mesh([[0, 0, ROOM.x + 1.0, ROOM.y]], 3.0, 2.0), Mk.mat(Mk.c(0xd8a070), .7, 0.0, {"map": _boards()}), Vector3.ZERO, w)
+
+
+## Vitre : tableau épais en bois, double vitrage (vitre côté régie inclinée), appui.
+func _build_window() -> void:
+	var d := .4
+	var cx: float = (WIN.x0 + WIN.x1) / 2
+	var cy: float = (WIN.y0 + WIN.y1) / 2
+	var ww: float = WIN.x1 - WIN.x0
+	var wh: float = WIN.y1 - WIN.y0
+	var frame := Mk.mat(Mk.c(0x5a3a22), .6, 0.0, {"map": Mk.walnut_tex()})
+	# tableau (épaisseur du mur double)
+	Mk.mi(Mk.box(Vector3(ww, .02, d)), frame, Vector3(cx, WIN.y1 + .01, d / 2), self)
+	Mk.mi(Mk.box(Vector3(ww, .02, d)), frame, Vector3(cx, WIN.y0 - .01, d / 2), self)
+	for x in [WIN.x0 - .01, WIN.x1 + .01]:
+		Mk.mi(Mk.box(Vector3(.02, wh, d)), frame, Vector3(x, cy, d / 2), self)
+	# encadrement côté régie
+	var t := .07
+	Mk.mi(Mk.rounded_box(Vector3(ww + 2 * t, t, .04), .008, frame, 2), null, Vector3(cx, WIN.y1 + t / 2, -.02), self)
+	Mk.mi(Mk.rounded_box(Vector3(ww + 2 * t, t, .04), .008, frame, 2), null, Vector3(cx, WIN.y0 - t / 2 + .02, -.02), self)
+	for x in [WIN.x0 - t / 2, WIN.x1 + t / 2]:
+		Mk.mi(Mk.rounded_box(Vector3(t, wh + 2 * t, .04), .008, frame, 2), null, Vector3(x, cy, -.02), self)
+	var glass := Mk.mat(Mk.c(0x0c0c0c), .04, 0.0, {"alpha": .12, "clearcoat": 1.0, "cull_off": true})
+	var g1 := Mk.mi(Mk.quad(ww, wh), glass, Vector3(cx, cy, .06), self)
+	g1.rotation.x = .09
+	Mk.mi(Mk.quad(ww, wh), glass, Vector3(cx, cy, d - .03), self)
+
+
+## Bureau en L : plateau en bois épais, joues et voile de fond.
+func _build_desks() -> void:
+	var dark := Mk.mat(Mk.c(0x24160d), .6)
+	for dsk in DESKS:
+		var x0: float = dsk[0]
+		var x1: float = dsk[1]
+		var z0: float = dsk[2]
+		var z1: float = dsk[3]
+		var top := Mk.mi(Mk.rounded_box(Vector3(x1 - x0, DESK_T, z1 - z0), .012, _wood, 3), null, Vector3((x0 + x1) / 2, DESK_TOP - DESK_T / 2, (z0 + z1) / 2), self)
+		top.name = "Desk"
+		var h := DESK_TOP - DESK_T
+		# voile de fond contre le mur
+		if z1 == 0.0 and x0 > .1:
+			Mk.mi(Mk.box(Vector3(x1 - x0 - .04, h, .02)), dark, Vector3((x0 + x1) / 2, h / 2, -.04), self)
+		else:
+			Mk.mi(Mk.box(Vector3(.02, h, z1 - z0 - .04)), dark, Vector3(x0 + .04, h / 2, (z0 + z1) / 2), self)
+	# joues en bois
+	Mk.mi(Mk.rounded_box(Vector3(.04, DESK_TOP - DESK_T, .98), .006, _wood, 2), null, Vector3(2.70, (DESK_TOP - DESK_T) / 2, -.5), self)
+	Mk.mi(Mk.rounded_box(Vector3(.53, DESK_TOP - DESK_T, .04), .006, _wood, 2), null, Vector3(.28, (DESK_TOP - DESK_T) / 2, -1.77), self)
+
+
+# ---------------------------------------------------------------- lumières
+func _build_lights() -> void:
+	# spots encastrés au plafond (lumière tungstène)
+	var can_mat := Mk.glow(Mk.c(0xffc68a), 5.0)
+	var trim := Mk.mat(Mk.c(0x2a2420), .4, .6)
+	for p in [Vector3(1.0, 0, -.55), Vector3(2.1, 0, -.55), Vector3(.3, 0, -1.2), Vector3(1.6, 0, -2.4), Vector3(.5, 0, -3.4)]:
+		var ring := Mk.mi(Mk.cyl(.05, .05, .01, 24), trim, Vector3(p.x, ROOM.y - .005, p.z), self)
+		ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var bulb := Mk.mi(Mk.disc(.035, 24), can_mat, Vector3(p.x, ROOM.y - .011, p.z), self)
+		bulb.rotation.x = PI
+		var sp := SpotLight3D.new()
+		sp.light_color = Mk.c(0xffc890)
+		sp.light_energy = 3.2
+		sp.spot_range = 3.0
+		sp.spot_angle = 34.0
+		sp.spot_angle_attenuation = 1.4
+		sp.shadow_enabled = true
+		sp.light_volumetric_fog_energy = .6
+		_aim(sp, Vector3(p.x, ROOM.y - .02, p.z), Vector3(p.x - .05, 0, p.z + .05))
+		add_child(sp)
+	# rasants sur le liège du mur de droite
+	for z in [-2.2, -3.4]:
+		var ww := SpotLight3D.new()
+		ww.light_color = Mk.c(0xffa860)
+		ww.light_energy = 1.4
+		ww.spot_range = 2.0
+		ww.spot_angle = 40.0
+		_aim(ww, Vector3(.35, ROOM.y - .05, z), Vector3(0, 1.2, z))
+		add_child(ww)
+	# rasants sur le lambris de part et d'autre de la vitre
+	for x in [.25, 2.75]:
+		var lw := SpotLight3D.new()
+		lw.light_color = Mk.c(0xffc080)
+		lw.light_energy = 1.6
+		lw.spot_range = 2.4
+		lw.spot_angle = 38.0
+		_aim(lw, Vector3(x, ROOM.y - .05, -.35), Vector3(x, .9, 0))
+		add_child(lw)
+	# remplissage doux côté caméra
+	var fill := OmniLight3D.new()
+	fill.light_color = Mk.c(0xffc8a0)
+	fill.light_energy = 1.0
+	fill.omni_range = 6.0
+	fill.position = Vector3(2.6, 1.6, -3.2)
+	add_child(fill)
 
 
 # ---------------------------------------------------------------- cabine de prise (vue floue à travers la vitre)
 func _build_booth(dark_wood: Material) -> void:
 	var b := Node3D.new()
 	b.name = "Booth"
+	# la cabine est construite dans son propre repère puis retournée derrière la vitre (côté +Z)
+	b.transform = Transform3D(Basis(Vector3.UP, PI), BOOTH_ORIGIN)
 	add_child(b)
 	var x0: float = BOOTH.x0
 	var x1: float = BOOTH.x1
@@ -303,7 +425,7 @@ func _build_booth(dark_wood: Material) -> void:
 	var cx := (x0 + x1) / 2.0
 	# parquet + tapis
 	var wood: Texture2D = load("res://assets/textures/hardwood2_diffuse.jpg")
-	Mk.mi(Mk.plane(w, dz), Mk.mat(Mk.c(0x6a4a30), .7, 0.0, {"map": wood, "uv_scale": Vector3(2, 1, 1)}), Vector3(cx, FLOOR_Y, (z0 + z1) / 2), b)
+	Mk.mi(Mk.plane(w, dz), Mk.mat(Mk.c(0x6a4a30), .7, 0.0, {"map": wood, "uv_scale": Vector3(2, 1, 1)}), Vector3(cx, B_FLOOR, (z0 + z1) / 2), b)
 	var rug := Tex.canvas(512, 384, func(ci, rw, rh):
 		ci.draw_rect(Rect2(0, 0, rw, rh), Mk.c(0x5a1612))
 		ci.draw_rect(Rect2(18, 18, rw - 36, rh - 36), Mk.c(0x2a0d0a))
@@ -313,14 +435,14 @@ func _build_booth(dark_wood: Material) -> void:
 			var p := Vector2(60 + r.randf() * (rw - 120), 60 + r.randf() * (rh - 120))
 			ci.draw_circle(p, 4 + r.randf() * 10, Color(.85, .6, .3, .25))
 		Tex.grime(ci, rw, rh, 13, 2))
-	Mk.mi(Mk.rounded_box(Vector3(1.8, .01, 1.3), .004, Mk.mat(Color.WHITE, .98, 0.0, {"map": rug})), null, Vector3(-.5, FLOOR_Y + .005, -2.25), b)
+	Mk.mi(Mk.rounded_box(Vector3(1.8, .01, 1.3), .004, Mk.mat(Color.WHITE, .98, 0.0, {"map": rug})), null, Vector3(-.5, B_FLOOR + .005, -2.25), b)
 	# murs : lambris + tissu chaud
 	var boards := Mk.mat(Color.WHITE, .8, 0.0, {"map": _boards()})
-	var back := Mk.mi(_wall_mesh([[-w / 2, FLOOR_Y, w / 2, cy]], 6.0, 3.4), Mk.mat(Mk.c(0x1a0f08), .95), Vector3(cx, 0, z1), b)
+	var back := Mk.mi(_wall_mesh([[-w / 2, B_FLOOR, w / 2, cy]], 6.0, 3.4), Mk.mat(Mk.c(0x1a0f08), .95), Vector3(cx, 0, z1), b)
 	back.name = "BoothBack"
-	Mk.mi(_wall_mesh([[-w / 2, FLOOR_Y, w / 2, WOOD_TOP - .1]]), boards, Vector3(cx, 0, z1 + .005), b)
+	Mk.mi(_wall_mesh([[-w / 2, B_FLOOR, w / 2, B_WOOD_TOP - .1]]), boards, Vector3(cx, 0, z1 + .005), b)
 	for side in [[x0, PI / 2], [x1, -PI / 2]]:
-		var sw := Mk.mi(_wall_mesh([[-dz / 2, FLOOR_Y, dz / 2, cy]]), Mk.mat(Mk.c(0x1a0f08), .95), Vector3(side[0], 0, (z0 + z1) / 2), b)
+		var sw := Mk.mi(_wall_mesh([[-dz / 2, B_FLOOR, dz / 2, cy]]), Mk.mat(Mk.c(0x1a0f08), .95), Vector3(side[0], 0, (z0 + z1) / 2), b)
 		sw.rotation.y = side[1]
 	Mk.mi(Mk.plane(w, dz), Mk.mat(Mk.c(0x0d0805), .95, 0.0, {"cull_off": true}), Vector3(cx, cy, (z0 + z1) / 2), b)
 	var warm := [0x8a5a2a, 0x6b3a1f, 0x9a6a30]
@@ -332,7 +454,7 @@ func _build_booth(dark_wood: Material) -> void:
 	var chrome := Mk.chrome_mat()
 	var black := Mk.mat(Mk.c(0x111111), .4, .3)
 	var mic := Node3D.new()
-	mic.position = Vector3(-.45, FLOOR_Y, -2.05)
+	mic.position = Vector3(-.45, B_FLOOR, -2.05)
 	b.add_child(mic)
 	Mk.mi(Mk.cyl(.13, .14, .02, 32), black, Vector3(0, .01, 0), mic)
 	Mk.mi(Mk.cyl(.011, .011, 1.42, 12), black, Vector3(0, .72, 0), mic)
@@ -349,7 +471,7 @@ func _build_booth(dark_wood: Material) -> void:
 	hp.rotation.y = PI / 2
 	# tabouret
 	var stool := Node3D.new()
-	stool.position = Vector3(.15, FLOOR_Y, -2.55)
+	stool.position = Vector3(.15, B_FLOOR, -2.55)
 	b.add_child(stool)
 	Mk.mi(Mk.cyl(.18, .17, .05, 32), Mk.mat(Mk.c(0x2a1a12), .6), Vector3(0, .72, 0), stool)
 	for i in 4:
@@ -358,7 +480,7 @@ func _build_booth(dark_wood: Material) -> void:
 		leg.rotation = Vector3(sin(a) * .12, 0, -cos(a) * .12)
 	# ampli guitare
 	var amp := Node3D.new()
-	amp.position = Vector3(.85, FLOOR_Y, -3.0)
+	amp.position = Vector3(.85, B_FLOOR, -3.0)
 	amp.rotation.y = -.35
 	b.add_child(amp)
 	Mk.mi(Mk.rounded_box(Vector3(.55, .45, .26), .015, Mk.mat(Mk.c(0x161412), .7)), null, Vector3(0, .225, 0), amp)
@@ -366,7 +488,7 @@ func _build_booth(dark_wood: Material) -> void:
 	Mk.mi(Mk.quad(.48, .06), Mk.mat(Mk.c(0x9a968f), .4, .8), Vector3(0, .39, .131), amp)
 	# lampadaire chaud : la vraie source de lumière de la cabine
 	var lampe := Node3D.new()
-	lampe.position = Vector3(-1.95, FLOOR_Y, -2.95)
+	lampe.position = Vector3(-1.95, B_FLOOR, -2.95)
 	b.add_child(lampe)
 	Mk.mi(Mk.cyl(.12, .13, .02, 24), black, Vector3(0, .01, 0), lampe)
 	Mk.mi(Mk.cyl(.01, .01, 1.5, 8), Mk.mat(Mk.c(0x8a6a3a), .35, 1.0), Vector3(0, .76, 0), lampe)
@@ -394,198 +516,8 @@ func _build_booth(dark_wood: Material) -> void:
 	sp.spot_range = 3.0
 	sp.spot_angle = 28.0
 	sp.spot_angle_attenuation = 1.5
-	_aim(sp, Vector3(-.45, cy - .05, -2.0), Vector3(-.45, FLOOR_Y, -2.1))
+	_aim(sp, Vector3(-.45, cy - .05, -2.0), Vector3(-.45, B_FLOOR, -2.1))
 	b.add_child(sp)
-
-
-# ---------------------------------------------------------------- murs latéraux et plafond de la régie
-func _build_side_walls(dark_wood: Material) -> void:
-	var boards := Mk.mat(Color.WHITE, .8, 0.0, {"map": _boards()})
-	var backing := Mk.mat(Mk.c(0x140c07), .95)
-	var z0 := WALL_Z - .02
-	var z1 := 4.5
-	var wl := z1 - z0
-	for s in [-1, 1]:
-		var wall := Node3D.new()
-		wall.position = Vector3(s * ROOM_X, 0, (z0 + z1) / 2)
-		wall.rotation.y = -s * PI / 2
-		add_child(wall)
-		Mk.mi(_wall_mesh([[-wl / 2, FLOOR_Y, wl / 2, WOOD_TOP]]), boards, Vector3.ZERO, wall)
-		Mk.mi(_wall_mesh([[-wl / 2, WOOD_TOP, wl / 2, CEIL_Y]]), backing, Vector3.ZERO, wall)
-		Mk.mi(Mk.rounded_box(Vector3(wl, .045, .05), .006, dark_wood, 2), null, Vector3(0, WOOD_TOP, .025), wall)
-		for i in 5:
-			# u le long du mur : depuis le fond (côté mur du fond) vers l'avant
-			var u := -wl / 2 + .5 + i * .8
-			var lx := u if s > 0 else -u
-			for cy in [.8, 1.5]:
-				var p := _acoustic_panel(.72, .62, Mk.c(FABRICS[(i + int(cy * 2)) % FABRICS.size()]), 500 + i * 3 + int(cy * 10), dark_wood)
-				p.position = Vector3(lx, cy, 0)
-				wall.add_child(p)
-	Mk.mi(Mk.plane(ROOM_X * 2, z1 - z0), Mk.mat(Mk.c(0x0e0906), .95, 0.0, {"cull_off": true}), Vector3(0, CEIL_Y, (z0 + z1) / 2), self)
-
-
-# ---------------------------------------------------------------- disques d'or encadrés
-## Spots rasants sur les panneaux du mur du fond (éclairage d'ambiance de la régie).
-func _build_wall_washers() -> void:
-	for x in [-2.3, 1.45, 2.25]:
-		var sp := SpotLight3D.new()
-		sp.light_color = Mk.c(0xffa860)
-		sp.light_energy = 1.6
-		sp.spot_range = 2.2
-		sp.spot_angle = 35.0
-		sp.spot_angle_attenuation = 1.3
-		sp.light_volumetric_fog_energy = 0.4
-		_aim(sp, Vector3(x, 1.36, WALL_Z + .45), Vector3(x, .55, WALL_Z))
-		add_child(sp)
-
-
-func _build_frames() -> void:
-	var discs := [[1.45, .935, Mk.c(0xd4a838)], [2.21, .935, Mk.c(0xc8c8cc)]]
-	for d in discs:
-		var g := Node3D.new()
-		g.position = Vector3(d[0], d[1], WALL_Z + .1)
-		add_child(g)
-		Mk.mi(Mk.rounded_box(Vector3(.36, .44, .03), .004, Mk.mat(Mk.c(0x0b0908), .35, 0.0, {"clearcoat": .6})), null, Vector3.ZERO, g)
-		Mk.mi(Mk.quad(.32, .4), Mk.mat(Mk.c(0x1a1512), .9), Vector3(0, 0, .0155), g)
-		var disc := Mk.mi(Mk.cyl(.12, .12, .003, 64), Mk.mat(d[2], .22, 1.0), Vector3(0, .04, .018), g)
-		disc.rotation.x = PI / 2
-		var lab := Mk.mi(Mk.cyl(.04, .04, .0034, 32), Mk.mat(Mk.c(0xb3241a), .6), Vector3(0, .04, .0182), g)
-		lab.rotation.x = PI / 2
-		Mk.mi(Mk.quad(.14, .035), Mk.mat(Mk.c(0xc9b27a), .35, .9), Vector3(0, -.15, .017), g)
-		Mk.mi(Mk.quad(.32, .4), Mk.mat(Color.WHITE, .03, 0.0, {"alpha": .1, "clearcoat": 1.0}), Vector3(0, 0, .03), g)
-
-
-func _build_ceiling() -> void:
-	Mk.mi(Mk.box(Vector3(4.2, .12, .5)), Mk.mat(Mk.c(0x1b120b), .8), Vector3(.1, 1.4, -.48), self)
-	var bulb_mesh := Mk.disc(.025, 24)
-	var bulb_mat := Mk.glow(Mk.c(0xffc68a), 6.0)
-	for x in [-1.35, -.65, .05, .75, 1.45]:
-		var b := Mk.mi(bulb_mesh, bulb_mat, Vector3(x, 1.338, -.3), self)
-		b.rotation.x = PI
-		var sp := SpotLight3D.new()
-		sp.light_color = Mk.c(0xffb36b)
-		sp.light_energy = 2.2
-		sp.spot_range = 3.2
-		sp.spot_angle = rad_to_deg(.55)
-		sp.spot_angle_attenuation = 1.6
-		sp.spot_attenuation = 1.2
-		sp.shadow_enabled = absf(x) < 1.0
-		sp.light_volumetric_fog_energy = 1.0
-		_aim(sp, Vector3(x, 1.32, -.3), Vector3(x * .9, 0, .05))
-		add_child(sp)
-
-
-func _build_tv() -> void:
-	var g := Node3D.new()
-	g.name = "TV"
-	Mk.mi(Mk.rounded_box(Vector3(.52, .42, .44), .03, Mk.mat(Mk.c(0xc8742a), .45, 0.0, {"clearcoat": .5, "clearcoat_rough": .3}), 5), null, Vector3(0, .21, 0), g)
-	Mk.mi(Mk.rounded_box(Vector3(.4, .32, .02), .01, Mk.mat(Mk.c(0x9a9690), .4, .6), 4), null, Vector3(-.04, .21, .215), g)
-	tv = Tex.live(512, 400, func(ci, w, h):
-		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0x06121a))
-		var t := tv_t
-		var y := 0
-		while y < 400:
-			var a := .25 + .2 * sin(y * .07 + t * 3) + (.5 if absf(fmod(y + t * 60.0, 400.0) - 200.0) < 18.0 else 0.0)
-			ci.draw_rect(Rect2(30 + sin(y * .3 + t) * 4, y, 450, 1.6), Color(.59, .86, 1, a * .55))
-			y += 3)
-	Mk.mi(Mk.quad(.35, .27), Mk.glow(Color.WHITE, 1.8, tv.texture), Vector3(-.04, .21, .2265), g)
-	for i in 3:
-		var holder := Node3D.new()
-		holder.rotation.x = PI / 2
-		holder.position = Vector3(.205, .32 - i * .06, .22)
-		holder.add_child(Mk.knob(.012, .012))
-		g.add_child(holder)
-	g.position = Vector3(.22, 0, -.35)
-	g.rotation.y = -.12
-	add_child(g)
-	var glow_tv := OmniLight3D.new()
-	glow_tv.light_color = Mk.c(0x9fd8ff)
-	glow_tv.light_energy = .5
-	glow_tv.omni_range = 1.2
-	glow_tv.position = Vector3(.2, .25, -.05)
-	add_child(glow_tv)
-	var kbd := Mk.mi(Mk.rounded_box(Vector3(.42, .018, .14), .004, Mk.mat(Mk.c(0xd8d2c4), .5), 2), null, Vector3(.42, .009, .05), self)
-	kbd.rotation.y = -.1
-
-
-func _build_lamp() -> void:
-	lamp_g = Node3D.new()
-	lamp_g.name = "Lamp"
-	var lm := Mk.mat(Mk.c(0x1a1a1a), .4, 0.0, {"clearcoat": .4})
-	Mk.mi(Mk.cyl(.07, .08, .025, 40), lm, Vector3(0, .012, 0), lamp_g)
-	var a1 := Mk.mi(Mk.cyl(.007, .007, .5, 12), Mk.chrome_mat(), Vector3(0, .26, 0), lamp_g)
-	a1.rotation.x = .12
-	var a2 := Mk.mi(Mk.cyl(.007, .007, .36, 12), Mk.chrome_mat(), Vector3(0, .5, .16), lamp_g)
-	a2.rotation.x = 1.25
-	var shade := Mk.mi(Mk.cyl(0.0, .07, .12, 40, false), Mk.mat(Mk.c(0x151515), .35, 0.0, {"cull_off": true}), Vector3(0, .48, .34), lamp_g)
-	shade.rotation.x = -.5
-	Mk.mi(Mk.sphere(.025, 20, 12), Mk.glow(Mk.c(0xffc27a), 2.2), Vector3(0, .45, .35), lamp_g)
-	lamp_g.position = Vector3(-.72, 0, -.42)
-	lamp_g.rotation.y = .25
-	add_child(lamp_g)
-
-
-func _build_chair() -> void:
-	var chair := Node3D.new()
-	chair.name = "Chair"
-	var seat_m := Mk.mat(Mk.c(0x1c1813), .88)
-	Mk.mi(Mk.rounded_box(Vector3(.5, .08, .48), .03, seat_m, 4), null, Vector3(0, -.27, 0), chair)
-	var back := Mk.mi(Mk.rounded_box(Vector3(.48, .55, .07), .03, seat_m, 4), null, Vector3(0, -.02, .27), chair)
-	back.rotation.x = -.12
-	var arm_mesh := Mk.torus_arc(.14, .012, PI, 24, 8)
-	for s in [-1, 1]:
-		var arm := Mk.mi(arm_mesh, Mk.chrome_mat(), Vector3(s * .26, -.2, .05), chair)
-		arm.rotation.y = PI / 2
-	Mk.mi(Mk.cyl(.025, .025, .4, 16), Mk.chrome_mat(), Vector3(0, -.5, 0), chair)
-	var lm := Mk.mat(Mk.c(0x1a1a1a), .4, 0.0, {"clearcoat": .4})
-	for i in 5:
-		var a := i * 1.2566
-		var leg := Mk.mi(Mk.box(Vector3(.04, .03, .32)), lm, Vector3(sin(a) * .16, -.72, cos(a) * .16), chair)
-		leg.rotation.y = a
-	chair.position = Vector3(1.72, 0, .82)
-	chair.rotation.y = -.9
-	add_child(chair)
-
-
-func _build_cup() -> Node3D:
-	var cup := Node3D.new()
-	cup.name = "Cup"
-	var prof := [[0, 0], [.034, 0], [.038, .005], [.04, .09], [.037, .09], [.035, .008], [0, .008]]
-	Mk.mi(Mk.lathe(prof, 64), Mk.mat(Mk.c(0x1b1b1d), .25, 0.0, {"clearcoat": .9}), Vector3.ZERO, cup)
-	var coffee := Mk.mi(Mk.disc(.035, 48), Mk.mat(Mk.c(0x1a0d05), .1, 0.0, {"clearcoat": 1.0}), Vector3(0, .075, 0), cup)
-	coffee.name = "Coffee"
-	return cup
-
-
-# ---------------------------------------------------------------- lumières
-func _build_lights() -> void:
-	lamp = SpotLight3D.new()
-	lamp.name = "LampLight"
-	lamp.light_color = Mk.c(0xffa456)
-	lamp.light_energy = 1.2
-	lamp.spot_range = 3.0
-	lamp.spot_angle = rad_to_deg(.9)
-	lamp.spot_angle_attenuation = 1.4
-	lamp.spot_attenuation = 1.0
-	lamp.shadow_enabled = true
-	lamp.shadow_blur = 1.5
-	lamp.light_size = 0.04
-	add_child(lamp)
-	var warm := OmniLight3D.new()
-	warm.light_color = Mk.c(0xffa060)
-	warm.light_energy = .8
-	warm.omni_range = 6.0
-	warm.omni_attenuation = 1.6
-	warm.position = Vector3(.2, 1.1, 1.4)
-	add_child(warm)
-	var cold := SpotLight3D.new()
-	cold.light_color = Mk.c(0x8a9cc0)
-	cold.light_energy = 1.2
-	cold.spot_range = 4.0
-	cold.spot_angle = rad_to_deg(.9)
-	_aim(cold, Vector3(-.4, 1.1, -1.2), Vector3(0, 0, .3))
-	add_child(cold)
-
 
 
 ## Oriente une lumière (le studio est à l'origine : repère local = monde).
@@ -593,32 +525,23 @@ func _aim(n: Node3D, from: Vector3, to: Vector3) -> void:
 	n.transform = Transform3D(Basis.looking_at(to - from, Vector3.UP), from)
 
 
-# ---------------------------------------------------------------- plans caméra
-## Renvoie [position, point visé] pour un plan.
-func shot_pose(_shot: String, cam: Camera3D, aspect: float) -> Array:
-	var tall := aspect < .85
-	var look := Vector3(-.05, .55 if tall else .45, -.25)
-	var dir := Vector3(-.15 if tall else -.3, .4 if tall else .3, 1).normalized()
-	var d := _fit(cam, aspect, 1.4 if tall else 1.75, 1.0 if tall else .95) * 1.04
-	return [look + dir * d, look]
+
+# ---------------------------------------------------------------- caméra
+## Renvoie [position, point visé, orientation] : la caméra fixe de la scène Blender.
+func shot_pose(_shot: String, _cam: Camera3D, _aspect: float) -> Array:
+	var b := Basis(CAM_QUAT)
+	return [CAM_POS, CAM_POS - b.z * CAM_FOCUS, b]
 
 
-func _fit(cam: Camera3D, aspect: float, half_w: float, half_h: float) -> float:
-	var v := tan(deg_to_rad(cam.fov) / 2.0)
-	return maxf(half_h / v, half_w / (v * aspect))
+## Réglage d'objectif : on garde le champ horizontal de Blender quand la fenêtre est plus étroite que 16:9.
+func setup_camera(cam: Camera3D, aspect: float) -> void:
+	if aspect >= 16.0 / 9.0:
+		cam.keep_aspect = Camera3D.KEEP_HEIGHT
+		cam.fov = rad_to_deg(CAM_YFOV)
+	else:
+		cam.keep_aspect = Camera3D.KEEP_WIDTH
+		cam.fov = rad_to_deg(2.0 * atan(tan(CAM_YFOV / 2.0) * 16.0 / 9.0))
 
 
-func _via(obj: Node3D, local: Vector3, n: Vector3, hw: float, hh: float, cam: Camera3D, aspect: float, m := 1.12) -> Array:
-	var c := obj.to_global(local)
-	var nn := (obj.global_basis * n).normalized()
-	return [c + nn * _fit(cam, aspect, hw * m, hh * m), c]
-
-
-# ---------------------------------------------------------------- animation
-func animate(t: float, _dt: float, reduced: bool) -> void:
-	if reduced:
-		return
-	if t - _last_screen > 1.0 / 30.0:
-		_last_screen = t
-		tv_t = t
-		tv.redraw()
+func animate(_t: float, _dt: float, _reduced: bool) -> void:
+	pass
