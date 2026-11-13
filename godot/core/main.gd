@@ -2,7 +2,8 @@ extends Node3D
 ## REEL'S TOOLS — point d'entrée : monte le studio, la caméra, et gère clic / glisser / clavier.
 ##
 ## Modules : clic sur une machine = zoom ; ses commandes ont des actions « module:commande ».
-## Raccourcis : Échap = plan large · ←/→ ou PageUp/PageDown = plan précédent/suivant
+## Raccourcis : Échap = plan large · ←/→ ou PageUp/PageDown = plan précédent/suivant · 1–7 = machines
+## Cmd+K ou / = rechercher · Cmd+, = réglages · M = mode mini
 ## Tempo : Espace = tap, ↑/↓ = BPM (Maj = 0,1), N = note, C = copier les ms
 ## F ou Cmd+F = plein écran · T = garder la fenêtre au premier plan (à côté du DAW)
 ##
@@ -13,6 +14,7 @@ var studio: Studio7080
 var cam: Camera3D
 var attrs: CameraAttributesPractical
 var overlay: Overlay
+var ui: AppUI
 var current := "overview"
 var cam_pos := Vector3.ZERO
 var cam_look := Vector3.ZERO
@@ -47,6 +49,9 @@ func _ready() -> void:
 	cam.current = true
 	overlay = Overlay.new()
 	add_child(overlay)
+	ui = AppUI.new(self)
+	add_child(ui)
+	Toast.ui = ui
 	current = _args.get("shot", Store.get_v("shot", "overview"))
 	if not studio.order.has(current):
 		current = "overview"
@@ -58,6 +63,8 @@ func _ready() -> void:
 		studio.modules.analyse.load_track(_args.track)
 		studio.modules.analyse.wait_done()
 	_update_fov()
+	ui.route_audio(studio)
+	ui.on_shot(current)
 	var p := studio.shot_pose(current, cam, _aspect())
 	cam_pos = p[0]
 	cam_look = p[1]
@@ -67,6 +74,14 @@ func _ready() -> void:
 		_selftest()
 	elif _args.has("screenshot"):
 		studio.cat.no_blink = true
+		if _args.get("ui", "") == "settings":
+			ui.toggle_settings()
+		elif _args.get("ui", "") == "search":
+			ui.open_search()
+			ui.search_edit.text = "bpm"
+			ui._refresh_search()
+		elif _args.get("ui", "") == "toast":
+			Toast.say("Copié : 428,6 ms")
 		_screenshot_and_quit()
 
 
@@ -85,6 +100,7 @@ func go(shot: String) -> void:
 	studio.on_shot(shot, cam, _aspect())
 	Store.set_v("shot", shot)
 	overlay.hide_hint()
+	ui.on_shot(shot)
 
 
 func step(dir: int) -> void:
@@ -201,15 +217,35 @@ func _mouse_button(e: InputEventMouseButton) -> void:
 
 func _key(e: InputEventKey) -> void:
 	var k := e.keycode
-	if k == KEY_F:
-		var fs := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if fs else DisplayServer.WINDOW_MODE_FULLSCREEN)
+	var cmd := e.meta_pressed or e.ctrl_pressed
+	if cmd and k == KEY_K:
+		ui.open_search()
 		return
-	if k == KEY_T:
+	if cmd and k == KEY_COMMA:
+		ui.toggle_settings()
+		return
+	if k == KEY_ESCAPE and ui.is_open():
+		ui.close_all()
+		return
+	# le module affiché passe en premier (saisie de texte, Hz, tap…)
+	if studio.modules.has(current) and studio.modules[current].on_key(e):
+		return
+	if k == KEY_F:
+		ui.set_fullscreen(DisplayServer.window_get_mode() != DisplayServer.WINDOW_MODE_FULLSCREEN)
+		return
+	if k == KEY_T and not cmd:
 		var on := not DisplayServer.window_get_flag(DisplayServer.WINDOW_FLAG_ALWAYS_ON_TOP)
 		DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_ALWAYS_ON_TOP, on)
+		Toast.say("Premier plan : " + ("oui" if on else "non"))
 		return
-	if studio.modules.has(current) and studio.modules[current].on_key(e):
+	if k == KEY_M and not cmd:
+		ui.mini_mode()
+		return
+	if k == KEY_SLASH:
+		ui.open_search()
+		return
+	if k >= KEY_1 and k <= KEY_7 and not cmd:
+		go(AppUI.SHOTS[k - KEY_1][0])
 		return
 	if k == KEY_ESCAPE:
 		go("overview")

@@ -452,6 +452,17 @@ func _architect_lamp() -> void:
 	g.add_child(sp)
 
 
+var _lamp_light: OmniLight3D
+var _lamp_shade: StandardMaterial3D
+
+
+## Couleur du lampadaire (réglage de personnalisation).
+func set_lamp_color(c: Color) -> void:
+	if _lamp_light:
+		_lamp_light.light_color = c
+		_lamp_shade.emission = c.lerp(Color(1, .69, .38), .25)
+
+
 ## Lampadaire à abat-jour en tissu dans le coin, contre le mur en liège.
 func _floor_lamp() -> void:
 	var g := Node3D.new()
@@ -459,10 +470,12 @@ func _floor_lamp() -> void:
 	_put(g, Vector3(.3, 0, -2.75))
 	Mk.mi(Mk.cyl(.15, .16, .03, 32), _brass, Vector3(0, .015, 0), g)
 	Mk.mi(Mk.cyl(.012, .012, 1.4, 10), _brass, Vector3(0, .72, 0), g)
-	var shade := Mk.mi(Mk.cyl(.16, .23, .3, 40, false), Mk.mat(Mk.c(0xe8d2a8), .9, 0.0, {"emission": Mk.c(0xffb060), "energy": 1.8, "cull_off": true}), Vector3(0, 1.48, 0), g)
+	_lamp_shade = Mk.mat(Mk.c(0xe8d2a8), .9, 0.0, {"emission": Mk.c(0xffb060), "energy": 1.8, "cull_off": true})
+	var shade := Mk.mi(Mk.cyl(.16, .23, .3, 40, false), _lamp_shade, Vector3(0, 1.48, 0), g)
 	shade.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	var l := OmniLight3D.new()
 	l.light_color = Mk.c(0xffb870)
+	_lamp_light = l
 	l.light_energy = 1.4
 	l.omni_range = 2.6
 	l.shadow_enabled = true

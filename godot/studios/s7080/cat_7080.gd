@@ -273,6 +273,13 @@ func on_key(e: InputEventKey) -> bool:
 	return true
 
 
+## Nom donné depuis les réglages.
+func set_cat_name(n: String) -> void:
+	cat_name = n.strip_edges().left(12)
+	editing = false
+	_save_name()
+
+
 func _save_name() -> void:
 	Store.set_v("cat_name", cat_name)
 	medal.redraw()

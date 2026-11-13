@@ -373,6 +373,7 @@ func on_action(a: String) -> void:
 	elif a.begins_with("copy:"):
 		var tp := a.substr(5)
 		DisplayServer.clipboard_set(filename(tp))
+		Toast.say("Copié : " + filename(tp))
 		done[tp] = true
 		active = ""
 	elif a == "new":

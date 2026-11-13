@@ -20,8 +20,8 @@ func _init() -> void:
 
 	hint = _label("CLIQUE UNE MACHINE  ·  ÉCHAP POUR REVENIR", 11, Color(.925, .894, .839, .7))
 	hint.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	hint.offset_top = -44
-	hint.offset_bottom = -20
+	hint.offset_top = -86
+	hint.offset_bottom = -62
 	add_child(hint)
 
 	var bg := ColorRect.new()

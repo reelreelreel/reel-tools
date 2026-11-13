@@ -212,6 +212,7 @@ func on_action(a: String) -> void:
 		"copy":
 			var ms := ("%.1f" % engine.note_ms()).replace(".", ",")
 			DisplayServer.clipboard_set(ms)
+			Toast.say("Copié : %s ms" % ms)
 			message("COPY")
 
 
