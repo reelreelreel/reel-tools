@@ -52,7 +52,7 @@ func _init(e: TempoEngine) -> void:
 	name = "Studio7080"
 	_build_environment()
 	var wood_n := Mk.normal_from_texture("res://assets/textures/hardwood2_diffuse.jpg", 2.5)
-	_wood = Mk.weather(Mk.mat(Mk.c(0x8a4426), .42, 0.0, {"map": load("res://assets/textures/hardwood2_diffuse.jpg"), "clearcoat": .4, "clearcoat_rough": .35}), wood_n, .5, .2)
+	_wood = Mk.pbr("dark_wood", .9, {"tint": Mk.c(0xc8a090), "rough": .85, "clearcoat": .35, "clearcoat_rough": .35})
 	_build_floor_ceiling()
 	_build_window_wall()
 	_build_right_wall()
@@ -208,6 +208,11 @@ func _reflection_room() -> Image:
 	return img
 
 
+## Lambris : planches Poly Haven (wood_planks), teintées plus sombre et chaud.
+func _wall_boards() -> StandardMaterial3D:
+	return Mk.pbr("wood_planks", 1.4, {"tint": Mk.c(0xa87c60), "rough": .9, "local": false})
+
+
 func _boards() -> Texture2D:
 	if _boards_tex == null:
 		_boards_tex = Tex.canvas(2048, 1024, func(ci, w, h):
@@ -268,8 +273,7 @@ func _fabric_mat(base: Color, seed: int, w: float, h: float) -> StandardMaterial
 			var x: float = r.randf() * cw
 			ci.draw_rect(Rect2(x, 0, 6 + r.randf() * 14, ch), Color(0, 0, 0, .05))
 		Tex.grime(ci, cw, ch, seed + 1, .3))
-	var m := Mk.mat(Color.WHITE, .95, 0.0, {"map": tex, "normal": _weave_n, "normal_scale": .5})
-	m.uv1_scale = Vector3(maxf(1.0, w * 3.0), maxf(1.0, h * 3.0), 1)
+	var m: StandardMaterial3D = Mk.pbr("hessian_230", .35, {"tint": base.lightened(.25)}).duplicate()
 	m.rim_enabled = true
 	m.rim = .25
 	m.rim_tint = .6
@@ -338,9 +342,7 @@ func _carpet_mat() -> StandardMaterial3D:
 # ---------------------------------------------------------------- pièce
 func _build_floor_ceiling() -> void:
 	# parquet
-	var parquet := Mk.weather(Mk.mat(Mk.c(0x8a6040), .45, 0.0, {"map": load("res://assets/textures/hardwood2_diffuse.jpg"), "clearcoat": .3, "clearcoat_rough": .45}),
-		Mk.normal_from_texture("res://assets/textures/hardwood2_diffuse.jpg", 2.5), .7, .25)
-	parquet.uv1_scale = Vector3(4.0, 5.0, 1)
+	var parquet := Mk.pbr("plank_flooring", 1.6, {"tint": Mk.c(0xc0a088), "clearcoat": .25, "clearcoat_rough": .45, "local": false})
 	var fl := Mk.mi(Mk.plane(5.0, 6.5), parquet, Vector3(2.0, 0, -2.6), self)
 	fl.name = "Floor"
 	# grand tapis persan sous le bureau
@@ -434,7 +436,7 @@ func _persian_rug() -> StandardMaterial3D:
 
 ## Mur à vitre (z = 0, face vers -Z) : lambris de bois vertical sur toute la hauteur.
 func _build_window_wall() -> void:
-	var boards := Mk.weather(Mk.mat(Mk.c(0xcfa585), .55, 0.0, {"map": _boards(), "clearcoat": .2}), Mk.boards_normal(), 1.0, .2)
+	var boards := _wall_boards()
 	var w := Node3D.new()
 	w.name = "WindowWall"
 	w.rotation.y = PI  # repère local : x = -x monde, normale +Z = -Z monde
@@ -452,7 +454,7 @@ func _build_right_wall() -> void:
 	w.name = "RightWall"
 	w.rotation.y = PI / 2  # local x = -z monde
 	add_child(w)
-	var boards := Mk.weather(Mk.mat(Mk.c(0xcfa585), .55, 0.0, {"map": _boards(), "clearcoat": .2}), Mk.boards_normal(), 1.0, .2)
+	var boards := _wall_boards()
 	Mk.mi(_wall_mesh([[0, 0, ROOM.z, WAINSCOT]], 3.0, 2.0), boards, Vector3.ZERO, w)
 	var cork := _cork_mat()
 	cork.uv1_scale = Vector3(2.5, 1, 1)
@@ -468,7 +470,7 @@ func _build_back_wall() -> void:
 	w.name = "BackWall"
 	w.position = Vector3(0, 0, -ROOM.z)
 	add_child(w)
-	Mk.mi(_wall_mesh([[0, 0, ROOM.x + 1.0, ROOM.y]], 3.0, 2.0), Mk.mat(Mk.c(0xd8a070), .7, 0.0, {"map": _boards()}), Vector3.ZERO, w)
+	Mk.mi(_wall_mesh([[0, 0, ROOM.x + 1.0, ROOM.y]], 3.0, 2.0), _wall_boards(), Vector3.ZERO, w)
 
 
 ## Vitre : tableau épais en bois, double vitrage (vitre côté régie inclinée), appui.

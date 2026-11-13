@@ -15,8 +15,8 @@ var _brass: StandardMaterial3D
 
 func _init() -> void:
 	name = "Deco7080"
-	_leather_brown = Mk.weather(Mk.mat(Mk.c(0x6a3820), .5, 0.0, {"clearcoat": .25, "clearcoat_rough": .5}), _grain(), .5, .15)
-	_walnut = Mk.mat(Mk.c(0x6a4028), .55, 0.0, {"map": Mk.walnut_tex(), "clearcoat": .3})
+	_leather_brown = Mk.pbr("leather_brown", .45, {"tint": Mk.c(0xf0dcd0), "clearcoat": .1, "clearcoat_rough": .6})
+	_walnut = Mk.pbr("fine_grained_wood", .7, {"tint": Mk.c(0xd8c0a8), "rough": .8, "clearcoat": .3, "clearcoat_rough": .3})
 	_black = Mk.mat(Mk.c(0x121212), .45, .1)
 	_chrome = Mk.chrome_mat()
 	_brass = Mk.mat(Mk.c(0xc89a48), .3, 1.0)
@@ -55,7 +55,7 @@ func _grille_tex(drivers: Array) -> Texture2D:
 ## façon moniteur de régie fin 70s (type JBL 4430) : caisson noyer, baffle bleu nuit, pavillon
 ## bi-radial à fente, boomer 38 cm au dôme alu, évents, plaque, atténuateurs, étrier au plafond.
 func _big_speakers() -> void:
-	var baffle := Mk.mat(Mk.c(0x1b2c44), .85, 0.0, {"normal": Mk.noise_tex(.35, 256, 2), "normal_scale": .25})
+	var baffle := Mk.pbr("blue_metal_plate", .6, {"tint": Mk.c(0x7890b0), "rough": 1.1, "normal_scale": .6})
 	var cone := Mk.mat(Mk.c(0x1c1b1a), .9, 0.0, {"normal": _cone_ribs(), "normal_scale": .6})
 	var surround := Mk.mat(Mk.c(0x161514), .55)
 	var basket := Mk.mat(Mk.c(0x202224), .5, .6)

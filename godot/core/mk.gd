@@ -54,6 +54,38 @@ static func mat(color: Color, rough := 0.5, metal := 0.0, opts := {}) -> Standar
 	return m
 
 
+## Matière Poly Haven (assets/textures/ph/<nom>_diff|nor|rough.jpg), plaquée en triplanaire :
+## `size` = taille réelle couverte par une tuile de texture, en mètres. opts : tint, rough (multiplicateur),
+## normal_scale, clearcoat, clearcoat_rough, metal, local (triplanaire dans le repère de l'objet).
+static func pbr(name: String, size := 1.0, opts := {}) -> StandardMaterial3D:
+	var key := "pbr:%s:%s:%s" % [name, size, str(opts)]
+	if _cache.has(key):
+		return _cache[key]
+	var base := "res://assets/textures/ph/" + name
+	var m := StandardMaterial3D.new()
+	m.albedo_texture = load(base + "_diff.jpg")
+	m.albedo_color = opts.get("tint", Color.WHITE)
+	m.normal_enabled = true
+	m.normal_texture = load(base + "_nor.jpg")
+	m.normal_scale = opts.get("normal_scale", 1.0)
+	m.roughness_texture = load(base + "_rough.jpg")
+	m.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+	m.roughness = opts.get("rough", 1.0)
+	m.metallic = opts.get("metal", 0.0)
+	m.metallic_specular = 0.5
+	if opts.has("clearcoat"):
+		m.clearcoat_enabled = true
+		m.clearcoat = opts.clearcoat
+		m.clearcoat_roughness = opts.get("clearcoat_rough", 0.3)
+	m.uv1_triplanar = true
+	m.uv1_world_triplanar = not opts.get("local", true)
+	m.uv1_triplanar_sharpness = 8.0
+	m.uv1_scale = Vector3.ONE / size
+	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	_cache[key] = m
+	return m
+
+
 ## Écran / LED : noir, qui émet de la lumière (bloom). Avec une texture : shader d'écran.
 static func glow(color: Color, energy := 1.4, tex: Texture2D = null) -> Material:
 	if tex:
