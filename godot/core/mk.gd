@@ -348,6 +348,58 @@ static func torus_arc(R: float, r: float, arc: float, segs := 24, rsegs := 8) ->
 	return _sweep(s, r, rsegs)
 
 
+## Plaque rectangulaire (w × h, face +Z, épaisseur t vers -Z) percée d'un trou. `hole` : points du bord
+## du trou, dans l'ordre trigonométrique autour du centre (cercle, super-ellipse…).
+static func plate_with_hole(w: float, h: float, t: float, hole: PackedVector2Array) -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var n := hole.size()
+	var outer: Array[Vector2] = []
+	for p in hole:
+		var d := p.normalized()
+		var k := minf(w / 2 / maxf(absf(d.x), 1e-6), h / 2 / maxf(absf(d.y), 1e-6))
+		outer.append(d * k)
+	var on_v := func(q: Vector2) -> bool: return absf(absf(q.x) - w / 2) < 1e-5
+	var tri := func(a: Vector2, b: Vector2, c: Vector2, z: float, nz: float) -> void:
+		for q in ([a, b, c] if nz > 0 else [a, c, b]):
+			st.set_normal(Vector3(0, 0, nz))
+			st.set_uv(Vector2(q.x / w + .5, .5 - q.y / h))
+			st.add_vertex(Vector3(q.x, q.y, z))
+	for face in [[0.0, 1.0], [-t, -1.0]]:
+		for i in n:
+			var j := (i + 1) % n
+			tri.call(outer[i], hole[i], outer[j], face[0], face[1])
+			tri.call(hole[i], hole[j], outer[j], face[0], face[1])
+			if on_v.call(outer[i]) != on_v.call(outer[j]):
+				var pv: Vector2 = outer[i] if on_v.call(outer[i]) else outer[j]
+				var ph: Vector2 = outer[j] if on_v.call(outer[i]) else outer[i]
+				var c := Vector2(signf(pv.x) * w / 2, signf(ph.y) * h / 2)
+				tri.call(outer[i], outer[j], c, face[0], face[1])
+	# paroi du trou (double face)
+	for i in n:
+		var j := (i + 1) % n
+		var a := Vector3(hole[i].x, hole[i].y, 0)
+		var b := Vector3(hole[j].x, hole[j].y, 0)
+		var a2 := a + Vector3(0, 0, -t)
+		var b2 := b + Vector3(0, 0, -t)
+		var nn := -(Vector3(hole[i].x + hole[j].x, hole[i].y + hole[j].y, 0)).normalized()
+		for q in [a, b, b2, a, b2, a2, a, b2, b, a, a2, b2]:
+			st.set_normal(nn)
+			st.set_uv(Vector2(0, 0))
+			st.add_vertex(q)
+	st.generate_tangents()
+	return st.commit()
+
+
+## Points d'un cercle (sens trigo), pour plate_with_hole.
+static func circle_pts(r: float, n := 72, c := Vector2.ZERO) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for i in n:
+		var a := float(i) / n * TAU
+		out.append(c + Vector2(cos(a), sin(a)) * r)
+	return out
+
+
 ## Anneau (tore complet) à plat dans le plan XZ.
 static func torus_ring(R: float, r: float) -> TorusMesh:
 	var t := TorusMesh.new()

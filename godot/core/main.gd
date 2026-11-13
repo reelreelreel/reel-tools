@@ -39,8 +39,8 @@ func _ready() -> void:
 	cam.near = 0.02
 	cam.far = 30.0
 	attrs = CameraAttributesPractical.new()
-	attrs.dof_blur_far_enabled = true
-	attrs.dof_blur_near_enabled = true
+	attrs.dof_blur_far_enabled = Studio7080.LOOK_FX
+	attrs.dof_blur_near_enabled = Studio7080.LOOK_FX
 	attrs.auto_exposure_enabled = false
 	cam.attributes = attrs
 	add_child(cam)

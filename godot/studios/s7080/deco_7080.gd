@@ -56,8 +56,8 @@ func _grille_tex(drivers: Array) -> Texture2D:
 ## bi-radial à fente, boomer 38 cm au dôme alu, évents, plaque, atténuateurs, étrier au plafond.
 func _big_speakers() -> void:
 	var baffle := Mk.pbr("blue_metal_plate", .6, {"tint": Mk.c(0x7890b0), "rough": 1.1, "normal_scale": .6})
-	var cone := Mk.mat(Mk.c(0x1c1b1a), .9, 0.0, {"normal": _cone_ribs(), "normal_scale": .6})
-	var surround := Mk.mat(Mk.c(0x161514), .55)
+	var cone := Mk.mat(Mk.c(0x232120), .95, 0.0, {"normal": Mk.noise_tex(.6, 256, 3), "normal_scale": .35, "cull_off": true})
+	var surround := Mk.mat(Mk.c(0x161514), .55, 0.0, {"cull_off": true})
 	var basket := Mk.mat(Mk.c(0x202224), .5, .6)
 	var dome := Mk.mat(Mk.c(0xd0ccc4), .28, 1.0)
 	var horn := Mk.mat(Mk.c(0x232425), .45, .3, {"cull_off": true})
@@ -67,21 +67,18 @@ func _big_speakers() -> void:
 		root.position = Vector3(s[0], 1.54, -.22)
 		root.basis = Basis(Vector3.UP, s[1]) * Basis(Vector3.RIGHT, .2)
 		add_child(root)
-		Mk.mi(Mk.rounded_box(Vector3(.44, .66, .3), .006, _walnut, 3), null, Vector3(0, 0, -.15), root)
-		Mk.mi(Mk.rounded_box(Vector3(.412, .632, .012), .002, baffle, 1), null, Vector3(0, 0, .002), root)
+		# caisson ouvert devant (face avant invisible) + cadre noyer + fond noir : on voit dans les trous
+		Mk.mi(Mk.rounded_box(Vector3(.44, .66, .3), .006, [_walnut, _walnut, _walnut, _walnut, _invisible(), _walnut], 3), null, Vector3(0, 0, -.15), root)
+		_front_frame(root, .44, .66, .014, 0.0, _walnut)
+		Mk.mi(Mk.quad(.41, .63), Mk.mat(Mk.c(0x050505), 1.0), Vector3(0, 0, -.2), root)
+		# baffle en deux plaques percées (boomer en bas, pavillon en haut)
+		Mk.mi(Mk.plate_with_hole(.412, .401, .012, Mk.circle_pts(.158, 96)), baffle, Vector3(0, -.1155, .008), root)
+		Mk.mi(Mk.plate_with_hole(.412, .231, .012, _horn_mouth(.33, .135)), baffle, Vector3(0, .2005, .008), root)
 		# boomer
 		var w := Node3D.new()
-		w.position = Vector3(0, -.115, .008)
+		w.position = Vector3(0, -.1155, .008)
 		root.add_child(w)
-		var c1 := Mk.mi(Mk.lathe([[0, -.075], [.05, -.07], [.138, -.012], [.14, 0], [0, 0]], 64), cone, Vector3.ZERO, w)
-		c1.rotation.x = PI / 2
-		var r1 := Mk.mi(Mk.torus_ring(.147, .011), surround, Vector3(0, 0, -.002), w)
-		r1.rotation.x = PI / 2
-		var r2 := Mk.mi(Mk.lathe([[.158, .0], [.171, .0], [.171, .006], [.158, .006]], 64), basket, Vector3.ZERO, w)
-		r2.rotation.x = PI / 2
-		var cap := Mk.mi(Mk.sphere(.052, 32, 12, true), dome, Vector3(0, 0, -.048), w)
-		cap.rotation.x = PI / 2
-		cap.scale = Vector3(1, .62, 1)
+		_driver(w, .158, .07, cone, surround, basket, dome, .052)
 		for i in 8:
 			var a := i * TAU / 8 + PI / 8
 			var sc := Mk.screw_head(.0045)
@@ -90,7 +87,7 @@ func _big_speakers() -> void:
 			w.add_child(sc)
 		# pavillon bi-radial : flasque + évasement + fente de gorge
 		var hn := Node3D.new()
-		hn.position = Vector3(0, .2, .008)
+		hn.position = Vector3(0, .2005, .008)
 		root.add_child(hn)
 		Mk.mi(Mk.rounded_box(Vector3(.36, .16, .014), .006, horn, 2), null, Vector3(0, 0, 0), hn)
 		Mk.mi(_horn_flare(.33, .135, .012, .07, .13), horn, Vector3(0, 0, .0072), hn)
@@ -105,6 +102,8 @@ func _big_speakers() -> void:
 		for x in [-.165, .165]:
 			var port := Mk.mi(Mk.cyl(.022, .022, .04, 24, false), Mk.mat(Mk.c(0x050505), .8, 0.0, {"cull_off": true}), Vector3(x, -.29, -.012), root)
 			port.rotation.x = PI / 2
+			var hole := Mk.mi(Mk.disc(.022, 32), Mk.mat(Mk.c(0x020202), 1.0), Vector3(x, -.29, .0085), root)
+			hole.rotation.x = PI / 2
 			var lip := Mk.mi(Mk.torus_ring(.023, .003), Mk.mat(Mk.c(0x0c0c0c), .6), Vector3(x, -.29, .009), root)
 			lip.rotation.x = PI / 2
 		Mk.mi(Mk.rounded_box(Vector3(.085, .022, .004), .002, Mk.mat(Mk.c(0xb8b6b0), .3, 1.0)), null, Vector3(0, -.29, .009), root)
@@ -120,6 +119,67 @@ func _big_speakers() -> void:
 		Mk.mi(Mk.rounded_box(Vector3(.16, .008, .12), .002, bracket, 1), null, Vector3(.06, .334, -.15), root)
 		var rod := Mk.mi(Mk.cyl(.012, .012, .5, 10), bracket, Vector3(s[0], 1.85, -.2), self)
 		rod.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
+## Haut-parleur réaliste (face vers +Z du parent) : membrane papier évasée, suspension en demi-rouleau,
+## joint plat de fixation, cache-noyau bombé. R = rayon extérieur de la suspension, depth = profondeur du cône.
+func _driver(parent: Node3D, R: float, depth: float, cone: Material, roll: Material, gasket: Material, cap_mat: Material, cap_r: float) -> void:
+	var hr := R * .07           # demi-largeur du rouleau
+	var rc := R - hr            # rayon du bord de la membrane
+	var prof := [[0.0, -depth]]
+	for i in 13:
+		var t := float(i) / 12.0
+		# profil légèrement courbe (cône « NAWI ») : plus creux au centre
+		var r := lerpf(cap_r * .9, rc - hr, t)
+		prof.append([r, -depth * (1.0 - pow(t, .8))])
+	prof.append([rc - hr, 0.0])
+	var c1 := Mk.mi(Mk.lathe(prof, 72), cone, Vector3.ZERO, parent)
+	c1.rotation.x = PI / 2
+	# suspension : demi-tore bombé vers l'avant
+	var sp := []
+	for i in 11:
+		var a := PI * i / 10.0
+		sp.append([rc - hr * cos(a), hr * .9 * sin(a)])
+	sp.append([R, -.002])
+	sp.append([rc - hr, -.002])
+	var r1 := Mk.mi(Mk.lathe(sp, 72), roll, Vector3.ZERO, parent)
+	r1.rotation.x = PI / 2
+	# joint / flasque du saladier
+	var r2 := Mk.mi(Mk.lathe([[R, .0], [R * 1.09, .0], [R * 1.09, R * .035], [R, R * .035]], 72), gasket, Vector3.ZERO, parent)
+	r2.rotation.x = PI / 2
+	# cache-noyau
+	var cap := Mk.mi(Mk.sphere(cap_r, 32, 12, true), cap_mat, Vector3(0, 0, -depth * .62), parent)
+	cap.rotation.x = PI / 2
+	cap.scale = Vector3(1, .55, 1)
+
+
+var _invis: StandardMaterial3D
+
+
+## Matériau invisible (face d'une boîte qu'on veut ouverte).
+func _invisible() -> StandardMaterial3D:
+	if _invis == null:
+		_invis = Mk.mat(Color(0, 0, 0), 1.0, 0.0, {"alpha": 0.0})
+	return _invis
+
+
+## Cadre (4 lattes) sur la face avant d'un caisson ouvert : largeur b, en z = zf (local), centré en y = cy.
+func _front_frame(root: Node3D, w: float, h: float, b: float, zf: float, m: Material, cy := 0.0) -> void:
+	for sy in [-1, 1]:
+		Mk.mi(Mk.box(Vector3(w, b, .006)), m, Vector3(0, cy + sy * (h / 2 - b / 2), zf - .003), root)
+	for sx in [-1, 1]:
+		Mk.mi(Mk.box(Vector3(b, h - 2 * b, .006)), m, Vector3(sx * (w / 2 - b / 2), cy, zf - .003), root)
+
+
+## Contour de la bouche du pavillon (même super-ellipse que _horn_flare), sens trigo.
+func _horn_mouth(w1: float, h1: float, n := 96) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for j in n:
+		var a := float(j) / n * TAU
+		var ca := cos(a)
+		var sa := sin(a)
+		out.append(Vector2(w1 / 2 * signf(ca) * pow(absf(ca), .35), h1 / 2 * signf(sa) * pow(absf(sa), .35)))
+	return out
 
 
 ## Évasement de pavillon : bouche (w1 × h1) en z = 0, gorge (w0 × h0) en z = -depth, profil exponentiel.
@@ -172,7 +232,7 @@ func _cone_ribs() -> Texture2D:
 ## vis, dôme d'aigu protégé, évent, plaque, bornier et câble à l'arrière.
 func _nearfields() -> void:
 	var listener := Vector3(1.7, 1.15, -1.6)
-	var cone := Mk.mat(Mk.c(0xe8e4da), .7)
+	var cone := Mk.mat(Mk.c(0xe8e4da), .75, 0.0, {"normal": _cone_ribs(), "normal_scale": .35, "cull_off": true})
 	var cab := Mk.mat(Mk.c(0x141414), .4, 0.0, {"clearcoat": .3})
 	for x in [1.08, 2.32]:
 		var root := Node3D.new()
@@ -181,23 +241,21 @@ func _nearfields() -> void:
 		root.position = pos
 		root.rotation.y = atan2(to.x, to.z)
 		add_child(root)
-		Mk.mi(Mk.rounded_box(Vector3(.2, .33, .2), .008, cab, 3), null, Vector3(0, .165, 0), root)
-		Mk.mi(Mk.rounded_box(Vector3(.18, .31, .01), .003, Mk.mat(Mk.c(0x0c0c0c), .6), 2), null, Vector3(0, .165, .098), root)
+		Mk.mi(Mk.rounded_box(Vector3(.2, .33, .2), .008, [cab, cab, cab, cab, _invisible(), cab], 3), null, Vector3(0, .165, 0), root)
+		_front_frame(root, .2, .33, .01, .1, cab, .165)
+		Mk.mi(Mk.quad(.18, .31), Mk.mat(Mk.c(0x050505), 1.0), Vector3(0, .165, .04), root)
+		var fb := Mk.mat(Mk.c(0x0c0c0c), .6)
+		Mk.mi(Mk.plate_with_hole(.18, .2, .01, Mk.circle_pts(.078, 72)), fb, Vector3(0, .11, .104), root)
+		Mk.mi(Mk.rounded_box(Vector3(.18, .11, .01), .002, fb, 1), null, Vector3(0, .265, .099), root)
 		var w := Node3D.new()
 		w.position = Vector3(0, .11, .104)
 		root.add_child(w)
-		var c1 := Mk.mi(Mk.lathe([[0, -.022], [.02, -.02], [.068, -.003], [.072, 0], [0, 0]], 40), cone, Vector3.ZERO, w)
-		c1.rotation.x = PI / 2
-		var sr := Mk.mi(Mk.torus_ring(.074, .005), _black, Vector3.ZERO, w)
-		sr.rotation.x = PI / 2
-		var cap := Mk.mi(Mk.sphere(.02, 16, 8, true), Mk.mat(Mk.c(0xd8d2c6), .6), Vector3(0, 0, -.018), w)
-		cap.rotation.x = PI / 2
-		cap.scale = Vector3(1, .45, 1)
+		_driver(w, .078, .03, cone, Mk.mat(Mk.c(0x161616), .6, 0.0, {"cull_off": true}), Mk.mat(Mk.c(0x1a1a1a), .5, .5), Mk.mat(Mk.c(0xd8d2c6), .6), .02)
 		for i in 4:
 			var a := PI / 4 + i * PI / 2
 			var sc := Mk.screw_head(.0035)
 			sc.rotation.x = PI / 2
-			sc.position = Vector3(cos(a) * .082, sin(a) * .082, .001)
+			sc.position = Vector3(cos(a) * .082, sin(a) * .082, .003)
 			w.add_child(sc)
 		var tw := Node3D.new()
 		tw.position = Vector3(0, .255, .104)
@@ -708,6 +766,47 @@ func _floor_objects() -> void:
 		sl.rotation.x = -.25
 	# bandes posées par terre contre le meuble
 	_tape_stack(Vector3(2.85, 0, -.75), 3)
+	_pouf()
+	_toolbox()
+
+
+## Pouf rond 70s capitonné en jacquard gris à motifs, à côté du fauteuil.
+func _pouf() -> void:
+	var g := Node3D.new()
+	g.name = "Pouf"
+	_put(g, Vector3(2.62, 0, -2.05), .4)
+	var fab := Mk.pbr("floral_jacquard", .35, {"tint": Mk.c(0xb8b0c0)})
+	var prof := [[0.0, .02]]
+	for i in 13:
+		var a := -PI / 2 + PI * i / 12.0
+		prof.append([.2 + .05 * cos(a), .19 + .17 * sin(a)])
+	prof.append([0.0, .37])
+	var body := Mk.mi(Mk.lathe(prof, 48), fab, Vector3.ZERO, g)
+	Mk.mi(Mk.sphere(.018, 16, 8), Mk.mat(Mk.c(0x2a2a30), .6), Vector3(0, .365, 0), g)
+	Mk.mi(Mk.torus_ring(.2, .012), Mk.mat(Mk.c(0x3a3640), .7), Vector3(0, .05, 0), g)
+	for i in 4:
+		var a := i * TAU / 4 + PI / 4
+		Mk.mi(Mk.cyl(.012, .009, .03, 10), _walnut, Vector3(cos(a) * .15, .015, sin(a) * .15), g)
+
+
+## Vieille caisse à outils en tôle verte écaillée (câbles, adaptateurs) posée au sol contre le bureau.
+func _toolbox() -> void:
+	var g := Node3D.new()
+	g.name = "Toolbox"
+	_put(g, Vector3(2.78, 0, -1.62), -.35)
+	var tole := Mk.pbr("green_metal_rust", .5, {"metal": .55, "rough": .9})
+	var steel := Mk.mat(Mk.c(0x8a8680), .4, 1.0)
+	Mk.mi(Mk.rounded_box(Vector3(.46, .17, .22), .008, tole, 2), null, Vector3(0, .09, 0), g)
+	# couvercle en bâtière + charnière
+	var lid := Mk.mi(Mk.prism(PackedVector2Array([Vector2(-.11, 0), Vector2(.11, 0), Vector2(.07, .06), Vector2(-.07, .06)]), .46), tole, Vector3(.23, .176, 0), g)
+	lid.rotation.y = -PI / 2
+	Mk.mi(Mk.box(Vector3(.47, .004, .225)), Mk.mat(Mk.c(0x0a0a08), .8), Vector3(0, .175, 0), g)
+	# poignée + loquets
+	var h := Mk.mi(Mk.torus_arc(.07, .006, PI, 16, 8), steel, Vector3(0, .236, 0), g)
+	for sx in [-1, 1]:
+		Mk.mi(Mk.rounded_box(Vector3(.035, .045, .01), .003, steel, 1), null, Vector3(sx * .15, .16, .114), g)
+	# câble qui dépasse
+	Mk.mi(Mk.tube([Vector3(-.12, .2, .05), Vector3(-.2, .22, .14), Vector3(-.3, .02, .2), Vector3(-.45, .006, .1)], .0045, 24, 6), _black, Vector3.ZERO, g)
 
 
 var plant: Node3D

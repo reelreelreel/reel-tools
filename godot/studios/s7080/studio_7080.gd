@@ -121,6 +121,11 @@ func _ready() -> void:
 
 
 # ---------------------------------------------------------------- environnement & post-traitement
+## Effets d'image « de finition » (brume volumétrique, halos, profondeur de champ, grain, étalonnage).
+## Coupés pour l'instant à la demande de Maxime : ambiance simple, on les remettra à la fin.
+const LOOK_FX := false
+
+
 func _build_environment() -> void:
 	env = Environment.new()
 	env.background_mode = Environment.BG_COLOR
@@ -152,30 +157,30 @@ func _build_environment() -> void:
 	env.ssao_radius = 0.45
 	env.ssao_intensity = 1.2
 	env.ssao_detail = 0.8
-	env.ssil_enabled = true
+	env.ssil_enabled = LOOK_FX
 	env.ssil_radius = 1.5
 	env.ssr_enabled = false
-	env.glow_enabled = true
-	env.glow_intensity = 0.7
+	env.glow_enabled = true  # seulement les LED / écrans (seuil haut), sans voile
+	env.glow_intensity = 0.7 if LOOK_FX else 0.35
 	env.glow_strength = 1.0
-	env.glow_bloom = 0.02
-	env.glow_hdr_threshold = 0.9
+	env.glow_bloom = 0.02 if LOOK_FX else 0.0
+	env.glow_hdr_threshold = 0.9 if LOOK_FX else 1.3
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
 	env.set_glow_level(0, 0.0)
 	env.set_glow_level(1, 1.0)
 	env.set_glow_level(2, 1.0)
 	env.set_glow_level(3, 0.6)
 	env.set_glow_level(4, 0.4)
-	env.fog_enabled = true
+	env.fog_enabled = LOOK_FX
 	env.fog_light_color = Mk.c(0x100c09)
 	env.fog_density = 0.05
 	env.fog_sky_affect = 0.0
-	env.volumetric_fog_enabled = true
+	env.volumetric_fog_enabled = LOOK_FX
 	env.volumetric_fog_density = 0.012
 	env.volumetric_fog_albedo = Mk.c(0xffe2c4)
 	env.volumetric_fog_length = 6.0
 	env.volumetric_fog_ambient_inject = 0.0
-	env.adjustment_enabled = true
+	env.adjustment_enabled = LOOK_FX
 	env.adjustment_saturation = 0.86
 	env.adjustment_contrast = 1.05
 	var we := WorldEnvironment.new()
@@ -876,6 +881,9 @@ const DEBUG_SHOTS := {
 	"x_console": [Vector3(1.7, 1.55, -1.55), Vector3(1.7, .85, -.5)],
 	"x_spk": [Vector3(1.25, 1.3, -1.35), Vector3(.45, 1.2, -.3)],
 	"x_desk": [Vector3(1.4, .75, -2.6), Vector3(1.0, .45, -.6)],
+	"x_woofer": [Vector3(2.35, 1.3, -1.05), Vector3(2.72, 1.5, -.25)],
+	"x_near": [Vector3(1.75, 1.2, -.95), Vector3(2.3, 1.2, -.2)],
+	"x_floor": [Vector3(1.6, 1.0, -3.2), Vector3(2.6, .2, -1.8)],
 }
 
 

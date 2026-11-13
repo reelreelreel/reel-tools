@@ -15,6 +15,7 @@ func _init() -> void:
 	var sm := ShaderMaterial.new()
 	sm.shader = load("res://core/shaders/grain_vignette.gdshader")
 	fx.material = sm
+	fx.visible = Studio7080.LOOK_FX
 	add_child(fx)
 
 	hint = _label("CLIQUE UNE MACHINE  ·  ÉCHAP POUR REVENIR", 11, Color(.925, .894, .839, .7))
