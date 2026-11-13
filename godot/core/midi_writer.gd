@@ -82,3 +82,35 @@ static func save(path: String, prog: Array, bpm: float, title := "REEL'S TOOLS")
 	f.store_buffer(build(prog, bpm, title))
 	f.close()
 	return true
+
+
+## Plusieurs pistes de notes : tracks = [{name, channel, program, notes: [[tick_on, tick_off, note, vel], …]}].
+static func build_tracks(tracks: Array, bpm: float, title := "REEL'S TOOLS") -> PackedByteArray:
+	var t0 := PackedByteArray()
+	t0.append_array(_text_event(0, 0x03, title))
+	var us := int(round(60000000.0 / bpm))
+	t0.append_array(PackedByteArray([0, 0xFF, 0x51, 3, (us >> 16) & 255, (us >> 8) & 255, us & 255]))
+	t0.append_array(PackedByteArray([0, 0xFF, 0x58, 4, 4, 2, 24, 8]))
+	t0.append_array(PackedByteArray([0, 0xFF, 0x2F, 0]))
+	var out := _chunk("MThd", PackedByteArray([0, 1, 0, tracks.size() + 1, (PPQ >> 8) & 255, PPQ & 255]))
+	out.append_array(_chunk("MTrk", t0))
+	for tr in tracks:
+		var ch: int = tr.channel
+		var ev := []
+		for n in tr.notes:
+			ev.append([int(n[0]), 1, PackedByteArray([0x90 | ch, n[2], n[3]])])
+			ev.append([int(n[1]), 0, PackedByteArray([0x80 | ch, n[2], 0])])
+		ev.sort_custom(func(a, b): return a[0] < b[0] or (a[0] == b[0] and a[1] < b[1]))
+		var t := PackedByteArray()
+		t.append_array(_text_event(0, 0x03, tr.name))
+		if ch != 9:
+			t.append_array(PackedByteArray([0, 0xC0 | ch, tr.program]))
+		var last := 0
+		for e in ev:
+			t.append_array(_vlq(e[0] - last))
+			last = e[0]
+			t.append_array(e[2])
+		t.append_array(PackedByteArray([0, 0xFF, 0x2F, 0]))
+		out.append_array(_chunk("MTrk", t))
+	return out
+

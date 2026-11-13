@@ -15,6 +15,7 @@ const SHOTS := [
 	["freq", "Fréquences"],
 	["export", "Export"],
 	["fax", "Fax d'accords"],
+	["beats", "Boîtes à rythmes"],
 ]
 const STUDIOS := [
 	["7080", "Années 70/80", true],
@@ -371,7 +372,7 @@ func _build_settings(root: Control) -> void:
 
 	# raccourcis
 	_section(v, "Raccourcis")
-	for kv in [["1 – 7", "Aller à une machine"], ["← →", "Machine précédente / suivante"], ["Échap", "Vue d'ensemble"], ["Cmd+K", "Rechercher une machine"], ["F  ·  T  ·  M", "Plein écran · Premier plan · Mini"], ["Espace", "Tap tempo (Tempo)"], ["Glisser un fichier", "Accordeur ou Analyse"]]:
+	for kv in [["1 – 8", "Aller à une machine"], ["← →", "Machine précédente / suivante"], ["Échap", "Vue d'ensemble"], ["Cmd+K", "Rechercher une machine"], ["F  ·  T  ·  M", "Plein écran · Premier plan · Mini"], ["Espace", "Tap tempo (Tempo)"], ["Glisser un fichier", "Accordeur ou Analyse"]]:
 		var h := HBoxContainer.new()
 		var k := _label(kv[0], 12, .9)
 		k.custom_minimum_size.x = 110
@@ -476,6 +477,7 @@ const KEYWORDS := {
 	"freq": "fréquences frequences hz note synthé synthe la 440",
 	"export": "export nom fichier mix master version bounce",
 	"fax": "fax accords grille progression midi compo rhodes",
+	"beats": "boite rythme boîte batterie drum 808 beat pattern séquenceur sequenceur kick hat",
 }
 
 

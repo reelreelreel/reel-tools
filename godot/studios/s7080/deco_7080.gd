@@ -434,7 +434,7 @@ func _architect_lamp() -> void:
 	var g := Node3D.new()
 	g.name = "ArchitectLamp"
 	arch_lamp = g
-	_put(g, Vector3(3.52, TOP, -2.2), PI / 2 + .6)
+	_put(g, Vector3(3.5, TOP, -.98), PI / 2 + .3)
 	Mk.mi(Mk.cyl(.07, .08, .025, 32), _black, Vector3(0, .012, 0), g)
 	var a1 := Mk.mi(Mk.cyl(.007, .007, .5, 10), _chrome, Vector3(0, .26, 0), g)
 	a1.rotation.x = .12
@@ -492,7 +492,7 @@ func _desk_objects() -> void:
 	_console(Vector3(1.7, TOP, -.57), PI, 1.6, .74, 20)
 	# (le module Tempo est accolé à droite de la console : voir Tempo7080)
 	# l'angle et le retour restent libres pour les modules : objets en bout de bureau et au fond du retour
-	_phone(Vector3(3.3, TOP, -1.95), -PI / 2 - .4)
+	_phone(Vector3(.3, TOP, -.86), PI + .5)
 	_notepad(Vector3(2.62, TOP, -.85), .25)
 	_mug(Vector3(.78, TOP, -.82), .8)
 	_ashtray(Vector3(2.92, TOP, -.25))

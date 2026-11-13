@@ -288,7 +288,7 @@ func _key(e: InputEventKey) -> void:
 	if k == KEY_SLASH:
 		ui.open_search()
 		return
-	if k >= KEY_1 and k <= KEY_7 and not cmd:
+	if k >= KEY_1 and k <= KEY_8 and not cmd:
 		go(AppUI.SHOTS[k - KEY_1][0])
 		return
 	if k == KEY_ESCAPE:
@@ -473,6 +473,33 @@ func _selftest() -> void:
 	for i in 40:
 		await get_tree().process_frame
 	print("fax : froissée -> nouvelle grille ", ChordEngine.summary(fx.prog), " | boulettes = ", fx.balls.size())
+	# boîtes à rythmes
+	var bt: Beats7080 = studio.beats
+	print("pick beats (plan large) -> ", _wide_pick(bt.to_global(Vector3(0, .1, 0))))
+	go("beats")
+	for i in 60:
+		await get_tree().process_frame
+	for nd in [bt.d_caps[4].get_parent(), bt.b_caps[3].get_parent(), bt.keys[4], bt.knobs.bpm]:
+		var gp: Vector3 = (nd as Node3D).global_position + Vector3(0, .006, 0)
+		print("pick beats -> ", pick(cam.unproject_position(gp)).action)
+	var before: int = bt.drums[0][4]
+	bt.on_action("dstep:4")
+	print("beats : pas 5 kick ", before, " -> ", bt.drums[0][4])
+	bt.on_action("bstep:3")
+	bt.on_action("key:7")
+	print("beats : 808 pas 4 = ", bt.bass[3], " sel ", bt.bass_sel)
+	bt.instr = 2
+	bt.on_wheel("dstep:6", 1.0, false)
+	print("beats : hat pas 7 = ", bt.drums[2][6])
+	bt.set_sync(true)
+	print("beats : sync -> ", bt.bpm, " BPM, ", bt._bars(), " mesures | ", bt._led_lines())
+	bt.toggle_play()
+	for i in 90:
+		await get_tree().process_frame
+	print("beats : lecture, pas courant = ", bt.cur_step, " horloge = ", snappedf(bt.clock, .01))
+	bt.toggle_play()
+	bt._export_to("/tmp/beats_test.mid")
+	print("beats : midi écrit = ", FileAccess.get_file_as_bytes("/tmp/beats_test.mid").size(), " octets")
 	go("overview")
 	get_tree().quit()
 

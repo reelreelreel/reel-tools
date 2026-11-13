@@ -33,7 +33,7 @@ const B_FLOOR := -0.78
 const B_WOOD_TOP := 0.44
 
 ## Plans : la vue 360° depuis le fauteuil, puis un gros plan par module.
-var order: Array = ["overview", "tempo", "tuner", "analyse", "freq", "export", "fax"]
+var order: Array = ["overview", "tempo", "tuner", "analyse", "freq", "export", "fax", "beats"]
 ## Modules jouables : nom -> nœud (on_action, on_drag_start, on_drag, on_wheel, on_key, animate)
 var modules := {}
 var tempo: Tempo7080
@@ -42,6 +42,7 @@ var analyzer: Analyzer7080
 var freq: Freq7080
 var export: Export7080
 var fax: Fax7080
+var beats: Beats7080
 var deco: Deco7080
 
 var engine: TempoEngine
@@ -113,6 +114,11 @@ func _init(e: TempoEngine) -> void:
 	fax.rotation.y = -PI / 2
 	add_child(fax)
 	modules["fax"] = fax
+	beats = Beats7080.new(fax)
+	beats.position = Vector3(3.33, DESK_TOP, -2.05)
+	beats.rotation.y = -PI / 2
+	add_child(beats)
+	modules["beats"] = beats
 
 
 func _ready() -> void:
@@ -875,7 +881,7 @@ func _module_cables() -> void:
 	# analyseur -> vers la console
 	Mk.mi(Mk.tube([analyzer.to_global(Vector3(0, .05, -.16)), Vector3(.3, y, -.12), Vector3(.6, y, -.06), Vector3(.88, y + .03, -.1)], .004, 24, 6), black, Vector3.ZERO, self)
 	# synthé mural : câble qui descend le long du mur jusqu'au retour
-	Mk.mi(Mk.tube([freq.to_global(Vector3(.3, -.02, -.05)), Vector3(ROOM.x - .03, 1.05, -1.5), Vector3(ROOM.x - .02, y + .02, -1.62), Vector3(3.48, y, -1.7), Vector3(3.4, y, -1.9)], .004, 30, 6), black, Vector3.ZERO, self)
+	Mk.mi(Mk.tube([freq.to_global(Vector3(.3, -.02, -.05)), Vector3(ROOM.x - .03, 1.05, -1.5), Vector3(ROOM.x - .02, y + .02, -1.62), Vector3(3.5, y, -1.7), Vector3(3.53, y, -1.78)], .004, 30, 6), black, Vector3.ZERO, self)
 	# rouleau de gaffer et étiquettes de scotch sur le bord du bureau
 	var gaff := Mk.mat(Mk.c(0x1a1a1a), .7)
 	var roll := Mk.mi(Mk.torus_ring(.045, .022), gaff, Vector3(3.36, y + .02, -1.1), self)
@@ -1354,6 +1360,8 @@ func shot_pose(shot: String, cam: Camera3D, aspect: float) -> Array:
 		return _via(tuner, Vector3(0, Tuner7080.H / 2, 0), Vector3(0, .25, 1), Tuner7080.W / 2, Tuner7080.H / 2, cam, aspect, 1.25)
 	if shot == "fax":
 		return _via(fax, Vector3(0, Fax7080.BASE_H, .06), Vector3(0, 1, .85), Fax7080.W / 2 + .02, Fax7080.D / 2 + .08, cam, aspect, 1.1)
+	if shot == "beats":
+		return _via(beats, Vector3(0, Beats7080.LOW_H + .03, 0), Vector3(0, 1, .8), Beats7080.W / 2 + .02, Beats7080.D / 2 + .02, cam, aspect, 1.08)
 	if shot == "tempo":
 		return _via(tempo.deck, Vector3(0, 0, .0), Vector3(0, 1, .55), Tempo7080.W / 2, tempo.plen / 2, cam, aspect, 1.08)
 	if DEBUG_SHOTS.has(shot):
@@ -1371,6 +1379,7 @@ const DEBUG_SHOTS := {
 	"v_up": [.6, .55],
 	"v_window": [.05, .05],
 	"v_fax": [1.25, -.45],
+	"v_beats": [1.0, -.4],
 }
 
 
