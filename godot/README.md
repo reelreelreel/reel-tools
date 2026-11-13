@@ -31,6 +31,10 @@ bobines tournent pendant l'analyse, puis l'écran donne le BPM (+ moitié / doub
 possibilités et relative). LECTURE / Espace pour écouter, STOP / S. Les fichiers longs glissés n'importe où
 vont à l'analyse, les courts à l'accordeur. Les MP3 / AIFF sont convertis avec `afconvert` (fourni avec macOS).
 
+**Fréquences** (petit synthé sur un support au mur, au-dessus du retour) : clic sur une touche = note +
+fréquence (et la note est jouée) ; OCT − / + (ou Z / X) ; mode HZ → NOTE : potard FREQ (glisser / molette) ou
+taper des chiffres + Entrée → note la plus proche + cents ; curseur LA4 = diapason 430–450 Hz ; PLAY / Espace.
+
 Le BPM, la note et le dernier plan sont gardés en local (`user://reel_tools.cfg`).
 
 ## Organisation

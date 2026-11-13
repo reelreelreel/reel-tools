@@ -250,7 +250,7 @@ func _tufted_leather() -> StandardMaterial3D:
 func _architect_lamp() -> void:
 	var g := Node3D.new()
 	g.name = "ArchitectLamp"
-	_put(g, Vector3(.12, TOP, -1.28), -2.0)
+	_put(g, Vector3(.1, TOP, -1.47), -2.0)
 	Mk.mi(Mk.cyl(.07, .08, .025, 32), _black, Vector3(0, .012, 0), g)
 	var a1 := Mk.mi(Mk.cyl(.007, .007, .5, 10), _chrome, Vector3(0, .26, 0), g)
 	a1.rotation.x = .12
@@ -262,8 +262,8 @@ func _architect_lamp() -> void:
 	Mk.mi(Mk.sphere(.022, 16, 8), Mk.glow(Mk.c(0xffc27a), 3.0), Vector3(0, .45, .35), g)
 	var sp := SpotLight3D.new()
 	sp.light_color = Mk.c(0xffc890)
-	sp.light_energy = 1.6
-	sp.spot_range = 1.6
+	sp.light_energy = .8
+	sp.spot_range = 1.4
 	sp.spot_angle = 45.0
 	sp.shadow_enabled = true
 	sp.position = Vector3(0, .44, .36)
@@ -295,7 +295,7 @@ func _desk_objects() -> void:
 	_console(Vector3(1.7, TOP, -.57), PI, 1.6, .74, 20)
 	# (le module Tempo est accolé à droite de la console : voir Tempo7080)
 	# l'angle et le retour restent libres pour les modules : objets en bout de bureau et au fond du retour
-	_phone(Vector3(.27, TOP, -1.65), .5)
+	_phone(Vector3(.31, TOP, -1.68), .5)
 	_notepad(Vector3(.35, TOP, -1.38), .25)
 	_mug(Vector3(.42, TOP, -.3), .8)
 	_ashtray(Vector3(.42, TOP, -1.17))

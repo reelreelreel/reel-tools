@@ -156,8 +156,11 @@ func _mouse_button(e: InputEventMouseButton) -> void:
 		var a: String = pick(e.position).action
 		swipe = {"pos": e.position, "t": Time.get_ticks_msec(), "a": a}
 		var sp := _split(a)
-		if not sp.is_empty() and sp[2] == current and sp[0].on_drag_start(sp[1]):
-			drag = {"mod": sp[0]}
+		if not sp.is_empty() and sp[2] == current:
+			if sp[0].has_method("on_press"):
+				sp[0].on_press(sp[1])
+			if sp[0].on_drag_start(sp[1]):
+				drag = {"mod": sp[0]}
 		return
 	var was_drag := drag != null
 	drag = null
@@ -304,6 +307,16 @@ func _selftest() -> void:
 		print("accordeur ", f, " -> ", tu.result.note, tu.result.octave, " %.1f Hz %+.0f c" % [tu.result.hz, tu.result.cents])
 	tu.on_files(PackedStringArray(["/tmp/x.mp3"]))
 	print("mp3 absent -> ", tu.result)
+	var fq: Node3D = studio.freq
+	print("pick synthé (plan large) -> ", pick(cam.unproject_position(fq.to_global(Vector3(0, .08, 0)))).action)
+	fq.on_action("key:9")
+	print("touche A : ", NoteFreq.label(fq.midi), " ", "%.2f Hz" % fq.freq)
+	fq._set_a4(432.0)
+	print("diapason 432 : ", "%.2f Hz" % fq.freq)
+	fq._set_a4(440.0)
+	fq._set_freq(100.0)
+	var dsc := NoteFreq.describe(100.0)
+	print("100 Hz -> ", dsc.note, dsc.octave, " %+.0f c" % dsc.cents, "  (LED : ", NoteFreq.label(fq.midi), ")")
 	var an: Node3D = studio.analyzer
 	print("pick analyseur (plan large) -> ", pick(cam.unproject_position(an.to_global(Vector3(0, .09, 0)))).action)
 	for f in ["house_128_Am.wav", "trap_140_Fsm.mp3", "boom_92_D.wav"]:
