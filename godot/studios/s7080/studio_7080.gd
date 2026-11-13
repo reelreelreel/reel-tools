@@ -556,6 +556,9 @@ func _cabinet(w: float, h: float, d: float, kind: String) -> Node3D:
 		Mk.mi(Mk.rounded_box(Vector3(fw, fh, .014), .003, _wood, 2), null, Vector3(sx * (w / 2 - fw / 2), kick + fh / 2, .007), g)
 	Mk.mi(Mk.rounded_box(Vector3(w - 2 * fw, .03, .014), .003, _wood, 2), null, Vector3(0, h - .015, .007), g)
 	var iw := w - 2 * fw
+	# moulure basse (quart-de-rond) au-dessus de la plinthe en retrait
+	var mold := Mk.mi(Mk.prism(PackedVector2Array([Vector2(0, 0), Vector2(.016, 0), Vector2(.014, .008), Vector2(.008, .014), Vector2(0, .016)]), w), _wood, Vector3(w / 2, kick - .004, 0), g)
+	mold.rotation.y = -PI / 2
 	match kind:
 		"drawers":
 			var n := 3
@@ -568,6 +571,8 @@ func _cabinet(w: float, h: float, d: float, kind: String) -> Node3D:
 				# panneau en relief chanfreiné
 				Mk.mi(Mk.rounded_box(Vector3(iw - 2 * gap - .07, dh - .06, .008), .006, _wood, 3), null, Vector3(0, cy, .022), g)
 				_pull(g, brass, Vector3(0, cy + dh * .12, .028), .12)
+				if i == n - 1:
+					_keyhole(g, brass, Vector3(0, cy - dh * .2, .0265))
 		"doors":
 			var gap := .006
 			var dw := (iw - 3 * gap) / 2
@@ -576,8 +581,16 @@ func _cabinet(w: float, h: float, d: float, kind: String) -> Node3D:
 				Mk.mi(Mk.rounded_box(Vector3(dw, fh - .03 - 2 * gap, .022), .004, _wood, 2), null, Vector3(cx, kick + (fh - .03) / 2, .011), g)
 				# moulure de porte
 				Mk.mi(Mk.rounded_box(Vector3(dw - .08, fh - .13, .008), .006, _wood, 3), null, Vector3(cx, kick + (fh - .03) / 2, .025), g)
-				var knob := Mk.mi(Mk.sphere(.012, 16, 8), brass, Vector3(cx + (dw / 2 - .04) * (1 if i == 0 else -1), kick + fh * .62, .034), g)
+				var side := 1 if i == 0 else -1
+				var knob := Mk.mi(Mk.sphere(.012, 16, 8), brass, Vector3(cx + (dw / 2 - .04) * side, kick + fh * .62, .034), g)
 				knob.scale = Vector3(1, 1, .8)
+				var rose := Mk.mi(Mk.cyl(.012, .012, .002, 16), brass, Vector3(cx + (dw / 2 - .04) * side, kick + fh * .62, .0235), g)
+				rose.rotation.x = PI / 2
+				# charnières (côté opposé à la poignée)
+				for hy in [kick + .07, kick + fh - .1]:
+					Mk.mi(Mk.cyl(.0045, .0045, .045, 10), brass, Vector3(cx - (dw / 2 + .002) * side, hy, .024), g)
+				if i == 0:
+					_keyhole(g, brass, Vector3(cx + (dw / 2 - .04) * side, kick + fh * .52, .0235))
 		"rack":
 			# baie 19" : ouverture sombre, rails, appareils et façades de remplissage
 			var bw := .483
@@ -604,6 +617,15 @@ func _cabinet(w: float, h: float, d: float, kind: String) -> Node3D:
 						g.add_child(sc)
 				yy -= uh + .001
 	return g
+
+
+## Entrée de serrure en laiton (rosace + trou de clé).
+func _keyhole(g: Node3D, m: Material, at: Vector3) -> void:
+	var r := Mk.mi(Mk.rounded_box(Vector3(.022, .032, .002), .006, m, 2), null, at, g)
+	r.name = "Keyhole"
+	var hole := Mk.mi(Mk.cyl(.0028, .0028, .001, 10), Mk.mat(Mk.c(0x050403), 1.0), at + Vector3(0, .004, .0012), g)
+	hole.rotation.x = PI / 2
+	Mk.mi(Mk.box(Vector3(.0018, .007, .001)), Mk.mat(Mk.c(0x050403), 1.0), at + Vector3(0, -.001, .0012), g)
 
 
 func _pull(g: Node3D, m: Material, at: Vector3, w: float) -> void:
@@ -883,6 +905,10 @@ const DEBUG_SHOTS := {
 	"x_desk": [Vector3(1.4, .75, -2.6), Vector3(1.0, .45, -.6)],
 	"x_woofer": [Vector3(2.35, 1.3, -1.05), Vector3(2.72, 1.5, -.25)],
 	"x_near": [Vector3(1.75, 1.2, -.95), Vector3(2.3, 1.2, -.2)],
+	"x_phone": [Vector3(.75, 1.15, -1.95), Vector3(.3, .85, -1.62)],
+	"x_tape": [Vector3(2.25, 1.1, -.55), Vector3(2.6, .85, -.12)],
+	"x_hp": [Vector3(2.3, .95, -2.05), Vector3(1.85, .52, -1.52)],
+	"x_cab": [Vector3(1.25, .55, -1.75), Vector3(.55, .35, -1.39)],
 	"x_floor": [Vector3(1.6, 1.0, -3.2), Vector3(2.6, .2, -1.8)],
 }
 
