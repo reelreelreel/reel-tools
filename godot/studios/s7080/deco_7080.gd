@@ -51,65 +51,122 @@ func _grille_tex(drivers: Array) -> Texture2D:
 		ci.draw_rect(Rect2(w * .38, h * .9, w * .24, h * .035), Mk.c(0xc8a050)))
 
 
-## Grandes enceintes de monitoring suspendues de chaque côté de la vitre, inclinées vers l'écoute :
-## caisson en noyer, baffle sombre, boomer 30 cm, pavillon d'aigu, évents, vis, plaque laiton.
+## Grandes enceintes de monitoring suspendues de chaque côté de la vitre, inclinées vers l'écoute,
+## façon moniteur de régie fin 70s (type JBL 4430) : caisson noyer, baffle bleu nuit, pavillon
+## bi-radial à fente, boomer 38 cm au dôme alu, évents, plaque, atténuateurs, étrier au plafond.
 func _big_speakers() -> void:
-	var baffle := Mk.mat(Mk.c(0x1c1714), .7)
-	var cone := Mk.mat(Mk.c(0x2a2622), .85)
-	var surround := Mk.mat(Mk.c(0x141210), .6)
-	var horn := Mk.mat(Mk.c(0x1a1a1a), .35, .5)
+	var baffle := Mk.mat(Mk.c(0x1b2c44), .85, 0.0, {"normal": Mk.noise_tex(.35, 256, 2), "normal_scale": .25})
+	var cone := Mk.mat(Mk.c(0x1c1b1a), .9, 0.0, {"normal": _cone_ribs(), "normal_scale": .6})
+	var surround := Mk.mat(Mk.c(0x161514), .55)
+	var basket := Mk.mat(Mk.c(0x202224), .5, .6)
+	var dome := Mk.mat(Mk.c(0xd0ccc4), .28, 1.0)
+	var horn := Mk.mat(Mk.c(0x232425), .45, .3, {"cull_off": true})
+	var bracket := Mk.mat(Mk.c(0x1a1a1a), .4, .7)
 	for s in [[.27, PI - .3], [2.74, PI + .3]]:
 		var root := Node3D.new()
-		root.position = Vector3(s[0], 1.56, -.22)
-		root.basis = Basis(Vector3.UP, s[1]) * Basis(Vector3.RIGHT, .22)
+		root.position = Vector3(s[0], 1.54, -.22)
+		root.basis = Basis(Vector3.UP, s[1]) * Basis(Vector3.RIGHT, .2)
 		add_child(root)
-		Mk.mi(Mk.rounded_box(Vector3(.42, .6, .32), .012, _walnut, 3), null, Vector3(0, 0, -.165), root)
-		Mk.mi(Mk.rounded_box(Vector3(.39, .57, .02), .004, baffle, 2), null, Vector3(0, 0, -.005), root)
+		Mk.mi(Mk.rounded_box(Vector3(.44, .66, .3), .006, _walnut, 3), null, Vector3(0, 0, -.15), root)
+		Mk.mi(Mk.rounded_box(Vector3(.412, .632, .012), .002, baffle, 1), null, Vector3(0, 0, .002), root)
 		# boomer
 		var w := Node3D.new()
-		w.position = Vector3(0, -.09, .006)
+		w.position = Vector3(0, -.115, .008)
 		root.add_child(w)
-		var c1 := Mk.mi(Mk.lathe([[0, -.05], [.03, -.045], [.13, -.008], [.135, 0], [0, 0]], 48), cone, Vector3.ZERO, w)
+		var c1 := Mk.mi(Mk.lathe([[0, -.075], [.05, -.07], [.138, -.012], [.14, 0], [0, 0]], 64), cone, Vector3.ZERO, w)
 		c1.rotation.x = PI / 2
-		var r1 := Mk.mi(Mk.torus_ring(.142, .012), surround, Vector3(0, 0, 0), w)
+		var r1 := Mk.mi(Mk.torus_ring(.147, .011), surround, Vector3(0, 0, -.002), w)
 		r1.rotation.x = PI / 2
-		var r2 := Mk.mi(Mk.torus_ring(.163, .006), _chrome, Vector3(0, 0, .002), w)
+		var r2 := Mk.mi(Mk.lathe([[.158, .0], [.171, .0], [.171, .006], [.158, .006]], 64), basket, Vector3.ZERO, w)
 		r2.rotation.x = PI / 2
-		var cap := Mk.mi(Mk.sphere(.035, 20, 10, true), Mk.mat(Mk.c(0x8a8680), .4, .8), Vector3(0, 0, -.035), w)
+		var cap := Mk.mi(Mk.sphere(.052, 32, 12, true), dome, Vector3(0, 0, -.048), w)
 		cap.rotation.x = PI / 2
-		cap.scale = Vector3(1, .5, 1)
+		cap.scale = Vector3(1, .62, 1)
 		for i in 8:
-			var a := i * TAU / 8
-			var sc := Mk.screw_head(.004)
+			var a := i * TAU / 8 + PI / 8
+			var sc := Mk.screw_head(.0045)
 			sc.rotation.x = PI / 2
-			sc.position = Vector3(cos(a) * .165, sin(a) * .165, .004)
+			sc.position = Vector3(cos(a) * .1645, sin(a) * .1645, .008)
 			w.add_child(sc)
-		# pavillon d'aigu (évasé rectangulaire)
+		# pavillon bi-radial : flasque + évasement + fente de gorge
 		var hn := Node3D.new()
-		hn.position = Vector3(0, .17, .006)
+		hn.position = Vector3(0, .2, .008)
 		root.add_child(hn)
-		Mk.mi(Mk.rounded_box(Vector3(.22, .1, .012), .004, horn, 2), null, Vector3(0, 0, 0), hn)
-		var throat := Mk.mi(Mk.cyl(.012, .07, .07, 24, false), Mk.mat(Mk.c(0x0a0a0a), .5, .3, {"cull_off": true}), Vector3(0, 0, -.03), hn)
-		throat.rotation.x = -PI / 2
-		throat.scale = Vector3(1.4, 1, .6)
-		# évents et plaque
-		for x in [-.13, .13]:
-			var port := Mk.mi(Mk.cyl(.022, .022, .03, 20, false), Mk.mat(Mk.c(0x050505), .8, 0.0, {"cull_off": true}), Vector3(x, .17, 0), root)
+		Mk.mi(Mk.rounded_box(Vector3(.36, .16, .014), .006, horn, 2), null, Vector3(0, 0, 0), hn)
+		Mk.mi(_horn_flare(.33, .135, .012, .07, .13), horn, Vector3(0, 0, .0072), hn)
+		Mk.mi(Mk.box(Vector3(.006, .05, .004)), Mk.mat(Mk.c(0x050505), .9), Vector3(0, 0, -.121), hn)
+		for sx in [-1, 1]:
+			for sy in [-1, 1]:
+				var sc := Mk.screw_head(.0035)
+				sc.rotation.x = PI / 2
+				sc.position = Vector3(sx * .168, sy * .066, .0075)
+				hn.add_child(sc)
+		# évents, plaque, atténuateurs
+		for x in [-.165, .165]:
+			var port := Mk.mi(Mk.cyl(.022, .022, .04, 24, false), Mk.mat(Mk.c(0x050505), .8, 0.0, {"cull_off": true}), Vector3(x, -.29, -.012), root)
 			port.rotation.x = PI / 2
-		Mk.mi(Mk.rounded_box(Vector3(.09, .022, .004), .002, _brass), null, Vector3(0, -.255, .008), root)
-		Mk.mi(Mk.quad(.08, .016), _badge_mat("REEL'S  MONITOR", Mk.c(0xc89a48), Mk.c(0x1a1208)), Vector3(0, -.255, .0105), root)
-		# atténuateurs HF / MF sur le baffle
+			var lip := Mk.mi(Mk.torus_ring(.023, .003), Mk.mat(Mk.c(0x0c0c0c), .6), Vector3(x, -.29, .009), root)
+			lip.rotation.x = PI / 2
+		Mk.mi(Mk.rounded_box(Vector3(.085, .022, .004), .002, Mk.mat(Mk.c(0xb8b6b0), .3, 1.0)), null, Vector3(0, -.29, .009), root)
+		Mk.mi(Mk.quad(.078, .016), _badge_mat("REEL'S  4430", Mk.c(0xc8c6c0), Mk.c(0x111111)), Vector3(0, -.29, .0112), root)
 		for k in 2:
-			var kn := Mk.knob(.009, .01)
+			var kn := Mk.knob(.008, .008)
 			kn.rotation.x = PI / 2
-			kn.position = Vector3(-.16 + k * .03, -.255, .005)
+			kn.position = Vector3(.12 + k * .028, .095, .008)
 			root.add_child(kn)
-		# étiquette de scotch « L » / « R » sur le dessus
-		var tape := Mk.mi(Mk.plane(.07, .04), _badge_mat("L" if s[0] < 1.5 else "R", Mk.c(0xe8e0c8), Mk.c(0x1a1a40), "caveat"), Vector3(0, .301, -.08), root)
+		var tape := Mk.mi(Mk.plane(.07, .04), _badge_mat("L" if s[0] < 1.5 else "R", Mk.c(0xe8e0c8), Mk.c(0x1a1a40), "caveat"), Vector3(-.1, .331, -.08), root)
 		tape.rotation.y = .05
-		# patte de fixation au plafond
-		var rod := Mk.mi(Mk.cyl(.012, .012, .5, 8), _black, Vector3(s[0], 1.85, -.2), self)
+		# étrier : platine vissée sur le dessus + tige vers le plafond
+		Mk.mi(Mk.rounded_box(Vector3(.16, .008, .12), .002, bracket, 1), null, Vector3(.06, .334, -.15), root)
+		var rod := Mk.mi(Mk.cyl(.012, .012, .5, 10), bracket, Vector3(s[0], 1.85, -.2), self)
 		rod.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
+## Évasement de pavillon : bouche (w1 × h1) en z = 0, gorge (w0 × h0) en z = -depth, profil exponentiel.
+func _horn_flare(w1: float, h1: float, w0: float, h0: float, depth: float) -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var rings := 14
+	var pts := 48
+	for i in rings + 1:
+		var t := float(i) / rings
+		var k := pow(t, 2.2)
+		var ww := lerpf(w0, w1, k) / 2
+		var hh := lerpf(h0, h1, pow(t, 1.3)) / 2
+		var z := -depth * (1.0 - t)
+		for j in pts + 1:
+			var a := float(j) / pts * TAU
+			var ca := cos(a)
+			var sa := sin(a)
+			# super-ellipse : coins arrondis
+			var x := ww * signf(ca) * pow(absf(ca), .35)
+			var y := hh * signf(sa) * pow(absf(sa), .35)
+			st.set_uv(Vector2(float(j) / pts, t))
+			st.add_vertex(Vector3(x, y, z))
+	for i in rings:
+		for j in pts:
+			var a := i * (pts + 1) + j
+			var b := a + pts + 1
+			st.add_index(a)
+			st.add_index(b)
+			st.add_index(a + 1)
+			st.add_index(a + 1)
+			st.add_index(b)
+			st.add_index(b + 1)
+	st.generate_normals()
+	st.generate_tangents()
+	return st.commit()
+
+
+## Membrane papier : nervures concentriques (carte de normales radiale).
+func _cone_ribs() -> Texture2D:
+	var img := Image.create(16, 256, false, Image.FORMAT_L8)
+	for y in 256:
+		var v := .5 + .5 * sin(float(y) / 256.0 * TAU * 7.0)
+		for x in 16:
+			img.set_pixel(x, y, Color(v, v, v))
+	return Tex.normal_from_bump(img, 2.5)
+
 
 ## Enceintes de proximité sur le bureau : caisson noir, baffle en retrait, membrane blanche,
 ## vis, dôme d'aigu protégé, évent, plaque, bornier et câble à l'arrière.
@@ -195,40 +252,82 @@ func _badge_mat(txt: String, bg: Color, ink: Color, fam := "archivo") -> Standar
 	return m
 
 
-## Fauteuil de direction 70s : cuir brun, capitonnage en losanges (boutons + plis), dossier rond
-## enveloppant, accoudoirs pleins, pied étoile chromé. Reculé et tourné (session en cours).
+## Fauteuil de direction de l'époque, type « Soft Pad » : coussins de cuir piqués en boudins
+## sur montants en alu poli, accoudoirs alu + manchettes cuir, mécanisme basculant, vérin,
+## piètement 5 branches en alu et roulettes doubles. Reculé et tourné (session en cours).
 func _chair() -> void:
 	var c := Node3D.new()
 	c.name = "Chair"
 	_put(c, Vector3(1.85, 0, -1.55), .45)
-	c.scale = Vector3.ONE * .86
-	var tuft := _tufted_leather()
-	var btn := Mk.mat(Mk.c(0x3e1d0e), .45, 0.0, {"clearcoat": .5})
+	var alu := Mk.mat(Mk.c(0xc8c6c2), .22, 1.0, {"normal": Mk.scratch_normal(), "normal_scale": .15})
+	var plastic := Mk.mat(Mk.c(0x161514), .55, 0.0)
+	var pad := _leather_brown
+	# piètement : 5 branches profilées (plus épaisses au moyeu), roulettes doubles
+	var leg_prof := PackedVector2Array([Vector2(.03, .065), Vector2(.335, .045), Vector2(.345, .055), Vector2(.335, .072), Vector2(.03, .118)])
+	var leg_mesh := Mk.prism(leg_prof, .034)
 	for i in 5:
-		var a := i * TAU / 5
-		var leg := Mk.mi(Mk.rounded_box(Vector3(.05, .035, .34), .014, _chrome, 2), null, Vector3(sin(a) * .16, .07, cos(a) * .16), c)
-		leg.rotation.y = a
-		Mk.mi(Mk.sphere(.027, 12, 6), _black, Vector3(sin(a) * .32, .027, cos(a) * .32), c)
-	Mk.mi(Mk.cyl(.03, .03, .3, 16), _chrome, Vector3(0, .23, 0), c)
-	Mk.mi(Mk.cyl(.06, .07, .05, 16), _black, Vector3(0, .37, 0), c)
-	# assise : galette épaisse et ronde
-	Mk.mi(Mk.rounded_box(Vector3(.6, .16, .56), .075, tuft, 5), null, Vector3(0, .47, .03), c)
-	for p in _diamond_points(3, 3, .17, .15):
-		Mk.mi(Mk.sphere(.009, 8, 4), btn, Vector3(p.x, .55, .03 + p.y), c)
-	# dossier enveloppant : trois coussins arrondis (centre + deux ailes)
+		var a := i * TAU / 5 + .3
+		var h := Node3D.new()
+		h.rotation.y = a - PI / 2
+		c.add_child(h)
+		Mk.mi(leg_mesh, alu, Vector3(0, 0, -.017), h)
+		Mk.mi(Mk.rounded_box(Vector3(.036, .03, .046), .01, plastic, 2), null, Vector3(.33, .046, 0), h)
+		var stem := Mk.mi(Mk.cyl(.006, .006, .02, 8), alu, Vector3(.33, .058, 0), h)
+		stem.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		for sz in [-1, 1]:
+			var wh := Mk.mi(Mk.cyl(.024, .024, .011, 20), plastic, Vector3(.315, .024, sz * .0135), h)
+			wh.rotation.x = PI / 2
+			var hubcap := Mk.mi(Mk.cyl(.009, .009, .012, 12), alu, Vector3(.315, .024, sz * .0135), h)
+			hubcap.rotation.x = PI / 2
+	Mk.mi(Mk.lathe([[0, .06], [.05, .06], [.055, .09], [.045, .125], [0, .125]], 32), alu, Vector3.ZERO, c)
+	# vérin : soufflet / fourreau plastique + tige chromée
+	Mk.mi(Mk.cyl(.028, .032, .2, 24), plastic, Vector3(0, .225, 0), c)
+	for k in 6:
+		Mk.mi(Mk.torus_ring(.031, .003), plastic, Vector3(0, .14 + k * .028, 0), c)
+	Mk.mi(Mk.cyl(.019, .019, .08, 20), _chrome, Vector3(0, .36, 0), c)
+	# mécanisme basculant + manette
+	Mk.mi(Mk.rounded_box(Vector3(.2, .045, .24), .01, Mk.mat(Mk.c(0x1c1c1c), .45, .6), 2), null, Vector3(0, .41, .0), c)
+	Mk.mi(Mk.tube([Vector3(.09, .405, .06), Vector3(.17, .4, .09), Vector3(.24, .395, .1)], .005, 12, 6), _chrome, Vector3.ZERO, c)
+	Mk.mi(Mk.ellipsoid(.018, .014, .014), plastic, Vector3(.25, .395, .1), c)
+	# assise : 3 boudins de cuir posés entre deux longerons alu
+	var seat := Node3D.new()
+	seat.position = Vector3(0, .455, .02)
+	seat.rotation.x = -.06
+	c.add_child(seat)
+	for sx in [-1, 1]:
+		Mk.mi(Mk.rounded_box(Vector3(.024, .034, .5), .01, alu, 2), null, Vector3(sx * .258, 0, 0), seat)
+	Mk.mi(Mk.rounded_box(Vector3(.5, .018, .48), .008, plastic, 1), null, Vector3(0, -.01, 0), seat)
+	for k in 3:
+		var cz := -.165 + k * .165
+		Mk.mi(Mk.rounded_box(Vector3(.49, .085 - k * .004, .168), .038, pad, 5), null, Vector3(0, .036, cz), seat)
+	# dossier haut : 5 boudins sur une courbe, montants alu qui descendent rejoindre l'assise
 	var back := Node3D.new()
-	back.position = Vector3(0, .86, -.24)
-	back.rotation.x = -.16
+	back.position = Vector3(0, .5, -.24)
+	back.rotation.x = -.2
 	c.add_child(back)
-	Mk.mi(Mk.rounded_box(Vector3(.46, .72, .16), .075, tuft, 5), null, Vector3.ZERO, back)
+	var rail_l := []
+	var rail_r := []
+	for k in 6:
+		var y := .02 + k * .145
+		var z := -.025 * sin(k / 5.0 * PI) - .01
+		rail_l.append(Vector3(-.248, y, z - .02))
+		rail_r.append(Vector3(.248, y, z - .02))
+		if k < 5:
+			var cy := y + .0725
+			var cz2 := -.025 * sin((k + .5) / 5.0 * PI)
+			var cush := Mk.mi(Mk.rounded_box(Vector3(.47, .148, .085), .038, pad, 5), null, Vector3(0, cy, cz2 + .02), back)
+			cush.rotation.x = .05 * (k - 2)
+	# coque arrière du dossier (cuir sur l'arrière, comme les vrais)
+	Mk.mi(Mk.rounded_box(Vector3(.47, .72, .035), .015, pad, 3), null, Vector3(0, .385, -.045), back)
+	rail_l.insert(0, Vector3(-.258, -.08, .08))
+	rail_r.insert(0, Vector3(.258, -.08, .08))
+	for rr in [rail_l, rail_r]:
+		Mk.mi(Mk.tube(rr, .013, 40, 10), alu, Vector3.ZERO, back)
+	# accoudoirs : arceau alu + manchette cuir
 	for sx in [-1, 1]:
-		var wing := Mk.mi(Mk.rounded_box(Vector3(.13, .66, .17), .06, tuft, 4), null, Vector3(sx * .27, -.02, .04), back)
-		wing.rotation.y = -sx * .45
-	for p in _diamond_points(3, 4, .13, .15):
-		Mk.mi(Mk.sphere(.01, 8, 4), btn, Vector3(p.x, p.y, .081), back)
-	# accoudoirs pleins
-	for sx in [-1, 1]:
-		Mk.mi(Mk.rounded_box(Vector3(.09, .2, .44), .04, _leather_brown, 4), null, Vector3(sx * .33, .6, .02), c)
+		var x: float = sx * .27
+		Mk.mi(Mk.tube([Vector3(sx * .258, .46, .19), Vector3(x, .56, .2), Vector3(x, .645, .1), Vector3(x, .65, -.12), Vector3(sx * .255, .62, -.25)], .011, 40, 10), alu, Vector3.ZERO, c)
+		Mk.mi(Mk.rounded_box(Vector3(.062, .036, .32), .016, pad, 3), null, Vector3(x, .675, -.02), c)
 
 
 ## Positions des boutons d'un capitonnage en losanges (rangées décalées).
@@ -319,7 +418,7 @@ func _desk_objects() -> void:
 	_tape_stack(Vector3(2.6, TOP, -.1), 3)
 	_tape_stack(Vector3(.22, TOP, -.2), 2)
 	# casque posé sur l'assise du fauteuil
-	_headphones(Vector3(1.85, .475, -1.5), .8)
+	_headphones(Vector3(1.85, .535, -1.52), .8)
 
 
 ## Console de mixage posée sur le retour, tournée vers la pièce (+X) : 10 tranches + section master,
@@ -382,7 +481,11 @@ func _console(at: Vector3, rot: float, L: float, D: float, n: int) -> void:
 		Tex.silk(ci, "R", mx + P.call(master_w) * .7, h * .72, 16, Color(.9, .88, .82, .7), "center")
 		Tex.grime(ci, w, h, 13, 2))
 	Mk.mi(Mk.rounded_box(Vector3(L - .02, .004, plen), .001, [body, body, Mk.mat(Color.WHITE, .5, .4, {"map": tex}), body, body, body], 1), null, Vector3.ZERO, deck)
-	var knob_mesh := Mk.cyl(.0062, .0072, .011, 14)
+	var knob_mesh := Mk.cyl(.0058, .0068, .011, 16)
+	var skirt_mesh := Mk.cyl(.0088, .0092, .0028, 20)
+	var skirt := Mk.mat(Mk.c(0x2c2c2e), .35, .2)
+	var screw_mesh := Mk.sphere(.0022, 10, 4, true)
+	var screw_mat := Mk.mat(Mk.c(0x9a968f), .32, 1.0)
 	var cap_mesh := Mk.cyl(.0045, .0045, .003, 14)
 	var big_knob := Mk.cyl(.011, .012, .014, 20)
 	var row_caps := [0xd43a26, 0x2a6ab0, 0x3a8a4a, 0x3a8a4a, 0x2a6ab0, 0xe8742a, 0xe8742a, 0xd8d2c4]
@@ -403,9 +506,13 @@ func _console(at: Vector3, rot: float, L: float, D: float, n: int) -> void:
 			holder.position = Vector3(x, 0, v)
 			holder.rotation.y = r.randf_range(-2.4, 2.4)
 			deck.add_child(holder)
+			Mk.mi(skirt_mesh, skirt, Vector3(0, .0016, 0), holder)
 			Mk.mi(knob_mesh, _black, Vector3(0, .0075, 0), holder)
 			Mk.mi(cap_mesh, cap_mats[k], Vector3(0, .0142, 0), holder)
 			Mk.mi(Mk.box(Vector3(.001, .0005, .004)), line, Vector3(0, .0158, -.002), holder)
+		# vis de fixation du module (haut et bas de chaque tranche)
+		for zz in [-plen / 2 + .009, plen / 2 - .007]:
+			Mk.mi(screw_mesh, screw_mat, Vector3(x, .002, zz), deck)
 		# mute / solo
 		var mv: float = row_v.call(rows.size()) - .004
 		Mk.mi(Mk.rounded_box(Vector3(.014, .006, .01), .002, mute_on if r.randf() < .25 else mute_off, 1), null, Vector3(x - .009, .004, mv), deck)
@@ -419,12 +526,20 @@ func _console(at: Vector3, rot: float, L: float, D: float, n: int) -> void:
 		Mk.mi(big_knob, _black, Vector3(mx0 + master_w * (.25 + k * .25), .008, -plen / 2 + .07 + k * .06), deck)
 	for k in 2:
 		Mk.mi(Mk.rounded_box(Vector3(.022, .016, .03), .004, Mk.mat(Mk.c(0xb3241a), .4), 2), null, Vector3(mx0 + master_w * (.3 + k * .4), .01, plen / 2 - .06), deck)
+	# accoudoir rembourré sur l'avant (cuir noir, boudin) + nez en noyer
+	var roll := Mk.mat(Mk.c(0x0e0c0b), .45, 0.0, {"clearcoat": .3, "clearcoat_rough": .5, "normal": _grain(), "normal_scale": .15})
+	Mk.mi(Mk.rounded_box(Vector3(L + .05, .016, .06), .004, _walnut, 2), null, Vector3(0, .008, D / 2 + .028), g)
+	Mk.mi(Mk.rounded_box(Vector3(L + .03, .046, .058), .021, roll, 4), null, Vector3(0, .039, D / 2 + .028), g)
 	# pont de VU + baie de patch à l'arrière
 	var bridge := Node3D.new()
 	bridge.position = Vector3(0, .18, -D / 2 + .03)
 	bridge.rotation.x = -.25
 	g.add_child(bridge)
 	Mk.mi(Mk.rounded_box(Vector3(L, .12, .05), .006, body, 2), null, Vector3.ZERO, bridge)
+	for sx in [-1, 1]:
+		Mk.mi(Mk.rounded_box(Vector3(.028, .135, .062), .008, _walnut, 2), null, Vector3(sx * (L / 2 + .014), 0, -.004), bridge)
+	# visière au-dessus des VU
+	Mk.mi(Mk.rounded_box(Vector3(L * .88, .006, .03), .002, body, 1), null, Vector3(-L * .036, .049, .038), bridge)
 	var vu := Tex.canvas(256, 160, func(ci, w, h):
 		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0xe9d9aa))
 		ci.draw_arc(Vector2(128, 190), 150, -2.3, -.84, 32, Mk.c(0x1a1a1a), 2.0, true)

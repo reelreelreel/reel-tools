@@ -543,23 +543,32 @@ func _cabinet(w: float, h: float, d: float, kind: String) -> Node3D:
 	Mk.mi(Mk.rounded_box(Vector3(w, h - kick, d), .004, _wood, 2), null, Vector3(0, kick + (h - kick) / 2, -d / 2), g)
 	var brass := Mk.mat(Mk.c(0xc89a48), .28, 1.0)
 	var fh := h - kick
+	# cadre de façade (montants + traverse haute), les tiroirs / portes sont encastrés dedans
+	var fw := .024
+	for sx in [-1, 1]:
+		Mk.mi(Mk.rounded_box(Vector3(fw, fh, .014), .003, _wood, 2), null, Vector3(sx * (w / 2 - fw / 2), kick + fh / 2, .007), g)
+	Mk.mi(Mk.rounded_box(Vector3(w - 2 * fw, .03, .014), .003, _wood, 2), null, Vector3(0, h - .015, .007), g)
+	var iw := w - 2 * fw
 	match kind:
 		"drawers":
 			var n := 3
 			var gap := .006
-			var dh := (fh - gap * (n + 1)) / n
+			var dh := (fh - .03 - gap * (n + 1)) / n
 			for i in n:
 				var cy := kick + gap + dh / 2 + i * (dh + gap)
-				Mk.mi(Mk.rounded_box(Vector3(w - 2 * gap - .01, dh, .022), .004, _wood, 2), null, Vector3(0, cy, .011), g)
-				_pull(g, brass, Vector3(0, cy + dh * .18, .026), .12)
+				var front := Mk.mi(Mk.rounded_box(Vector3(iw - 2 * gap, dh, .02), .004, _wood, 2), null, Vector3(0, cy, .01), g)
+				front.name = "Drawer"
+				# panneau en relief chanfreiné
+				Mk.mi(Mk.rounded_box(Vector3(iw - 2 * gap - .07, dh - .06, .008), .006, _wood, 3), null, Vector3(0, cy, .022), g)
+				_pull(g, brass, Vector3(0, cy + dh * .12, .028), .12)
 		"doors":
 			var gap := .006
-			var dw := (w - 3 * gap) / 2
+			var dw := (iw - 3 * gap) / 2
 			for i in 2:
-				var cx := -w / 2 + gap + dw / 2 + i * (dw + gap)
-				Mk.mi(Mk.rounded_box(Vector3(dw, fh - 2 * gap, .022), .004, _wood, 2), null, Vector3(cx, kick + fh / 2, .011), g)
+				var cx := -iw / 2 + gap + dw / 2 + i * (dw + gap)
+				Mk.mi(Mk.rounded_box(Vector3(dw, fh - .03 - 2 * gap, .022), .004, _wood, 2), null, Vector3(cx, kick + (fh - .03) / 2, .011), g)
 				# moulure de porte
-				Mk.mi(Mk.rounded_box(Vector3(dw - .08, fh - .1, .006), .002, _wood, 2), null, Vector3(cx, kick + fh / 2, .024), g)
+				Mk.mi(Mk.rounded_box(Vector3(dw - .08, fh - .13, .008), .006, _wood, 3), null, Vector3(cx, kick + (fh - .03) / 2, .025), g)
 				var knob := Mk.mi(Mk.sphere(.012, 16, 8), brass, Vector3(cx + (dw / 2 - .04) * (1 if i == 0 else -1), kick + fh * .62, .034), g)
 				knob.scale = Vector3(1, 1, .8)
 		"rack":
@@ -853,8 +862,19 @@ func shot_pose(shot: String, cam: Camera3D, aspect: float) -> Array:
 		return _via(tuner, Vector3(0, Tuner7080.H / 2, 0), Vector3(0, .25, 1), Tuner7080.W / 2 * .85, Tuner7080.H / 2 * .85, cam, aspect, 1.25)
 	if shot == "tempo":
 		return _via(tempo.deck, Vector3(0, 0, .0), Vector3(0, 1, .55), Tempo7080.W / 2, tempo.plen / 2, cam, aspect, 1.08)
+	if DEBUG_SHOTS.has(shot):
+		return DEBUG_SHOTS[shot]
 	var b := Basis(CAM_QUAT)
 	return [CAM_POS, CAM_POS - b.z * CAM_FOCUS, b]
+
+
+## Plans de contrôle (captures de dev uniquement, pas dans `order`).
+const DEBUG_SHOTS := {
+	"x_chair": [Vector3(2.75, 1.05, -2.5), Vector3(1.85, .5, -1.5)],
+	"x_console": [Vector3(1.7, 1.55, -1.55), Vector3(1.7, .85, -.5)],
+	"x_spk": [Vector3(1.25, 1.3, -1.35), Vector3(.45, 1.2, -.3)],
+	"x_desk": [Vector3(1.4, .75, -2.6), Vector3(1.0, .45, -.6)],
+}
 
 
 func _fit(cam: Camera3D, aspect: float, half_w: float, half_h: float) -> float:
