@@ -51,6 +51,7 @@ func _init(e: TempoEngine) -> void:
 	_build_booth(Mk.mat(Mk.c(0x6a4a34), .7, 0.0, {"map": Mk.walnut_tex()}))
 	_build_desks()
 	_build_lights()
+	add_child(Deco7080.new())
 
 
 func _ready() -> void:
@@ -599,7 +600,7 @@ func _build_lights() -> void:
 		lens.rotation.x = -PI / 2
 		var ts := SpotLight3D.new()
 		ts.light_color = Mk.c(0xffd8b0)
-		ts.light_energy = 1.8
+		ts.light_energy = 1.1
 		ts.spot_range = 2.6
 		ts.spot_angle = 22.0
 		ts.spot_angle_attenuation = 1.2
