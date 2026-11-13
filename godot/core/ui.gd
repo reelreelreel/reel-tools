@@ -2,8 +2,8 @@ class_name AppUI
 extends CanvasLayer
 ## Interface de l'appli : volontairement simple et neutre (police système, gris translucide),
 ## commune à tous les studios — la D.A reste dans les studios.
-##   · petites étiquettes posées en face de chaque machine dans la vue d'ensemble (clic = y aller,
-##     chiffres 1–7 au clavier) ; en gros plan elles disparaissent
+##   · petite étiquette au nom de la machine, posée dessus, qui n'apparaît qu'au survol de la souris
+##     dans la vue d'ensemble (clic = y aller, chiffres 1–7 au clavier)
 ##   · deux petites icônes en haut à droite : recherche rapide (Cmd+K ou /) et réglages (Cmd+,)
 ##   · petites confirmations (toast), ex. « Copié »
 
@@ -37,7 +37,7 @@ var main: Node
 var font: Font
 var tags := {}            # plan -> Button posé sur la machine
 var _tag_anchor := {}     # plan -> point 3D (dessus de la machine)
-var _tags_alpha := 0.0
+var _tag_alpha := {}
 var _shot := "overview"
 var settings: PanelContainer
 var search: PanelContainer
@@ -200,13 +200,15 @@ func on_shot(shot: String) -> void:
 func _process(delta: float) -> void:
 	if main == null or main.cam == null or not main.ready_done:
 		return
-	var want := 1.0 if _shot == "overview" and not search.visible else 0.0
-	_tags_alpha = move_toward(_tags_alpha, want, delta * (3.0 if want > 0 else 6.0))
 	var cam: Camera3D = main.cam
 	var vs := get_viewport().get_visible_rect().size
+	var wide := _shot == "overview" and not search.visible
 	for shot in tags:
 		var b: Button = tags[shot]
-		var sp := _screen_anchor(cam, shot) if _tags_alpha > .01 else Vector2.INF
+		var want := 1.0 if wide and (main.hover_module == shot or b.is_hovered()) else 0.0
+		var al: float = move_toward(_tag_alpha.get(shot, 0.0), want, delta * (6.0 if want > 0 else 4.0))
+		_tag_alpha[shot] = al
+		var sp := _screen_anchor(cam, shot) if al > .01 else Vector2.INF
 		var vis := sp != Vector2.INF
 		b.visible = vis
 		if not vis:
@@ -216,7 +218,7 @@ func _process(delta: float) -> void:
 		pos.x = clampf(pos.x, 8, vs.x - b.size.x - 8)
 		pos.y = clampf(pos.y, 52, vs.y - b.size.y - 8)
 		b.position = pos.round()
-		b.modulate.a = _tags_alpha
+		b.modulate.a = al
 
 
 # ---------------------------------------------------------------- réglages

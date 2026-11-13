@@ -15,6 +15,7 @@ var cam: Camera3D
 var attrs: CameraAttributesPractical
 var overlay: Overlay
 var ui: AppUI
+var hover_module := ""  # machine sous la souris (pour son étiquette)
 var current := "overview"
 var cam_pos := Vector3.ZERO
 var cam_look := Vector3.ZERO
@@ -80,6 +81,8 @@ func _ready() -> void:
 			ui.open_search()
 			ui.search_edit.text = "bpm"
 			ui._refresh_search()
+		elif _args.get("ui", "").begins_with("hover="):
+			hover_module = _args.ui.substr(6)
 		elif _args.get("ui", "") == "toast":
 			Toast.say("Copié : 428,6 ms")
 		_screenshot_and_quit()
@@ -132,6 +135,7 @@ func _unhandled_input(e: InputEvent) -> void:
 			return
 		var hover: String = pick(e.position).action
 		Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND if hover != "" else Input.CURSOR_ARROW)
+		hover_module = hover.substr(2) if hover.begins_with("m:") else (hover.get_slice(":", 0) if hover.contains(":") else "")
 	elif e is InputEventMouseButton:
 		_mouse_button(e)
 	elif e is InputEventKey and e.pressed:
