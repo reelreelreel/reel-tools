@@ -42,7 +42,7 @@ func _init(e: TempoEngine) -> void:
 	engine = e
 	name = "Studio7080"
 	_build_environment()
-	_wood = Mk.mat(Mk.c(0x8a5a36), .55, 0.0, {"map": load("res://assets/textures/hardwood2_diffuse.jpg"), "clearcoat": .25, "clearcoat_rough": .5})
+	_wood = Mk.mat(Mk.c(0x8a4426), .5, 0.0, {"map": load("res://assets/textures/hardwood2_diffuse.jpg"), "clearcoat": .35, "clearcoat_rough": .4})
 	_build_floor_ceiling()
 	_build_window_wall()
 	_build_right_wall()
@@ -266,14 +266,98 @@ func _carpet_mat() -> StandardMaterial3D:
 
 # ---------------------------------------------------------------- pièce
 func _build_floor_ceiling() -> void:
-	var fl := Mk.mi(Mk.plane(5.0, 6.5), _carpet_mat(), Vector3(2.0, 0, -2.6), self)
+	# parquet
+	var parquet := Mk.mat(Mk.c(0x8a6040), .55, 0.0, {"map": load("res://assets/textures/hardwood2_diffuse.jpg"), "clearcoat": .3, "clearcoat_rough": .45})
+	parquet.uv1_scale = Vector3(4.0, 5.0, 1)
+	var fl := Mk.mi(Mk.plane(5.0, 6.5), parquet, Vector3(2.0, 0, -2.6), self)
 	fl.name = "Floor"
-	var ceil := Mk.mi(Mk.plane(5.0, 6.5), Mk.mat(Mk.c(0x1a120c), .9), Vector3(2.0, ROOM.y, -2.6), self)
+	# grand tapis persan sous le bureau
+	var rug := Mk.mi(Mk.rounded_box(Vector3(2.6, .012, 2.0), .005, [null, null, _persian_rug(), null, null, null], 2), null, Vector3(1.75, .006, -2.3), self)
+	rug.rotation.y = .03
+	var edge := Mk.mat(Mk.c(0x3a1410), 1.0)
+	for i in [0, 1, 3, 4, 5]:
+		rug.mesh.surface_set_material(i, edge)
+	# plafond en dalles acoustiques dans une grille
+	var ceil := Mk.mi(Mk.plane(5.0, 6.5), _ceiling_tiles(), Vector3(2.0, ROOM.y, -2.6), self)
 	ceil.rotation.x = PI
 	ceil.name = "Ceiling"
 	# plinthe sombre au pied des murs
 	Mk.mi(Mk.box(Vector3(.02, .1, ROOM.z)), Mk.mat(Mk.c(0x1a100a), .6), Vector3(.01, .05, -ROOM.z / 2), self)
 	Mk.mi(Mk.box(Vector3(ROOM.x, .1, .02)), Mk.mat(Mk.c(0x1a100a), .6), Vector3(ROOM.x / 2, .05, -.01), self)
+
+
+## Dalle de 60 cm : fond crème perforé + profilé de la grille. La texture = une dalle, répétée.
+func _ceiling_tiles() -> StandardMaterial3D:
+	var tex := Tex.canvas(512, 512, func(ci, w, h):
+		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0xcfc4b0))
+		var r := Tex.rng(33)
+		for i in 2600:
+			ci.draw_circle(Vector2(r.randf() * w, r.randf() * h), .8 + r.randf() * 1.6, Color(.25, .2, .15, .35 + r.randf() * .3))
+		Tex.grime(ci, w, h, 34, 1.5)
+		ci.draw_rect(Rect2(0, 0, w, 7), Mk.c(0x8a857c))
+		ci.draw_rect(Rect2(0, 0, 7, h), Mk.c(0x8a857c))
+		ci.draw_rect(Rect2(0, 7, w, 2), Color(0, 0, 0, .35))
+		ci.draw_rect(Rect2(7, 0, 2, h), Color(0, 0, 0, .35)))
+	var m := Mk.mat(Color.WHITE, .92, 0.0, {"map": tex})
+	m.uv1_scale = Vector3(5.0 / .6, 6.5 / .6, 1)
+	return m
+
+
+## Tapis persan : fond rouge profond, bordures, médaillon central, motifs répétés.
+func _persian_rug() -> StandardMaterial3D:
+	var tex := Tex.canvas(1024, 780, func(ci, w, h):
+		var red := Mk.c(0x7a1c16)
+		var navy := Mk.c(0x1c2440)
+		var cream := Mk.c(0xd8c49a)
+		var gold := Mk.c(0xb07a30)
+		ci.draw_rect(Rect2(0, 0, w, h), navy)
+		ci.draw_rect(Rect2(14, 14, w - 28, h - 28), cream)
+		ci.draw_rect(Rect2(22, 22, w - 44, h - 44), red.darkened(.2))
+		# frise de bordure
+		var r := Tex.rng(7)
+		var x := 40.0
+		while x < w - 40:
+			for yy in [40.0, h - 40.0]:
+				ci.draw_colored_polygon(PackedVector2Array([Vector2(x, yy - 12), Vector2(x + 12, yy), Vector2(x, yy + 12), Vector2(x - 12, yy)]), gold if int(x / 30) % 2 else cream)
+			x += 30
+		var y := 70.0
+		while y < h - 40:
+			for xx in [40.0, w - 40.0]:
+				ci.draw_colored_polygon(PackedVector2Array([Vector2(xx, y - 12), Vector2(xx + 12, y), Vector2(xx, y + 12), Vector2(xx - 12, y)]), gold if int(y / 30) % 2 else cream)
+			y += 30
+		ci.draw_rect(Rect2(62, 62, w - 124, h - 124), navy)
+		ci.draw_rect(Rect2(70, 70, w - 140, h - 140), red)
+		# semis de petits motifs
+		for i in 260:
+			var p := Vector2(90 + r.randf() * (w - 180), 90 + r.randf() * (h - 180))
+			var s := 4.0 + r.randf() * 7.0
+			ci.draw_colored_polygon(PackedVector2Array([p + Vector2(0, -s), p + Vector2(s, 0), p + Vector2(0, s), p + Vector2(-s, 0)]), [navy, cream, gold][r.randi() % 3].lerp(red, .35))
+		# médaillon central
+		var c := Vector2(w / 2.0, h / 2.0)
+		for k in 5:
+			var sx := 260.0 - k * 46
+			var sy := 190.0 - k * 34
+			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(0, -sy), c + Vector2(sx, 0), c + Vector2(0, sy), c + Vector2(-sx, 0)]), [navy, cream, red.lightened(.1), gold, navy][k])
+		# coins
+		for cc in [Vector2(70, 70), Vector2(w - 70, 70), Vector2(70, h - 70), Vector2(w - 70, h - 70)]:
+			ci.draw_circle(cc, 70, navy)
+			ci.draw_circle(cc, 50, gold.darkened(.2))
+		ci.draw_rect(Rect2(62, 62, w - 124, h - 124), navy, false, 3.0)
+		# usure
+		for i in 30000:
+			ci.draw_rect(Rect2(r.randf() * w, r.randf() * h, 1.5, 1.5), Color(0, 0, 0, .12) if r.randf() > .4 else Color(1, .9, .8, .06))
+		Tex.grime(ci, w, h, 8, 3))
+	var nt := NoiseTexture2D.new()
+	nt.width = 256
+	nt.height = 256
+	nt.seamless = true
+	nt.as_normal_map = true
+	nt.bump_strength = 3.0
+	var fn := FastNoiseLite.new()
+	fn.frequency = .4
+	nt.noise = fn
+	var m := Mk.mat(Color.WHITE, 1.0, 0.0, {"map": tex, "normal": nt, "normal_scale": .4})
+	return m
 
 
 ## Mur à vitre (z = 0, face vers -Z) : lambris de bois vertical sur toute la hauteur.
@@ -340,9 +424,9 @@ func _build_window() -> void:
 	Mk.mi(Mk.quad(ww, wh), glass, Vector3(cx, cy, d - .03), self)
 
 
-## Bureau en L : plateau en bois épais, joues et voile de fond.
+## Bureau en L façon meuble de régie : plateau teck, rebord cuir (console), caissons à tiroirs,
+## baie rack 19" intégrée, portes à boutons laiton, joues profilées.
 func _build_desks() -> void:
-	var dark := Mk.mat(Mk.c(0x24160d), .6)
 	for dsk in DESKS:
 		var x0: float = dsk[0]
 		var x1: float = dsk[1]
@@ -350,20 +434,117 @@ func _build_desks() -> void:
 		var z1: float = dsk[3]
 		var top := Mk.mi(Mk.rounded_box(Vector3(x1 - x0, DESK_T, z1 - z0), .012, _wood, 3), null, Vector3((x0 + x1) / 2, DESK_TOP - DESK_T / 2, (z0 + z1) / 2), self)
 		top.name = "Desk"
-		var h := DESK_TOP - DESK_T
-		# voile de fond contre le mur
-		if z1 == 0.0 and x0 > .1:
-			Mk.mi(Mk.box(Vector3(x1 - x0 - .04, h, .02)), dark, Vector3((x0 + x1) / 2, h / 2, -.04), self)
-		else:
-			Mk.mi(Mk.box(Vector3(.02, h, z1 - z0 - .04)), dark, Vector3(x0 + .04, h / 2, (z0 + z1) / 2), self)
+	var h := DESK_TOP - DESK_T
 	# rebord rembourré en cuir noir (façon console) sur l'avant du bureau
 	var arm_y := DESK_TOP - .03
 	Mk.mi(Mk.rounded_box(Vector3(2.727 - .55, .075, .11), .035, _leather(2.18), 4), null, Vector3((2.727 + .55) / 2, arm_y, -1.03), self)
 	var ret := Mk.mi(Mk.rounded_box(Vector3(.8, .075, .11), .035, _leather(.8), 4), null, Vector3(.57, arm_y, -1.4), self)
 	ret.rotation.y = PI / 2
-	# joues en bois
-	Mk.mi(Mk.rounded_box(Vector3(.04, DESK_TOP - DESK_T, .98), .006, _wood, 2), null, Vector3(2.70, (DESK_TOP - DESK_T) / 2, -.5), self)
-	Mk.mi(Mk.rounded_box(Vector3(.53, DESK_TOP - DESK_T, .04), .006, _wood, 2), null, Vector3(.28, (DESK_TOP - DESK_T) / 2, -1.77), self)
+	# caissons sous le bureau principal (façades tournées vers -Z)
+	_place(_cabinet(.52, h, .9, "drawers"), Vector3(.89, 0, -.97), PI)
+	_place(_cabinet(.54, h, .9, "rack"), Vector3(2.42, 0, -.97), PI)
+	# fond de l'espace pour les jambes
+	Mk.mi(Mk.box(Vector3(1.0, h, .02)), _wood, Vector3(1.65, h / 2, -.05), self)
+	# meuble sous le retour (façade tournée vers +X)
+	_place(_cabinet(.74, h, .5, "doors"), Vector3(.53, 0, -1.39), PI / 2)
+	# joues profilées façon console
+	var side := PackedVector2Array([Vector2(0, 0), Vector2(.93, 0), Vector2(.93, .1), Vector2(1.0, h - .02), Vector2(1.0, h), Vector2(0, h)])
+	var cheek := Mk.mi(Mk.prism(side, .04), _wood, Vector3(2.70, 0, 0), self)
+	cheek.rotation.y = PI / 2
+	var side2 := PackedVector2Array([Vector2(0, 0), Vector2(.5, 0), Vector2(.5, .1), Vector2(.56, h - .02), Vector2(.56, h), Vector2(0, h)])
+	Mk.mi(Mk.prism(side2, .04), _wood, Vector3(0, 0, -1.82), self)
+
+
+func _place(n: Node3D, pos: Vector3, rot_y: float) -> void:
+	n.position = pos
+	n.rotation.y = rot_y
+	add_child(n)
+
+
+## Caisson en bois, façade sur z = 0 (local, vers +Z), fond vers -Z. kind : drawers | rack | doors
+func _cabinet(w: float, h: float, d: float, kind: String) -> Node3D:
+	var g := Node3D.new()
+	g.name = "Cabinet_" + kind
+	var kick := .07
+	var dark := Mk.mat(Mk.c(0x120c08), .7)
+	Mk.mi(Mk.box(Vector3(w - .04, kick, d - .06)), dark, Vector3(0, kick / 2, -d / 2 - .03), g)
+	Mk.mi(Mk.rounded_box(Vector3(w, h - kick, d), .004, _wood, 2), null, Vector3(0, kick + (h - kick) / 2, -d / 2), g)
+	var brass := Mk.mat(Mk.c(0xc89a48), .28, 1.0)
+	var fh := h - kick
+	match kind:
+		"drawers":
+			var n := 3
+			var gap := .006
+			var dh := (fh - gap * (n + 1)) / n
+			for i in n:
+				var cy := kick + gap + dh / 2 + i * (dh + gap)
+				Mk.mi(Mk.rounded_box(Vector3(w - 2 * gap - .01, dh, .022), .004, _wood, 2), null, Vector3(0, cy, .011), g)
+				_pull(g, brass, Vector3(0, cy + dh * .18, .026), .12)
+		"doors":
+			var gap := .006
+			var dw := (w - 3 * gap) / 2
+			for i in 2:
+				var cx := -w / 2 + gap + dw / 2 + i * (dw + gap)
+				Mk.mi(Mk.rounded_box(Vector3(dw, fh - 2 * gap, .022), .004, _wood, 2), null, Vector3(cx, kick + fh / 2, .011), g)
+				# moulure de porte
+				Mk.mi(Mk.rounded_box(Vector3(dw - .08, fh - .1, .006), .002, _wood, 2), null, Vector3(cx, kick + fh / 2, .024), g)
+				var knob := Mk.mi(Mk.sphere(.012, 16, 8), brass, Vector3(cx + (dw / 2 - .04) * (1 if i == 0 else -1), kick + fh * .62, .034), g)
+				knob.scale = Vector3(1, 1, .8)
+		"rack":
+			# baie 19" : ouverture sombre, rails, appareils et façades de remplissage
+			var bw := .483
+			var by := kick + .03
+			var bh := fh - .06
+			Mk.mi(Mk.box(Vector3(bw - .01, bh, .02)), dark, Vector3(0, by + bh / 2, .002), g)
+			var rail := Mk.mat(Mk.c(0x1a1a1a), .5, .7)
+			for sx in [-1, 1]:
+				Mk.mi(Mk.box(Vector3(.016, bh, .006)), rail, Vector3(sx * (bw / 2 - .008), by + bh / 2, .014), g)
+			var U := .04445
+			var units := [[2, "blank"], [1, "vent"], [3, "blank"], [1, "vent"], [2, "blank"], [1, "vent"], [3, "blank"]]
+			var yy := by + bh - .004
+			for u in units:
+				var uh: float = u[0] * U - .001
+				if yy - uh < by:
+					break
+				var pm := _rack_panel_mat(u[1], u[0])
+				Mk.mi(Mk.rounded_box(Vector3(bw, uh, .004), .001, [rail, rail, rail, rail, pm, rail], 1), null, Vector3(0, yy - uh / 2, .018), g)
+				for sx in [-1, 1]:
+					for sy in ([0.0] if u[0] == 1 else [uh / 2 - .01, -uh / 2 + .01]):
+						var sc := Mk.screw_head(.003)
+						sc.rotation.x = PI / 2
+						sc.position = Vector3(sx * (bw / 2 - .008), yy - uh / 2 + sy, .0205)
+						g.add_child(sc)
+				yy -= uh + .001
+	return g
+
+
+func _pull(g: Node3D, m: Material, at: Vector3, w: float) -> void:
+	var bar := Mk.mi(Mk.cyl(.006, .006, w, 12), m, at + Vector3(0, 0, .01), g)
+	bar.rotation.z = PI / 2
+	for sx in [-1, 1]:
+		var post := Mk.mi(Mk.cyl(.005, .005, .02, 8), m, at + Vector3(sx * (w / 2 - .01), 0, 0), g)
+		post.rotation.x = PI / 2
+
+
+var _rack_mats := {}
+
+
+func _rack_panel_mat(kind: String, units: int) -> Material:
+	var key := "%s%d" % [kind, units]
+	if _rack_mats.has(key):
+		return _rack_mats[key]
+	var tex := Tex.canvas(1024, int(1024 * units * .04445 / .483), func(ci, w, h):
+		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0x161616) if kind == "vent" else Mk.c(0x9a958d))
+		Tex.brushed(ci, w, h, 60 + units, .06, 1500)
+		if kind == "vent":
+			var x := 120.0
+			while x < w - 120:
+				ci.draw_rect(Rect2(x, h * .25, 10, h * .5), Color(0, 0, 0, .9))
+				x += 22
+		Tex.grime(ci, w, h, 61 + units, .5))
+	var m := Mk.mat(Color.WHITE, .5, .6, {"map": tex})
+	_rack_mats[key] = m
+	return m
 
 
 ## Cuir noir capitonné en boudins (côtes verticales tous les ~9 cm).
