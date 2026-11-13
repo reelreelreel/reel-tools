@@ -9,10 +9,15 @@ const MAX_HZ := 500.0
 
 ## Renvoie {ok, hz, note, octave, cents, midi} ou {ok: false, err}.
 static func analyze_file(path: String) -> Dictionary:
-	var wav := read_wav(path)
+	var dec := AudioDecode.to_wav(path)
+	if not dec.ok:
+		return dec
+	var wav := read_wav(dec.path)
 	if not wav.ok:
 		return wav
-	return analyze(wav.samples, wav.rate)
+	var r := analyze(wav.samples, wav.rate)
+	r["wav"] = dec.path
+	return r
 
 
 static func analyze(samples: PackedFloat32Array, rate: float) -> Dictionary:
@@ -95,7 +100,7 @@ static func describe(hz: float) -> Dictionary:
 
 
 # ---------------------------------------------------------------- lecture WAV (PCM 8/16/24/32 bits, flottant 32)
-static func read_wav(path: String) -> Dictionary:
+static func read_wav(path: String, max_seconds := 4.0) -> Dictionary:
 	var b := FileAccess.get_file_as_bytes(path)
 	if b.size() < 44 or b.slice(0, 4).get_string_from_ascii() != "RIFF" or b.slice(8, 12).get_string_from_ascii() != "WAVE":
 		return {"ok": false, "err": "PAS UN WAV"}
@@ -127,7 +132,7 @@ static func read_wav(path: String) -> Dictionary:
 		return {"ok": false, "err": "FORMAT WAV NON GERE"}
 	var bps := bits / 8
 	var frames := data_len / (bps * ch)
-	frames = mini(frames, rate * 4)  # 4 s suffisent
+	frames = mini(frames, int(rate * max_seconds))
 	var out := PackedFloat32Array()
 	out.resize(frames)
 	for i in frames:

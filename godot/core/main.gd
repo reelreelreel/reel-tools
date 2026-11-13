@@ -54,6 +54,9 @@ func _ready() -> void:
 	await Tex.flush()
 	if _args.has("sample") and studio.modules.has("tuner"):
 		studio.modules.tuner.load_sample(_args.sample)
+	if _args.has("track") and studio.modules.has("analyse"):
+		studio.modules.analyse.load_track(_args.track)
+		studio.modules.analyse.wait_done()
 	_update_fov()
 	var p := studio.shot_pose(current, cam, _aspect())
 	cam_pos = p[0]
@@ -117,11 +120,18 @@ func _unhandled_input(e: InputEvent) -> void:
 		_key(e)
 
 
-## Fichier glissé sur la fenêtre : on l'envoie à l'accordeur et on zoome dessus.
+## Fichier glissé sur la fenêtre : au module affiché s'il prend des fichiers, sinon court = accordeur
+## (sample de 808 / kick), long = analyseur (morceau, prod).
 func _on_files_dropped(files: PackedStringArray) -> void:
-	if studio.modules.has("tuner"):
-		studio.modules.tuner.on_files(files)
-		go("tuner")
+	if files.is_empty():
+		return
+	var target := current
+	if not (target == "tuner" or target == "analyse"):
+		var big := FileAccess.get_file_as_bytes(files[0]).size() > 1500000 if FileAccess.file_exists(files[0]) else false
+		target = "analyse" if big else "tuner"
+	if studio.modules.has(target):
+		studio.modules[target].on_files(files)
+		go(target)
 
 
 ## « tempo:knob » -> [module, "knob"] si le module existe, sinon []
@@ -293,6 +303,12 @@ func _selftest() -> void:
 		tu.load_sample("/tmp/808/%s.wav" % f)
 		print("accordeur ", f, " -> ", tu.result.note, tu.result.octave, " %.1f Hz %+.0f c" % [tu.result.hz, tu.result.cents])
 	tu.on_files(PackedStringArray(["/tmp/x.mp3"]))
-	print("mp3 -> ", tu.result)
+	print("mp3 absent -> ", tu.result)
+	var an: Node3D = studio.analyzer
+	print("pick analyseur (plan large) -> ", pick(cam.unproject_position(an.to_global(Vector3(0, .09, 0)))).action)
+	for f in ["house_128_Am.wav", "trap_140_Fsm.mp3", "boom_92_D.wav"]:
+		an.load_track("/tmp/tracks/" + f)
+		an.wait_done()
+		print("analyse ", f, " -> ", an.result.bpm.bpm, " ", an.result.bpm.alts, " ", an.result.key.best.short, " ", an.result.key.best.long)
 	go("overview")
 	get_tree().quit()

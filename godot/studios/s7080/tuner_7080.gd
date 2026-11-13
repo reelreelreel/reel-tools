@@ -1,7 +1,7 @@
 class_name Tuner7080
 extends Node3D
 ## Module Accordeur 808 du studio 70/80 : petit boîtier posé sur le pont de la console.
-## On glisse un sample (WAV) sur la fenêtre, ou on clique CHARGER : l'aiguille montre l'écart en cents,
+## On glisse un sample (WAV, MP3, AIFF…) sur la fenêtre, ou on clique CHARGER (ÉCOUTE le rejoue) : l'aiguille montre l'écart en cents,
 ## la lampe de la note s'allume, l'octave et la fréquence s'affichent en LED rouges.
 ##
 ## Repère local : façade vers +Z. Actions : "tuner:load". Corps entier : "m:tuner".
@@ -20,6 +20,7 @@ var led_hz: TexLib.LiveCanvas
 var led_oct: TexLib.LiveCanvas
 var dialog: FileDialog
 var file_name := ""
+var player: AudioStreamPlayer
 
 const REST := -.9        # aiguille au repos (calée à gauche)
 const SWING := .75       # angle pour ±50 cents
@@ -43,7 +44,7 @@ func _init(walnut: Material) -> void:
 	dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
 	dialog.access = FileDialog.ACCESS_FILESYSTEM
 	dialog.use_native_dialog = true
-	dialog.filters = PackedStringArray(["*.wav ; Sample WAV"])
+	dialog.filters = PackedStringArray(["*.wav, *.wave, *.mp3, *.aif, *.aiff, *.m4a, *.flac ; Samples audio"])
 	dialog.title = "Choisis un sample de 808 / kick"
 	dialog.file_selected.connect(load_sample)
 	add_child(dialog)
@@ -57,11 +58,10 @@ func _build_face() -> void:
 		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0x1c1b1a))
 		Tex.brushed(ci, w, h, 808, .05, 3000)
 		Tex.grime(ci, w, h, 809, 1.2)
-		Tex.silk(ci, "OCT", P.call(-.025), V.call(-.048), 20, Color(.9, .88, .82, .6), "center")
+		Tex.silk(ci, "OCT", P.call(-.022), V.call(-.048), 20, Color(.9, .88, .82, .6), "center")
 		Tex.silk(ci, "HZ", P.call(.118), V.call(-.065), 22, Color(.9, .88, .82, .6), "center")
-		Tex.silk(ci, "CHARGER", P.call(-.1), V.call(-.048), 20, Color(.9, .88, .82, .6), "center")
-		Tex.silk(ci, "OU GLISSE", P.call(-.083), V.call(-.06), 15, Color(.9, .88, .82, .45), "left")
-		Tex.silk(ci, "UN WAV", P.call(-.083), V.call(-.07), 15, Color(.9, .88, .82, .45), "left"))
+		Tex.silk(ci, "CHARGER", P.call(-.105), V.call(-.048), 18, Color(.9, .88, .82, .6), "center")
+		Tex.silk(ci, "ÉCOUTE", P.call(-.064), V.call(-.048), 18, Color(.9, .88, .82, .6), "center"))
 	var m := Mk.mat(Color.WHITE, .45, .6, {"map": tex, "normal": Mk.scratch_normal(), "normal_scale": .15})
 	Mk.mi(Mk.quad(W - .012, H - .012), m, Vector3.ZERO, face)
 
@@ -86,7 +86,7 @@ func _build_meter() -> void:
 			if k % 5 == 0:
 				Tex.silk(ci, ("%+d" % cents) if cents != 0 else "0", c.x + dir.x * 292, c.y + dir.y * 292, 24, dark, "center")
 		Tex.silk(ci, "CENTS", w / 2.0, 196, 26, dark, "center")
-		Tex.silk(ci, "REEL'S TOOLS  ·  RT-808 KICK TUNER", w / 2.0, 236, 18, Color(.1, .1, .1, .7), "center")
+		Tex.silk(ci, "GLISSE UN SAMPLE  ·  WAV  MP3  AIFF", w / 2.0, 232, 17, Color(.1, .1, .1, .6), "center")
 		Tex.silk(ci, "♭", 60, 200, 40, dark, "center", 400)
 		Tex.silk(ci, "♯", w - 60.0, 200, 40, dark, "center", 400))
 	var win := Node3D.new()
@@ -131,7 +131,7 @@ func _build_leds() -> void:
 		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0x070101))
 		var s := "-" if result.is_empty() or not result.ok else str(result.octave)
 		Tex.seg7(ci, s.right(1), 22, 14, 84, 132, 0, Mk.c(0xff3d22), Color(1, .2, .08, .06)))
-	_led_window(led_oct.texture, Vector2(-.025, -.068), Vector2(.014, .02))
+	_led_window(led_oct.texture, Vector2(-.022, -.068), Vector2(.014, .02))
 
 
 func _led_window(tex: Texture2D, at: Vector2, size: Vector2) -> void:
@@ -141,21 +141,25 @@ func _led_window(tex: Texture2D, at: Vector2, size: Vector2) -> void:
 
 
 func _build_button() -> void:
-	var bt := Node3D.new()
-	bt.name = "LoadButton"
-	bt.position = Vector3(-.1, -.064, .003)
-	face.add_child(bt)
-	var ring := Mk.mi(Mk.torus_ring(.011, .002), Mk.chrome_mat(), Vector3.ZERO, bt)
-	ring.rotation.x = PI / 2
-	var cap := Mk.mi(Mk.cyl(.009, .009, .008, 24), Mk.mat(Mk.c(0xd8d2c4), .35, 0.0, {"clearcoat": .6}), Vector3(0, 0, .004), bt)
-	cap.rotation.x = PI / 2
-	Mk.add_pick_later(bt, "tuner:load", .006)
+	for b in [[-.105, "tuner:load", Mk.c(0xd8d2c4)], [-.064, "tuner:play", Mk.c(0x3a8a4a)]]:
+		var bt := Node3D.new()
+		bt.position = Vector3(b[0], -.066, .003)
+		face.add_child(bt)
+		var ring := Mk.mi(Mk.torus_ring(.0095, .0018), Mk.chrome_mat(), Vector3.ZERO, bt)
+		ring.rotation.x = PI / 2
+		var cap := Mk.mi(Mk.cyl(.0078, .0078, .008, 24), Mk.mat(b[2], .35, 0.0, {"clearcoat": .6}), Vector3(0, 0, .004), bt)
+		cap.rotation.x = PI / 2
+		Mk.add_pick_later(bt, b[1], .005)
+	player = AudioStreamPlayer.new()
+	add_child(player)
 
 
 # ---------------------------------------------------------------- logique
 func load_sample(path: String) -> void:
 	file_name = path.get_file()
 	result = PitchDetect.analyze_file(path)
+	player.stop()
+	player.stream = AudioStreamWAV.load_from_file(result.wav) if result.get("ok", false) else null
 	for i in 12:
 		lamps[i].emission_energy_multiplier = 1.3 if result.ok and PitchDetect.NAMES[i] == result.note else .03
 	led_hz.redraw()
@@ -164,24 +168,16 @@ func load_sample(path: String) -> void:
 
 
 func on_files(paths: PackedStringArray) -> void:
-	for p in paths:
-		if p.get_extension().to_lower() == "wav":
-			load_sample(p)
-			return
-	result = {"ok": false, "err": "PAS UN WAV"}
-	load_sample_failed()
-
-
-func load_sample_failed() -> void:
-	for m in lamps:
-		m.emission_energy_multiplier = .03
-	led_hz.redraw()
-	led_oct.redraw()
+	if not paths.is_empty():
+		load_sample(paths[0])
 
 
 func on_action(a: String) -> void:
 	if a == "load":
 		dialog.popup_centered()
+	elif a == "play" and player.stream:
+		player.stop()
+		player.play()
 
 
 func on_drag_start(_a: String) -> bool:
@@ -199,6 +195,9 @@ func on_wheel(_a: String, _dir: float, _fine: bool) -> void:
 func on_key(e: InputEventKey) -> bool:
 	if e.keycode == KEY_L or e.keycode == KEY_O:
 		on_action("load")
+		return true
+	if e.keycode == KEY_SPACE or e.keycode == KEY_P:
+		on_action("play")
 		return true
 	return false
 

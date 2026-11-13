@@ -250,7 +250,7 @@ func _tufted_leather() -> StandardMaterial3D:
 func _architect_lamp() -> void:
 	var g := Node3D.new()
 	g.name = "ArchitectLamp"
-	_put(g, Vector3(.22, TOP, -.75), -2.2)
+	_put(g, Vector3(.12, TOP, -1.28), -2.0)
 	Mk.mi(Mk.cyl(.07, .08, .025, 32), _black, Vector3(0, .012, 0), g)
 	var a1 := Mk.mi(Mk.cyl(.007, .007, .5, 10), _chrome, Vector3(0, .26, 0), g)
 	a1.rotation.x = .12
@@ -295,10 +295,10 @@ func _desk_objects() -> void:
 	_console(Vector3(1.7, TOP, -.57), PI, 1.6, .74, 20)
 	# (le module Tempo est accolé à droite de la console : voir Tempo7080)
 	# l'angle et le retour restent libres pour les modules : objets en bout de bureau et au fond du retour
-	_phone(Vector3(.27, TOP, -1.6), .5)
-	_notepad(Vector3(.3, TOP, -1.28), .25)
-	_mug(Vector3(.42, TOP, -.38), .8)
-	_ashtray(Vector3(.3, TOP, -1.05))
+	_phone(Vector3(.27, TOP, -1.65), .5)
+	_notepad(Vector3(.35, TOP, -1.38), .25)
+	_mug(Vector3(.42, TOP, -.3), .8)
+	_ashtray(Vector3(.42, TOP, -1.17))
 	_tape_stack(Vector3(2.6, TOP, -.1), 3)
 	_tape_stack(Vector3(.22, TOP, -.2), 2)
 	# casque posé sur l'assise du fauteuil

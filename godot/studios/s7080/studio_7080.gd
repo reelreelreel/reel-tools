@@ -29,11 +29,12 @@ const B_FLOOR := -0.78
 const B_WOOD_TOP := 0.44
 
 ## Plans caméra (glisser / flèches) : la vue fixe de Blender puis un plan par module.
-var order: Array = ["overview", "tempo", "tuner"]
+var order: Array = ["overview", "tempo", "tuner", "analyse"]
 ## Modules jouables : nom -> nœud (on_action, on_drag_start, on_drag, on_wheel, on_key, animate)
 var modules := {}
 var tempo: Tempo7080
 var tuner: Tuner7080
+var analyzer: Analyzer7080
 var deco: Deco7080
 
 var engine: TempoEngine
@@ -64,12 +65,18 @@ func _init(e: TempoEngine) -> void:
 	tempo.rotation.y = PI
 	add_child(tempo)
 	modules["tempo"] = tempo
-	# module Accordeur 808 : petit boîtier posé au centre du pont de la console
+	# module Accordeur 808 : petit boîtier posé sur le pont de la console, côté gauche de l'image
 	tuner = Tuner7080.new(Mk.mat(Mk.c(0x6a4028), .55, 0.0, {"map": Mk.walnut_tex(), "clearcoat": .3}))
-	tuner.position = Vector3(1.7, DESK_TOP + .245, -.25)
-	tuner.basis = Basis(Vector3.UP, PI) * Basis(Vector3.RIGHT, -.15)
+	tuner.position = Vector3(2.0, DESK_TOP + .245, -.25)
+	tuner.basis = (Basis(Vector3.UP, PI) * Basis(Vector3.RIGHT, -.15)).scaled(Vector3.ONE * .85)
 	add_child(tuner)
 	modules["tuner"] = tuner
+	# module Analyse : magnéto + écran vert posé sur le retour, face à la pièce
+	analyzer = Analyzer7080.new(Mk.mat(Mk.c(0x6a4028), .55, 0.0, {"map": Mk.walnut_tex(), "clearcoat": .3}))
+	analyzer.position = Vector3(.27, DESK_TOP, -.75)
+	analyzer.rotation.y = PI / 2
+	add_child(analyzer)
+	modules["analyse"] = analyzer
 
 
 func _ready() -> void:
@@ -774,8 +781,10 @@ func _aim(n: Node3D, from: Vector3, to: Vector3) -> void:
 # ---------------------------------------------------------------- caméra
 ## Renvoie [position, point visé, orientation] : la caméra fixe de la scène Blender.
 func shot_pose(shot: String, cam: Camera3D, aspect: float) -> Array:
+	if shot == "analyse":
+		return _via(analyzer, Vector3(0, .08, .02), Vector3(0, 1, .9), Analyzer7080.W / 2, Analyzer7080.D / 2, cam, aspect, 1.15)
 	if shot == "tuner":
-		return _via(tuner, Vector3(0, Tuner7080.H / 2, 0), Vector3(0, .25, 1), Tuner7080.W / 2, Tuner7080.H / 2, cam, aspect, 1.25)
+		return _via(tuner, Vector3(0, Tuner7080.H / 2, 0), Vector3(0, .25, 1), Tuner7080.W / 2 * .85, Tuner7080.H / 2 * .85, cam, aspect, 1.25)
 	if shot == "tempo":
 		return _via(tempo.deck, Vector3(0, 0, .0), Vector3(0, 1, .55), Tempo7080.W / 2, tempo.plen / 2, cam, aspect, 1.08)
 	var b := Basis(CAM_QUAT)
