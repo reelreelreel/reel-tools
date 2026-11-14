@@ -1,8 +1,8 @@
 shader_type canvas_item;
 // Grain de pellicule animé + vignettage, posés par-dessus l'image 3D.
 
-uniform float grain_amount = 0.09;
-uniform float vignette = 0.82;
+uniform float grain_amount = 0.04;
+uniform float vignette = 0.5;
 
 float hash(vec2 p) {
 	return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);

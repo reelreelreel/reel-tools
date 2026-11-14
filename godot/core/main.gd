@@ -45,6 +45,10 @@ func _ready() -> void:
 	engine = TempoEngine.new()
 	studio = Studio7080.new(engine)
 	add_child(studio)
+	if _args.has("overlaps"):
+		_overlaps()
+		get_tree().quit()
+		return
 	cam = Camera3D.new()
 	cam.cull_mask = 0xFFFFF & ~(1 << 9)  # couche 10 = ce que l'on « porte » (le fauteuil où l'on est assis)
 	cam.near = 0.02
@@ -334,7 +338,9 @@ func _process(delta: float) -> void:
 	attrs.dof_blur_far_transition = focus * (.9 if wide else .5)
 	attrs.dof_blur_near_distance = focus * (.55 if wide else .8)
 	attrs.dof_blur_near_transition = focus * (.35 if wide else .3)
-	attrs.dof_blur_amount = .06 if wide else .1
+	attrs.dof_blur_amount = .06
+	attrs.dof_blur_far_enabled = Studio7080.LOOK_FX and not wide
+	attrs.dof_blur_near_enabled = false
 	studio.animate(t, delta, reduced)
 
 
@@ -518,3 +524,86 @@ func _type(mod: Node, txt: String) -> void:
 		var ev := InputEventKey.new()
 		ev.unicode = ch.unicode_at(0)
 		mod.on_key(ev)
+
+
+## Contrôle de dev (--overlaps) : liste les objets de la pièce qui se rentrent dedans. Chaque objet
+## = sa boîte orientée (meshes visibles, dans son propre repère) ; test des axes séparateurs ;
+## on signale une pénétration de plus de 2 cm.
+func _vis_aabb(root: Node3D) -> Variant:
+	var out: Variant = null
+	var inv := root.global_transform.affine_inverse()
+	for n in root.find_children("*", "MeshInstance3D", true, false):
+		var m := n as MeshInstance3D
+		if not m.is_visible_in_tree() or m.mesh == null:
+			continue
+		var bb: AABB = (inv * m.global_transform) * m.get_aabb()
+		out = bb if out == null else (out as AABB).merge(bb)
+	return out
+
+
+func _obb_pen(a: Array, b: Array) -> float:
+	# a, b = [centre, [axe0, axe1, axe2] (unitaires), demi-tailles]
+	var axes := []
+	for i in 3:
+		axes.append(a[1][i])
+		axes.append(b[1][i])
+	for i in 3:
+		for j in 3:
+			var c: Vector3 = (a[1][i] as Vector3).cross(b[1][j])
+			if c.length() > 1e-4:
+				axes.append(c.normalized())
+	var best := 1e9
+	for ax in axes:
+		var ra := 0.0
+		var rb := 0.0
+		for i in 3:
+			ra += absf((a[1][i] as Vector3).dot(ax)) * a[2][i]
+			rb += absf((b[1][i] as Vector3).dot(ax)) * b[2][i]
+		var d := absf(((b[0] as Vector3) - (a[0] as Vector3)).dot(ax))
+		best = minf(best, ra + rb - d)
+		if best <= 0:
+			return 0.0
+	return best
+
+
+func _overlaps() -> void:
+	var items := []
+	var parents: Array = [studio, studio.deco]
+	for c in studio.get_children():
+		if c.name == "Booth":
+			parents.append(c)
+	for par in parents:
+		for c in par.get_children():
+			if not (c is Node3D) or c is MeshInstance3D or c is Light3D or c is MultiMeshInstance3D or c is Camera3D:
+				continue
+			if String(c.name) in ["Booth", "Street", "Deco7080", "FrontWall", "RightWall", "LeftWall", "BackWall"]:
+				continue
+			var n := c as Node3D
+			var bbv: Variant = _vis_aabb(n)
+			if bbv == null:
+				continue
+			var bb: AABB = bbv
+			if bb.size.x > 3.0 or bb.size.z > 3.0 or bb.size.y > 2.7:
+				continue
+			var gt := n.global_transform
+			var axes := []
+			var half := []
+			for i in 3:
+				var col: Vector3 = gt.basis[i]
+				axes.append(col.normalized())
+				half.append(bb.size[i] / 2 * col.length())
+			items.append([n, [gt * bb.get_center(), axes, half]])
+	var found := 0
+	for i in items.size():
+		for j in range(i + 1, items.size()):
+			var pen := _obb_pen(items[i][1], items[j][1])
+			if pen > .02:
+				found += 1
+				print("CHEVAUCHEMENT %.2f m  %s  <->  %s" % [pen, _nm(items[i][0]), _nm(items[j][0])])
+	print("objets contrôlés : %d, chevauchements : %d" % [items.size(), found])
+
+
+func _nm(n: Node) -> String:
+	var s := String(n.name)
+	var p := (n as Node3D).global_position.snapped(Vector3.ONE * .01)
+	return "%s@(%.2f, %.2f, %.2f)" % [s.replace("@", "").left(18), p.x, p.y, p.z]

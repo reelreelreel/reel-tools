@@ -21,14 +21,12 @@ func _init() -> void:
 	_black = Mk.mat(Mk.c(0x121212), .45, .1)
 	_chrome = Mk.chrome_mat()
 	_brass = Mk.mat(Mk.c(0xc89a48), .3, 1.0)
-	_big_speakers()
 	_nearfields()
 	_chair()
 	_architect_lamp()
 	_floor_lamp()
 	_desk_objects()
 	_floor_objects()
-	_plant()
 	_wall_frames()
 
 
@@ -232,14 +230,22 @@ func _cone_ribs() -> Texture2D:
 ## Enceintes de proximité sur le bureau : caisson noir, baffle en retrait, membrane blanche,
 ## vis, dôme d'aigu protégé, évent, plaque, bornier et câble à l'arrière.
 func _nearfields() -> void:
-	# enceintes de proximité : les Pioneer CS-780 de Maxime, posées sur le meuble derrière la console,
-	# tournées vers l'écoute
+	# enceintes de proximité façon NS-10 sur petits pieds, derrière la console, tournées vers l'écoute
 	var listener := Vector3(2.5, 1.15, -2.2)
-	for k in [["Speaker", 1.25, ["Speaker", "Print"]], ["Speaker.001", 3.75, ["Speaker.001", "Print.001"]]]:
-		var pos := Vector3(k[1], TOP, -.48)
+	for x in [1.5, 3.5]:
+		var pos := Vector3(x, TOP, -.39)
 		var to := listener - pos
-		var sp := Props.place(self, "pioneer_cs780.glb", pos, atan2(to.x, to.z), {"scale": .055, "keep": k[2]})
-		sp.name = "Nearfield"
+		var yaw := atan2(to.x, to.z)
+		var st := Items7080.wedge_stand(.22, .2, .2)
+		st.position = pos
+		st.rotation.y = yaw
+		add_child(st)
+		var sp := Items7080.ns10()
+		sp.position = pos + Vector3(0, .212, 0)
+		sp.rotation.y = yaw
+		add_child(sp)
+		var back := pos + Basis(Vector3.UP, yaw) * Vector3(0, .27, -.11)
+		Mk.mi(Mk.tube([back, back + Vector3(0, -.05, -.03), Vector3(back.x, TOP + .01, -.33), Vector3(back.x + .04, .5, -.31)], .004, 20, 6), _black, Vector3.ZERO, self)
 
 
 var _badges := {}
@@ -398,7 +404,7 @@ func _architect_lamp() -> void:
 	var g := Node3D.new()
 	g.name = "ArchitectLamp"
 	arch_lamp = g
-	_put(g, Vector3(4.82, TOP, -3.85), -PI / 2 - .5)
+	_put(g, Vector3(4.86, TOP, -3.85), -.25)
 	Mk.mi(Mk.cyl(.07, .08, .025, 32), _black, Vector3(0, .012, 0), g)
 	var a1 := Mk.mi(Mk.cyl(.007, .007, .5, 10), _chrome, Vector3(0, .26, 0), g)
 	a1.rotation.x = .12
@@ -434,7 +440,7 @@ func set_lamp_color(c: Color) -> void:
 func _floor_lamp() -> void:
 	var g := Node3D.new()
 	g.name = "FloorLamp"
-	_put(g, Vector3(1.2, 0, -5.7))
+	_put(g, Vector3(.25, 0, -4.75))
 	Mk.mi(Mk.cyl(.15, .16, .03, 32), _brass, Vector3(0, .015, 0), g)
 	Mk.mi(Mk.cyl(.012, .012, 1.4, 10), _brass, Vector3(0, .72, 0), g)
 	_lamp_shade = Mk.mat(Mk.c(0xe8d2a8), .9, 0.0, {"emission": Mk.c(0xffb060), "energy": 1.8, "cull_off": true})
@@ -454,21 +460,21 @@ func _floor_lamp() -> void:
 func _desk_objects() -> void:
 	# grande console sur le meuble, face à l'ingé (avant vers -Z)
 	_console(Vector3(2.5, TOP, -.85), PI, 2.2, .74, 24)
-	# aile gauche (place libre pour le futur Loudness) : téléphone, lampe, cendrier, notes
-	var lw := Vector3(4.28, TOP, -1.2)
-	Props.place(self, "props70.glb", lw + Vector3(.15, 0, .05), -2.4, {"keep": ["Phone"], "scale": .8})
-	Props.place(self, "props70.glb", Vector3(4.62, TOP, -.72), -2.1, {"keep": ["Lamp_01"]})
-	Props.place(self, "props70.glb", lw + Vector3(.25, 0, -.2), 0.0, {"keep": ["Ashtray_01"], "scale": .7})
-	# sur le meuble devant la console : bloc-notes + stylo, cassette, casque Sony, mug
-	Props.place(self, "props70.glb", Vector3(1.38, TOP, -1.0), PI + .3, {"keep": ["Note"], "scale": .9})
-	Props.place(self, "props70.glb", Vector3(1.45, TOP + .002, -1.02), PI + .1, {"keep": ["Pen"]})
-	Props.place(self, "props70.glb", Vector3(3.62, TOP, -1.2), .7, {"keep": ["Audio_Tape"], "scale": .5})
-	Props.place(self, "sony_mdr7506.glb", Vector3(1.25, TOP + .002, -.45), PI / 2, {"tilt": -PI / 2})
-	_mug(Vector3(1.42, TOP, -1.22), .8)
-	_tape_stack(Vector3(3.62, TOP, -.4), 3)
-	# casque Pioneer accroché au bord du bureau producteur
-	Props.place(self, "pioneer_se21.glb", Vector3(4.36, .62, -1.98), -PI / 2, {"scale": .03})
-	_notepad(Vector3(4.6, TOP, -2.75), -1.4)
+	# aile gauche (place libre pour le futur Loudness) : téléphone, cendrier, notes, cassette, mug,
+	# casque Pioneer — positions dans le repère de l'aile (x le long, z vers le fauteuil)
+	var wc := Vector3(4.35, TOP, -1.32)
+	var wy := atan2(2.5 - wc.x, -2.15 - wc.z)
+	var wb := Basis(Vector3.UP, wy)
+	Props.place(self, "props70.glb", wc + wb * Vector3(-.26, 0, -.24), wy + .3, {"keep": ["Phone"], "scale": .75})
+	Props.place(self, "props70.glb", wc + wb * Vector3(.27, 0, -.22), 0.0, {"keep": ["Ashtray_01"], "scale": .65})
+	Props.place(self, "props70.glb", wc + wb * Vector3(.05, 0, .2), wy + .2, {"keep": ["Note"], "scale": .75})
+	Props.place(self, "props70.glb", wc + wb * Vector3(.1, .003, .2), wy + .5, {"keep": ["Pen"]})
+	Props.place(self, "props70.glb", wc + wb * Vector3(-.25, 0, .22), wy - .4, {"keep": ["Audio_Tape"], "scale": .45})
+	_mug(wc + wb * Vector3(.3, 0, .12), .8)
+	Props.place(self, "pioneer_se21.glb", wc + wb * Vector3(.05, .002, -.05), wy + 1.3, {"scale": .03, "tilt": -PI / 2})
+	# derrière la console : bandes ; bureau producteur : casque Sony + bloc
+	_tape_stack(Vector3(2.5, TOP, -.25), 3)
+	Props.place(self, "sony_mdr7506.glb", Vector3(4.62, TOP + .002, -2.62), -PI / 2 + .3, {"tilt": -PI / 2})
 
 
 ## Console de mixage posée sur le retour, tournée vers la pièce (+X) : 10 tranches + section master,
@@ -839,33 +845,14 @@ func _nab_reel(at: Vector3, rot: float) -> void:
 
 # ---------------------------------------------------------------- objets au sol
 func _floor_objects() -> void:
-	# câble XLR enroulé
-	for i in 4:
-		var r := Mk.mi(Mk.torus_ring(.17 + i * .006, .005), _black, Vector3(3.6 + i * .01, .006 + i * .004, -3.1 + i * .008), self)
-		r.rotation = Vector3(0.04 * i, 0, .03)
-	# caisse de disques
-	var crate := Node3D.new()
-	_put(crate, Vector3(1.55, 0, -4.95), .3)
-	var wood := Mk.mat(Mk.c(0x8a6038), .7)
-	Mk.mi(Mk.box(Vector3(.34, .02, .34)), wood, Vector3(0, .01, 0), crate)
-	for sx in [-1, 1]:
-		Mk.mi(Mk.box(Vector3(.02, .3, .34)), wood, Vector3(sx * .16, .15, 0), crate)
-	Mk.mi(Mk.box(Vector3(.34, .3, .02)), wood, Vector3(0, .15, -.16), crate)
-	var cols := [0x2a4a7a, 0xd8a030, 0x1a1a1a, 0xb3241a, 0xe8e0d0, 0x3a6a3a, 0x8a3a6a]
-	for i in cols.size():
-		var sl := Mk.mi(Mk.box(Vector3(.31, .31, .004)), Mk.mat(Mk.c(cols[i]), .7), Vector3(0, .17, -.13 + i * .035), crate)
-		sl.rotation.x = -.25
-	# bandes posées par terre contre le meuble
-	_tape_stack(Vector3(3.9, 0, -5.75), 3)
 	_pouf()
-	_toolbox()
 
 
 ## Pouf rond 70s capitonné en jacquard gris à motifs, à côté du fauteuil.
 func _pouf() -> void:
 	var g := Node3D.new()
 	g.name = "Pouf"
-	_put(g, Vector3(2.9, 0, -4.55), .4)
+	_put(g, Vector3(2.05, 0, -5.0), .4)
 	var fab := Mk.pbr("floral_jacquard", .35, {"tint": Mk.c(0xb8b0c0)})
 	var prof := [[0.0, .02]]
 	for i in 13:
@@ -908,7 +895,7 @@ func _plant() -> void:
 	var g := Node3D.new()
 	plant = g
 	g.name = "Plant"
-	_put(g, Vector3(.3, 0, -.3))
+	_put(g, Vector3(4.72, 0, -1.55))
 	Mk.mi(Mk.lathe([[0, 0], [.12, 0], [.16, .3], [.17, .3], [.17, .32], [0, .32]], 32), Mk.mat(Mk.c(0xa8522a), .8), Vector3.ZERO, g)
 	Mk.mi(Mk.disc(.16, 24), Mk.mat(Mk.c(0x2a1a10), 1.0), Vector3(0, .3, 0), g)
 	var leaf := Mk.mat(Mk.c(0x2e4a1e), .5, 0.0, {"clearcoat": .4, "cull_off": true})

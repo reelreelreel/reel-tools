@@ -145,6 +145,28 @@ func _build_tower() -> void:
 	var rail := Mk.mat(Mk.c(0x202020), .45, .8)
 	for sx in [-1, 1]:
 		Mk.mi(Mk.box(Vector3(.02, TOWER_H - .14, .008)), rail, Vector3(sx * (RACK_W / 2 - .006), TOWER_H / 2 + .02, TOWER_D / 2 - .03), self)
+	# lampe de rack à col de cygne sur le dessus : éclaire les façades
+	var lb := Vector3(-.2, TOWER_H, TOWER_D / 2 - .06)
+	Mk.mi(Mk.cyl(.03, .035, .02, 20), steel, lb + Vector3(0, .01, 0), self)
+	var neck := [lb + Vector3(0, .02, 0), lb + Vector3(0, .16, .02), lb + Vector3(.06, .24, .1), lb + Vector3(.12, .22, .17)]
+	Mk.mi(Mk.tube(neck, .006, 24, 8), steel, Vector3.ZERO, self)
+	var head := Node3D.new()
+	head.position = neck[3]
+	add_child(head)
+	head.basis = Basis.looking_at(Vector3(.05, -1, .25), Vector3.UP)
+	var shade := Mk.mi(Mk.cyl(.022, .03, .06, 20, false), Mk.mat(Mk.c(0x1a1a1a), .4, .6, {"cull_off": true}), Vector3(0, 0, -.02), head)
+	shade.rotation.x = PI / 2
+	var bulb := Mk.mi(Mk.disc(.026, 20), Mk.glow(Mk.c(0xffd8a8), 4.0), Vector3(0, 0, -.05), head)
+	bulb.rotation.x = -PI / 2
+	var rl := SpotLight3D.new()
+	rl.light_color = Mk.c(0xffd8b0)
+	rl.light_energy = 2.2
+	rl.spot_range = 1.2
+	rl.spot_angle = 48.0
+	rl.spot_angle_attenuation = 1.2
+	rl.shadow_enabled = true
+	rl.position = Vector3(0, 0, -.06)
+	head.add_child(rl)
 	# appareils de remplissage : patchbay en haut, puis sous la 808 : blanc, compresseur, ventil, alim
 	var y := TOWER_H - t - .004
 	_filler(y - U / 2, 1, "patch")
