@@ -296,7 +296,7 @@ func _key(e: InputEventKey) -> void:
 	if k == KEY_SLASH:
 		ui.open_search()
 		return
-	if k >= KEY_1 and k <= KEY_8 and not cmd:
+	if k >= KEY_1 and k <= KEY_9 and not cmd:
 		go(AppUI.SHOTS[k - KEY_1][0])
 		return
 	if k == KEY_ESCAPE:
@@ -510,6 +510,55 @@ func _selftest() -> void:
 	bt.toggle_play()
 	bt._export_to("/tmp/beats_test.mid")
 	print("beats : midi écrit = ", FileAccess.get_file_as_bytes("/tmp/beats_test.mid").size(), " octets")
+	# carnet de splits
+	var sl: Splits7080 = studio.splits
+	print("pick splits (plan large) -> ", _wide_pick(sl.to_global(Vector3(-.1, .05, .02))))
+	go("splits")
+	await get_tree().create_timer(.6).timeout
+	for nm in ["field:title", "row:0:a", "equal", "next"]:
+		var probe := {"field:title": Vector3(-.11, .1, .02), "row:0:a": Vector3(.06, .08, .02), "equal": Vector3(.08, -.1, .02), "next": Vector3(.17, -.135, .02)}[nm] as Vector3
+		print("pick splits ", nm, " -> ", pick(cam.unproject_position(sl.to_global(probe))).action)
+	var saved: Array = sl.pages.duplicate(true)
+	var saved_cur := sl.cur
+	sl.pages = [sl._blank_page()]
+	sl.cur = 0
+	sl.on_action("field:title")
+	_type(sl, "Bolide")
+	_type(sl, "\n")
+	_type(sl, "SDM")
+	_type(sl, "\n")
+	for nm in ["Maxime", "SDM", "Kore"]:
+		sl.on_action("add")
+		_type(sl, nm)
+	sl.on_action("equal")
+	print("splits SACEM 3 -> ", sl.pages[0].rows.map(func(r): return r.share), " ", sl.check())
+	print("splits 24 parts -> ", Splits7080.equal_parts(24).slice(14, 18), " somme ", snappedf(Splits7080.equal_parts(24).reduce(func(a, b): return a + b, 0.0), .01))
+	sl.on_action("row:1:a")
+	sl._commit()
+	sl.on_action("row:1:d")
+	_type(sl, "40")
+	_type(sl, "\n")
+	print("splits part saisie -> ", sl.pages[0].rows[1].share, " ", sl.check())
+	sl.on_action("mode:intl")
+	sl.on_action("row:2:b")
+	sl.on_action("equal")
+	print("splits intl -> ", sl.pages[0].rows.map(func(r): return [r.role, r.share]), " ", sl.check())
+	sl.on_action("copy")
+	print("splits récap :\n", DisplayServer.clipboard_get())
+	sl.write_pdf("/tmp/splits_test.pdf")
+	var pdf := FileAccess.get_file_as_bytes("/tmp/splits_test.pdf")
+	print("splits PDF = ", pdf.size(), " octets, en-tête ", pdf.slice(0, 8).get_string_from_ascii())
+	sl.on_action("next")
+	for i in 50:
+		await get_tree().process_frame
+	print("splits page suivante -> ", sl.cur + 1, "/", sl.pages.size(), " titre '", sl.pages[sl.cur].title, "'")
+	sl.on_action("prev")
+	for i in 50:
+		await get_tree().process_frame
+	print("splits retour -> ", sl.pages[sl.cur].title)
+	sl.pages = saved
+	sl.cur = saved_cur
+	sl._refresh()
 	go("overview")
 	get_tree().quit()
 

@@ -41,7 +41,7 @@ const B_FLOOR := -0.78
 const B_WOOD_TOP := 0.44
 
 ## Plans : la vue 360° depuis le fauteuil, puis un gros plan par module.
-var order: Array = ["overview", "tempo", "tuner", "analyse", "freq", "export", "fax", "beats"]
+var order: Array = ["overview", "tempo", "tuner", "analyse", "freq", "export", "fax", "beats", "splits"]
 ## Modules jouables : nom -> nœud (on_action, on_drag_start, on_drag, on_wheel, on_key, animate)
 var modules := {}
 var tempo: Tempo7080
@@ -49,6 +49,7 @@ var tuner: Tuner7080
 var analyzer: Analyzer7080
 var freq: Freq7080
 var export: Export7080
+var splits: Splits7080
 var fax: Fax7080
 var beats: Beats7080
 var deco: Deco7080
@@ -1396,6 +1397,12 @@ func _build_lectern() -> void:
 	top.rotation.x = .35
 	var lip := Mk.mi(Mk.rounded_box(Vector3(.46, .03, .02), .004, _wood, 2), null, Vector3(0, .97, .19), g)
 	lip.rotation.x = .35
+	# carnet de splits ouvert sur le plateau (pages dans le plan XY local, +Z = vers le lecteur)
+	splits = Splits7080.new(_wood)
+	var b := Basis(Vector3.RIGHT, .35) * Basis(Vector3.RIGHT, -PI / 2)
+	splits.transform = Transform3D(b, Vector3(0, 1.02, .02) + Basis(Vector3.RIGHT, .35) * Vector3(0, .0125, 0))
+	g.add_child(splits)
+	modules["splits"] = splits
 
 
 # ---------------------------------------------------------------- dehors : rue la nuit (années 70)
@@ -1640,6 +1647,8 @@ func yaw_to(p: Vector3) -> float:
 
 ## Renvoie [position, point visé] : vue depuis le fauteuil, ou gros plan sur un module.
 func shot_pose(shot: String, cam: Camera3D, aspect: float) -> Array:
+	if shot == "splits":
+		return _via(splits, Vector3(0, 0, .012), Vector3(0, 0, 1), Splits7080.PW + .012, Splits7080.PH / 2 + .01, cam, aspect, 1.1)
 	if shot == "export":
 		return _via(export, Vector3(0, 0, .03), Vector3(0, 0, 1), Export7080.BW / 2, Export7080.BH / 2, cam, aspect, 1.12)
 	if shot == "freq":

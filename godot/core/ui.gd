@@ -16,6 +16,7 @@ const SHOTS := [
 	["export", "Export"],
 	["fax", "Fax d'accords"],
 	["beats", "Boîtes à rythmes"],
+	["splits", "Carnet de splits"],
 ]
 const STUDIOS := [
 	["7080", "Années 70/80", true],
@@ -477,6 +478,7 @@ const KEYWORDS := {
 	"freq": "fréquences frequences hz note synthé synthe la 440",
 	"export": "export nom fichier mix master version bounce",
 	"fax": "fax accords grille progression midi compo rhodes",
+	"splits": "split splits carnet répartition repartition sacem droits ayants auteur compositeur éditeur editeur publisher writer ipi pro pourcentage feuille",
 	"beats": "boite rythme boîte batterie drum 808 beat pattern séquenceur sequenceur kick hat",
 }
 
