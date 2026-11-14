@@ -1254,21 +1254,82 @@ func _build_soffits() -> void:
 		var W := .98
 		var H := ROOM.y - .85
 		var D := .42
-		var jute := _jute_mat(1)
-		Mk.mi(Mk.rounded_box(Vector3(W, H, D), .01, [jute, jute, _wood, jute, Mk.mat(Mk.c(0x0a0806), .9), jute], 2), null, Vector3(0, .85 + H / 2, 0), g)
-		# cadre en noyer autour du baffle
-		for sx in [-1, 1]:
-			Mk.mi(Mk.rounded_box(Vector3(.06, H, .04), .008, _wood, 2), null, Vector3(sx * (W / 2 - .03), .85 + H / 2, D / 2), g)
-		for sy in [.85 + .03, ROOM.y - .03]:
-			Mk.mi(Mk.rounded_box(Vector3(W, .06, .04), .008, _wood, 2), null, Vector3(0, sy, D / 2), g)
-		# socle sous le soffit (lattes comme le mur)
-		Mk.mi(Mk.rounded_box(Vector3(W, .85, D - .04), .008, _slat_mat(), 2), null, Vector3(0, .425, -.02), g)
+		var pm := _panel_mat()
+		var black := Mk.mat(Mk.c(0x0a0806), .9)
+		Mk.mi(Mk.rounded_box(Vector3(W, H, D), .01, [pm, pm, _wood, pm, black, pm], 2), null, Vector3(0, .85 + H / 2, 0), g)
+		# socle sous le soffit (lambris comme le mur) + tablette
+		Mk.mi(Mk.rounded_box(Vector3(W, .85, D - .04), .008, [pm, pm, _wood, pm, pm, pm], 2), null, Vector3(0, .425, -.02), g)
 		Mk.mi(Mk.rounded_box(Vector3(W + .02, .05, D + .02), .008, _wood, 2), null, Vector3(0, .85, 0), g)
-		var keep: Array = ["Speaker", "Print"] if i == 0 else ["Speaker.001", "Print.001"]
-		var sp := Props.place(g, "pioneer_cs780.glb", Vector3(0, 1.3, D / 2 + .012 - .28), 0.0, {"scale": .12, "keep": keep})
-		sp.name = "MainMonitor"
-		# grille de tissu au-dessus (évent du soffit)
-		Mk.mi(Mk.quad(W - .14, .3), Mk.pbr("hessian_230", .2, {"tint": Mk.c(0x2a1a10)}), Vector3(0, ROOM.y - .3, D / 2 + .002), g)
+		_main_monitor(g, Vector3(0, .85, D / 2), W, H)
+
+
+## Grande écoute encastrée façon 1977 : façade en noyer sombre à cadre mouluré, deux boomers 15"
+## côte à côte, pavillon multicellulaire au-dessus, évents en bas, toile acoustique en haut.
+## `at` = milieu bas de la face avant du soffit.
+func _main_monitor(g: Node3D, at: Vector3, W: float, H: float) -> void:
+	var walnut: StandardMaterial3D = Mk.pbr("dark_wood", .5, {"wear": .35, "tint": Mk.c(0x6a4028), "rough": .55, "clearcoat": .35})
+	var baffle := Mk.mat(Mk.c(0x0b0a09), .85)
+	var frame := Mk.mat(Mk.c(0x2a2826), .45, .75)
+	var paper := Mk.mat(Mk.c(0x161412), 1.0, 0.0, {"cull_off": true})
+	var roll := Mk.mat(Mk.c(0x0c0b0a), .9, 0.0, {"cull_off": true})
+	var cap := Mk.mat(Mk.c(0x1e1c1a), .7, 0.0, {"cull_off": true})
+	var z := at.z
+	# cadre de façade en noyer (montants + traverses), baffle noir en retrait
+	var y0 := at.y + .38
+	var y1 := at.y + H - .28
+	var bw := W - .16
+	Mk.mi(Mk.box(Vector3(bw, y1 - y0, .02)), baffle, Vector3(0, (y0 + y1) / 2, z - .012), g)
+	for sx in [-1, 1]:
+		Mk.mi(Mk.rounded_box(Vector3(.08, H, .035), .01, walnut, 2), null, Vector3(sx * (W / 2 - .04), at.y + H / 2, z + .004), g)
+	for yy in [y0 - .02, y1 + .02]:
+		Mk.mi(Mk.rounded_box(Vector3(W, .04, .035), .008, walnut, 2), null, Vector3(0, yy, z + .004), g)
+	# panneau bas : noyer + deux évents horizontaux
+	Mk.mi(Mk.box(Vector3(bw, .34, .02)), walnut, Vector3(0, at.y + .2, z - .006), g)
+	for sx in [-1, 1]:
+		Mk.mi(Mk.rounded_box(Vector3(.26, .05, .03), .02, baffle, 2), null, Vector3(sx * .2, at.y + .2, z + .002), g)
+	# toile acoustique en haut
+	Mk.mi(Mk.box(Vector3(bw, H - (y1 - at.y) - .06, .01)), Mk.pbr("hessian_230", .15, {"tint": Mk.c(0x2a1a10)}), Vector3(0, (y1 + at.y + H) / 2 + .01, z - .004), g)
+	# boomers 15" (profil tourné : saladier, suspension, cône, cache-noyau)
+	var r := minf(.19, bw / 4 - .01)
+	var wy := y0 + .26
+	for sx in [-1, 1]:
+		var cx: float = sx * (r + .015)
+		var ring := Mk.mi(Mk.lathe([[r, -.002], [r, .006], [r * .93, .008], [r * .9, .002]], 64), frame, Vector3(cx, wy, z), g)
+		ring.rotation.x = PI / 2
+		var sur := Mk.mi(Mk.lathe([[r * .9, .002], [r * .86, .014], [r * .8, .002]], 64), roll, Vector3(cx, wy, z), g)
+		sur.rotation.x = PI / 2
+		var cone := Mk.mi(Mk.lathe([[r * .8, .002], [r * .6, -.03], [r * .4, -.055], [r * .27, -.07]], 64), paper, Vector3(cx, wy, z), g)
+		cone.rotation.x = PI / 2
+		var dc := Mk.mi(Mk.lathe([[r * .27, -.07], [r * .22, -.052], [r * .12, -.043], [0.0, -.04]], 48), cap, Vector3(cx, wy, z), g)
+		dc.rotation.x = PI / 2
+		for k in 8:
+			var an := k / 8.0 * TAU + .2
+			var sc := Mk.mi(Mk.cyl(.005, .005, .004, 10), frame, Vector3(cx + cos(an) * r * .965, wy + sin(an) * r * .965, z + .009), g)
+			sc.rotation.x = PI / 2
+	# pavillon multicellulaire : bouche évasée noire, cellules verticales en alu, gorge au fond
+	var hy := y1 - .17
+	var hw := bw * .62
+	var hh := .2
+	var horn := Node3D.new()
+	horn.position = Vector3(0, hy, z)
+	g.add_child(horn)
+	var hm := Mk.mat(Mk.c(0x111010), .5, .3)
+	for side in [-1, 1]:
+		var wall := Mk.mi(Mk.box(Vector3(.008, hh, .16)), hm, Vector3(side * hw / 2 * .82, 0, -.07), horn)
+		wall.rotation.y = side * .32
+		var lid := Mk.mi(Mk.box(Vector3(hw, .008, .16)), hm, Vector3(0, side * hh / 2 * .8, -.07), horn)
+		lid.rotation.x = -side * .3
+	Mk.mi(Mk.box(Vector3(hw * .5, hh * .5, .01)), Mk.mat(Mk.c(0x050505), 1.0), Vector3(0, 0, -.14), horn)
+	var alu := Mk.mat(Mk.c(0x9a9a96), .35, .9)
+	for k in 7:
+		var fx := (k - 3) / 3.0
+		var fin := Mk.mi(Mk.box(Vector3(.004, hh * .8, .13)), alu, Vector3(fx * hw * .34, 0, -.075), horn)
+		fin.rotation.y = fx * .3
+	# petite plaque de marque gravée sous les boomers
+	var badge := Tex.canvas(256, 48, func(ci, w2, h2):
+		ci.draw_rect(Rect2(0, 0, w2, h2), Mk.c(0x2a2a28))
+		Tex.silk(ci, "REEL  MONITOR  77", w2 / 2, h2 * .68, 20, Mk.c(0xc8c0a8), "center", 700))
+	Mk.mi(Mk.quad(.12, .022), Mk.mat(Color.WHITE, .4, .8, {"map": badge}), Vector3(0, y0 + .015, z + .001), g)
 
 
 ## Petit chariot / meuble bas en noyer sur roulettes, plateau + tablette basse. size = (l, h, p).
