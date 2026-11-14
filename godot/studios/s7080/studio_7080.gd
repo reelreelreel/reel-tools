@@ -11,7 +11,7 @@ extends Node3D
 ##                                 Les Paul + Marshall, magnéto à bandes
 ##   · droite (mur x = 0)        : tableau Export, vitre de la cabine de prise, pupitre (futur carnet Splits)
 ##
-## Ambiance : lattes de bois, toile de jute, moquette, bois chaud, lumière tungstène tamisée.
+## Ambiance : lambris de noyer, moquette orange à poils longs, bois chaud, lumière tungstène tamisée.
 
 const ROOM := Vector3(5.0, 2.6, 6.0)         # x 0..5, y 0..2,6, z -6..0
 const WIN := {"z0": -4.35, "z1": -2.75, "y0": 1.0, "y1": 1.85}       # fenêtre sur rue (mur droit)
@@ -527,27 +527,35 @@ func _cork_mat() -> StandardMaterial3D:
 	return m
 
 
+## Moquette orange à poils longs (shag 70s) : mèches torsadées claires / sombres, relief marqué.
 func _carpet_mat() -> StandardMaterial3D:
 	var tex := Tex.canvas(1024, 1024, func(ci, w, h):
-		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0x5a3418))
+		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0x8a3410))
 		var r := Tex.rng(91)
-		for i in 60000:
-			var c := Mk.c(0x8a5426) if r.randf() > .5 else Mk.c(0x2e180a)
-			c.a = .35 + r.randf() * .3
-			ci.draw_circle(Vector2(r.randf() * w, r.randf() * h), .8 + r.randf() * 1.6, c)
-		Tex.grime(ci, w, h, 92, 3))
+		for i in 26000:
+			var p := Vector2(r.randf() * w, r.randf() * h)
+			var k := r.randf()
+			var c := Mk.c(0xd8682a).lerp(Mk.c(0x5a1e08), k * k)
+			c.a = .55 + r.randf() * .4
+			var d := Vector2.from_angle(r.randf() * TAU) * (3.0 + r.randf() * 6.0)
+			ci.draw_line(p - d, p + d, c, 2.2 + r.randf() * 2.4, true)
+			if r.randf() < .15:
+				ci.draw_circle(p + d, 1.6, Mk.c(0xf08a40) * Color(1, 1, 1, .5)))
 	var nt := NoiseTexture2D.new()
-	nt.width = 512
-	nt.height = 512
+	nt.width = 1024
+	nt.height = 1024
 	nt.seamless = true
 	nt.as_normal_map = true
-	nt.bump_strength = 8.0
+	nt.bump_strength = 14.0
 	var fn := FastNoiseLite.new()
-	fn.frequency = .5
+	fn.noise_type = FastNoiseLite.TYPE_CELLULAR
+	fn.frequency = .09
 	fn.fractal_octaves = 2
 	nt.noise = fn
-	var m := Mk.mat(Color.WHITE, 1.0, 0.0, {"map": tex, "normal": nt, "normal_scale": 1.0})
-	m.uv1_scale = Vector3(5, 6, 1)
+	var m := Mk.mat(Color.WHITE, 1.0, 0.0, {"map": tex, "normal": nt, "normal_scale": 1.6})
+	m.uv1_scale = Vector3(7, 8, 1)
+	m.roughness = 1.0
+	m.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	return m
 
 
@@ -660,56 +668,73 @@ func _build_front_wall() -> void:
 ##   · lisse en bois ;
 ##   · au-dessus, toile de jute tendue brun-orangé, coupée par des couvre-joints en bois tous les ~1,2 m ;
 ##   · corniche. Trou optionnel [a0, a1, y0, y1].
+## Mur en lambris de noyer (années 70) : planches verticales de 15 à 20 cm séparées par une rainure
+## sombre (vraie géométrie, donc de vraies ombres dans les joints), teinte qui varie un peu d'une planche
+## à l'autre. `hole` = [x0, x1, y0, y1] (vitre, fenêtre, porte).
 func _studio_wall(w: Node3D, a0: float, a1: float, hole := [], seed := 0) -> void:
-	var dark := Mk.mat(Mk.c(0x0c0806), .95)
-	var jute := _jute_mat(seed)
-	var low := []
-	var high := []
+	var dark := Mk.mat(Mk.c(0x0a0604), .95)
+	var back := []
 	if hole.is_empty():
-		low = [[a0, 0, a1, WAINSCOT]]
-		high = [[a0, WAINSCOT, a1, ROOM.y]]
+		back = [[a0, 0, a1, ROOM.y]]
 	else:
-		var h0: float = hole[0]
-		var h1: float = hole[1]
-		low = [[a0, 0, h0, WAINSCOT], [h1, 0, a1, WAINSCOT], [h0, 0, h1, minf(hole[2], WAINSCOT)]]
-		high = [[a0, WAINSCOT, h0, ROOM.y], [h1, WAINSCOT, a1, ROOM.y], [h0, hole[3], h1, ROOM.y]]
-		if hole[2] > WAINSCOT:
-			high.append([h0, WAINSCOT, h1, hole[2]])
-	Mk.mi(_wall_mesh(low), dark, Vector3.ZERO, w)
-	Mk.mi(_wall_mesh(high, 3.0, 2.0), jute, Vector3(0, 0, .001), w)
-	# lattes verticales (une seule MultiMesh par mur)
-	var slat_w := .045
-	var pitch := .07
-	var xs := []
-	var x := a0 + .03
-	while x < a1 - .03:
-		var in_hole: bool = not hole.is_empty() and x > hole[0] - .02 and x < hole[1] + .02 and hole[2] < WAINSCOT
-		if not in_hole:
-			xs.append(x)
-		x += pitch
-	var top_y := WAINSCOT - .04
+		back = [[a0, 0, hole[0], ROOM.y], [hole[1], 0, a1, ROOM.y], [hole[0], 0, hole[1], hole[2]], [hole[0], hole[3], hole[1], ROOM.y]]
+	Mk.mi(_wall_mesh(back), dark, Vector3.ZERO, w)
+	var y_lo := .085
+	var y_hi := ROOM.y - .09
+	# zones à couvrir : [x0, x1, y0, y1]
+	var zones := []
+	if hole.is_empty():
+		zones = [[a0, a1, y_lo, y_hi]]
+	else:
+		zones = [[a0, hole[0], y_lo, y_hi], [hole[1], a1, y_lo, y_hi]]
+		if hole[2] > y_lo + .05:
+			zones.append([hole[0], hole[1], y_lo, hole[2]])
+		if hole[3] < y_hi - .05:
+			zones.append([hole[0], hole[1], hole[3], y_hi])
+	var xf := []
+	var rr := Tex.rng(700 + seed)
+	for zn in zones:
+		var L: float = zn[1] - zn[0]
+		if L < .02:
+			continue
+		var n := maxi(1, int(round(L / .18)))
+		var bw := L / n
+		for k in n:
+			var cx: float = zn[0] + bw * (k + .5)
+			var h: float = zn[3] - zn[2]
+			var t := Transform3D(Basis.from_scale(Vector3(bw - .007, h, .014)), Vector3(cx, zn[2] + h / 2, .007 + rr.randf() * .0015))
+			xf.append([t, Color(rr.randf(), rr.randf(), rr.randf(), 0)])
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = Mk.box(Vector3(slat_w, top_y - .08, .022))
-	mm.instance_count = xs.size()
-	var rr := Tex.rng(300 + seed)
-	for i in xs.size():
-		mm.set_instance_transform(i, Transform3D(Basis.IDENTITY, Vector3(xs[i] + rr.randf_range(-.002, .002), .08 + (top_y - .08) / 2, .011 + rr.randf() * .004)))
+	mm.use_custom_data = true
+	mm.mesh = Mk.box(Vector3.ONE)
+	mm.instance_count = xf.size()
+	for i in xf.size():
+		mm.set_instance_transform(i, xf[i][0])
+		mm.set_instance_custom_data(i, xf[i][1])
 	var mmi := MultiMeshInstance3D.new()
+	mmi.name = "Panelling"
 	mmi.multimesh = mm
-	mmi.material_override = _slat_mat()
+	mmi.material_override = _panel_mat()
 	w.add_child(mmi)
-	# lisse (cimaise) + couvre-joints verticaux sur la toile
-	var spans := [[a0, a1]] if hole.is_empty() else [[a0, hole[0]], [hole[1], a1]]
-	for sp in spans:
-		var L: float = sp[1] - sp[0]
-		Mk.mi(Mk.rounded_box(Vector3(L, .06, .045), .008, _wood, 2), null, Vector3((sp[0] + sp[1]) / 2, WAINSCOT, .022), w)
-		var n := maxi(1, int(round(L / 1.2)))
-		for k in n + 1:
-			var bx: float = sp[0] + L * k / n
-			bx = clampf(bx, sp[0] + .03, sp[1] - .03)
-			Mk.mi(Mk.rounded_box(Vector3(.06, ROOM.y - WAINSCOT - .1, .03), .006, _wood, 2), null, Vector3(bx, (WAINSCOT + ROOM.y - .1) / 2, .015), w)
 	_cornice(w, a0, a1)
+
+
+var _panel: ShaderMaterial
+
+
+func _panel_mat() -> ShaderMaterial:
+	if _panel == null:
+		_panel = ShaderMaterial.new()
+		_panel.shader = load("res://core/shaders/panel.gdshader")
+		var base := "res://assets/textures/ph/fine_grained_wood"
+		_panel.set_shader_parameter("albedo_tex", load(base + "_diff.jpg"))
+		_panel.set_shader_parameter("normal_tex", load(base + "_nor.jpg"))
+		_panel.set_shader_parameter("rough_tex", load(base + "_rough.jpg"))
+		_panel.set_shader_parameter("wear_tex", Mk.wear_tex(.4))
+		_panel.set_shader_parameter("tint", Mk.c(0xe0a070))
+		_panel.set_shader_parameter("scale", 1.3)
+	return _panel
 
 
 var _slat: Material
