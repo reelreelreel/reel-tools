@@ -3,7 +3,7 @@ extends Node3D
 ## Carnet de splits : un carnet de cuir ouvert sur le pupitre. Une double page par titre
 ## (gauche : titre, artiste, date, mode, notes ; droite : ayants droit et parts).
 ## Deux modes : SACEM (A / C / AC / E, total 100 %) et international (writers et publishers,
-## chacun à 100 %, PRO + IPI). Partage égal au centième (ex. 4,17 / 4,16), récap texte et PDF.
+## chacun à 100 %). Partage égal au centième (ex. 4,17 / 4,16), récap texte et PDF.
 ## Repère local : plan XY = pages, +Z = vers le lecteur (posé par le studio sur le pupitre).
 
 const PW := .215            # une page
@@ -21,9 +21,9 @@ const PENCIL := Color(.25, .25, .28, .7)
 const RED := Color(.72, .1, .08, .92)
 const GREEN := Color(.1, .42, .2, .92)
 
-var pages: Array = []       # [{title, artist, date, notes, mode, rows: [{name, role, pro, ipi, share}]}]
+var pages: Array = []       # [{title, artist, date, notes, mode, rows: [{name, role, share}]}]
 var cur := 0
-var active := ""            # "title" | "artist" | "date" | "notes" | "r3:name" | "r3:share" | "r3:pro" | "r3:ipi"
+var active := ""            # "title" | "artist" | "date" | "notes" | "r3:name" | "r3:share"
 var buf := ""               # saisie en cours d'une part
 var left: TexLib.LiveCanvas
 var right: TexLib.LiveCanvas
@@ -222,7 +222,7 @@ func _draw_left(ci: CanvasItem, w: float, h: float) -> void:
 	# notes
 	_hl(ci, "notes", Rect2(26, 392, w - 52, 350))
 	Tex.silk(ci, "Notes :", 34, 436, 22, PENCIL, "left", 600)
-	var lines := _wrap(_caret("notes", String(p.notes)), 30)
+	var lines := _wrap(_caret("notes", String(p.notes)), 34)
 	for i in mini(lines.size(), 5):
 		Tex.silk(ci, lines[i], 40, 502 + i * 60, 38, INK, "left", 500, "caveat")
 	if String(p.notes) == "" and active != "notes":
@@ -237,9 +237,8 @@ func _draw_left(ci: CanvasItem, w: float, h: float) -> void:
 func _draw_right(ci: CanvasItem, w: float, h: float) -> void:
 	_paper_bg(ci, w, h, 1.0, ROW_Y0 + 12.0, ROW_H, 590.0)
 	var p := _page()
-	var intl: bool = p.mode == "intl"
 	Tex.silk(ci, "RIGHTS HOLDERS", 30, 70, 34, Color(.12, .1, .1, .85), "left", 800)
-	var heads := ["Name", "Role", "PRO / IPI", "Share"] if intl else ["Name", "Role", "", "Share"]
+	var heads := ["Name", "Role", "", "Share"]
 	var hx := [30.0, 278.0, 372.0, 556.0]
 	for i in heads.size():
 		Tex.silk(ci, heads[i], hx[i], 122, 20, PENCIL, "right" if i == 3 else "left", 700)
@@ -251,14 +250,8 @@ func _draw_right(ci: CanvasItem, w: float, h: float) -> void:
 		_hl(ci, "r%d:name" % i, Rect2(20, y - 30, 250, ROW_H))
 		_hl(ci, "r%d:share" % i, Rect2(460, y - 30, 100, ROW_H))
 		var nm := _caret("r%d:name" % i, String(r.name))
-		Tex.silk(ci, _fit(nm, 15 if intl else 15), 32, y + 6, 36, INK, "left", 600, "caveat")
+		Tex.silk(ci, _fit(nm, 18), 32, y + 6, 36, INK, "left", 600, "caveat")
 		Tex.silk(ci, String(r.role), 284, y + 6, 34, INK, "left", 600, "caveat")
-		if intl:
-			_hl(ci, "r%d:pro" % i, Rect2(365, y - 30, 95, ROW_H / 2))
-			_hl(ci, "r%d:ipi" % i, Rect2(365, y - 2, 95, ROW_H / 2))
-			Tex.silk(ci, _fit(_caret("r%d:pro" % i, String(r.pro)), 7), 372, y - 6, 26, INK, "left", 600, "caveat")
-			var ipi := _caret("r%d:ipi" % i, String(r.ipi))
-			Tex.silk(ci, _fit(ipi if ipi != "" else "IPI", 11), 372, y + 20, 19, PENCIL if ipi != "" else Color(.3, .3, .35, .3), "left", 600, "caveat")
 		var sh := buf if active == "r%d:share" % i else _pct(float(r.share))
 		Tex.silk(ci, _caret("r%d:share" % i, sh) + " %", 556, y + 6, 36, INK, "right", 600, "caveat")
 		Tex.silk(ci, "×", 578, y + 2, 26, Color(.5, .15, .1, .45), "center", 600)
@@ -384,10 +377,6 @@ func recap() -> String:
 		var line := "- %s (%s) : %s %%" % [r.name, role, _pct(float(r.share), fr)]
 		if not fr:
 			line = "- %s (%s): %s %%" % [r.name, role, _pct(float(r.share))]
-			if String(r.pro) != "":
-				line += "  · PRO " + String(r.pro)
-			if String(r.ipi) != "":
-				line += "  · IPI " + String(r.ipi)
 		t.append(line)
 	t.append("")
 	var chk := check()
@@ -521,7 +510,6 @@ func _start(key: String) -> void:
 func on_action(a: String) -> void:
 	var p := _page()
 	var rows: Array = p.rows
-	var intl: bool = p.mode == "intl"
 	if a.begins_with("field:"):
 		_start(a.substr(6))
 	elif a.begins_with("mode:"):
@@ -547,11 +535,8 @@ func on_action(a: String) -> void:
 					_commit()
 					_cycle_role(i, 1)
 				"c":
-					if intl:
-						_start(("r%d:ipi" if active == "r%d:pro" % i else "r%d:pro") % i)
-					else:
-						_commit()
-						_cycle_role(i, 1)
+					_commit()
+					_cycle_role(i, 1)
 				"d":
 					_start("r%d:share" % i)
 	elif a.begins_with("del:"):
@@ -599,7 +584,7 @@ func on_action(a: String) -> void:
 func _add_row() -> void:
 	var p := _page()
 	var role: String = ROLES[p.mode][0]
-	p.rows.append({"name": "", "role": role, "pro": "", "ipi": "", "share": 0.0})
+	p.rows.append({"name": "", "role": role, "share": 0.0})
 
 
 func _cycle_role(i: int, d: int) -> void:
@@ -637,6 +622,8 @@ func _flip(to: int) -> void:
 func on_wheel(a: String, dir: float, _fine: bool) -> void:
 	var sp := a.split(":")
 	if a.begins_with("row:") and sp.size() == 3:
+		if sp[2] == "c":
+			sp[2] = "b"
 		var i := int(sp[1])
 		var rows: Array = _page().rows
 		if i >= rows.size():
@@ -718,8 +705,7 @@ func _next_field() -> void:
 	if active.begins_with("r"):
 		var sp := active.split(":")
 		var i := int(sp[0].substr(1))
-		var intl: bool = _page().mode == "intl"
-		var seq := ["name", "pro", "ipi", "share"] if intl else ["name", "share"]
+		var seq := ["name", "share"]
 		var j := seq.find(sp[1])
 		if j < seq.size() - 1:
 			_start("r%d:%s" % [i, seq[j + 1]])
