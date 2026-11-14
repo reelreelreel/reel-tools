@@ -39,7 +39,7 @@ func _ready() -> void:
 	DisplayServer.window_set_title("REEL'S TOOLS")
 	if _args.has("screenshot") or _args.has("selftest") or _args.has("perf"):
 		# captures de dev (rendu logiciel, mémoire limitée) : ombres et anticrénelage allégés
-		get_viewport().positional_shadow_atlas_size = 2048 if OS.has_environment("REEL_LOWMEM") else 4096
+		get_viewport().positional_shadow_atlas_size = (1024 if OS.has_environment("REEL_TINY") else 2048) if OS.has_environment("REEL_LOWMEM") else 4096
 		get_viewport().msaa_3d = Viewport.MSAA_DISABLED
 	DisplayServer.window_set_min_size(Vector2i(480, 320))
 	engine = TempoEngine.new()
@@ -48,6 +48,18 @@ func _ready() -> void:
 	if _args.has("splitspdf"):
 		studio.splits.demo()
 		studio.splits.write_pdf(_args.splitspdf)
+		get_tree().quit()
+		return
+	if _args.has("probe"):
+		# dev : maillages dont la boîte touche une zone (x0,x1,y0,y1,z0,z1)
+		var v: PackedFloat64Array = PackedFloat64Array(Array(_args.probe.split(",")).map(func(t): return float(t)))
+		var zone := AABB(Vector3(v[0], v[2], v[4]), Vector3(v[1] - v[0], v[3] - v[2], v[5] - v[4]))
+		for m in studio.find_children("*", "MeshInstance3D", true, false):
+			var mi := m as MeshInstance3D
+			if mi.is_visible_in_tree() and mi.mesh:
+				var bb: AABB = mi.global_transform * mi.get_aabb()
+				if bb.intersects(zone):
+					print("probe ", mi.get_path(), " ", bb)
 		get_tree().quit()
 		return
 	if _args.has("overlaps"):

@@ -117,7 +117,7 @@ func _init(e: TempoEngine) -> void:
 	modules["freq"] = freq
 	# --- droite : tableau Export en liège, au mur droit avant la vitre de la cabine
 	export = Export7080.new(walnut)
-	export.position = Vector3(.002, 1.45, -1.05)
+	export.position = Vector3(.034, 1.45, -1.05)  # posé sur les couvre-joints du mur
 	export.rotation.y = PI / 2
 	add_child(export)
 	modules["export"] = export
