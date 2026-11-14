@@ -556,7 +556,7 @@ func _console(at: Vector3, rot: float, L: float, D: float, n: int) -> void:
 	var roll := Mk.mat(Mk.c(0x0e0c0b), .45, 0.0, {"clearcoat": .3, "clearcoat_rough": .5, "normal": _grain(), "normal_scale": .15})
 	var row_caps := {"red": 0xc8281a, "blue": 0x3a6aa0, "grey": 0x9a9a98, "cream": 0xd8d2c4}
 	var mats := {
-		"body": body, "walnut": _walnut, "leather": roll, "deck_print": Mk.mat(Color.WHITE, .5, .4, {"map": tex}),
+		"body": body, "walnut": Mats.wood("rosewood", .35, .5), "leather": roll, "deck_print": Mk.mat(Color.WHITE, .5, .4, {"map": tex}),
 		"brass": Mk.mat(Mk.c(0xb08840), .3, 1.0), "alu": Mk.mat(Mk.c(0x9a968f), .32, 1.0), "chrome": Mk.chrome_mat(),
 		"black": _black, "black_metal": Mk.mat(Mk.c(0x1a1a1a), .5, .5),
 		"knob_grey": Mk.mat(Mk.c(0x8a8c8e), .35, .1, {"clearcoat": .4}),
@@ -770,6 +770,11 @@ func _floor_objects() -> void:
 
 ## Pouf rond 70s capitonné en jacquard gris à motifs, à côté du fauteuil.
 func _pouf() -> void:
+	# tabouret tulipe space age (laque blanche, galette en skaï rouge) à la place du pouf
+	if ResourceLoader.exists("res://assets/models/tulip_stool.glb"):
+		var st := Props.model("tulip_stool.glb", {"lacquer_white": Mats.lacquer(Mk.c(0xece6da)), "vinyl_red": Mats.vinyl(Mk.c(0xb01e18))})
+		_put(st, Vector3(3.85, 0, -3.75), .4)
+		return
 	var g := Node3D.new()
 	g.name = "Pouf"
 	_put(g, Vector3(3.85, 0, -3.75), .4)

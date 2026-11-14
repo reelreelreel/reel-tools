@@ -886,11 +886,11 @@ func _build_control_desk() -> void:
 		var yaw := wing_yaw(side)
 		var b := Basis(Vector3.UP, yaw)
 		var fwd := b * Vector3(0, 0, 1)
-		var wm := Props.model("desk_wing.glb", {"walnut": _wood, "leather_cognac": _leather(WING_W), "brass": Mk.mat(Mk.c(0xb08840), .3, 1.0), "black": Mk.mat(Mk.c(0x0c0806), .9)})
+		var wm := Props.model("desk_wing.glb", {"walnut": Mats.wood("teak"), "leather_cognac": _leather(WING_W), "brass": Mk.mat(Mk.c(0xb08840), .3, 1.0), "black": Mk.mat(Mk.c(0x0c0806), .9)})
 		wm.position = Vector3(c.x, 0, c.z)
 		wm.rotation.y = yaw
 		add_child(wm)
-		_place(_cabinet(WING_W - .02, h, WING_D - .04, "rack"), c + fwd * (WING_D / 2 - .02), yaw)
+		_place(_cabinet(WING_W - .02, h, WING_D - .04, "rack", Mats.wood("teak")), c + fwd * (WING_D / 2 - .02), yaw)
 
 
 ## Cap d'une aile (façade vers le fauteuil).
@@ -911,13 +911,13 @@ func _build_side_desk() -> void:
 	var z0: float = SIDE_DESK[2]
 	var z1: float = SIDE_DESK[3]
 	var h := DESK_TOP - DESK_T
-	var sd := Props.model("desk_side.glb", {"walnut": _wood, "leather_cognac": _leather(z1 - z0), "brass": Mk.mat(Mk.c(0xb08840), .3, 1.0), "black": Mk.mat(Mk.c(0x0c0806), .9)})
+	var sd := Props.model("desk_side.glb", {"walnut": Mats.wood("oak"), "leather_cognac": _leather(z1 - z0), "brass": Mk.mat(Mk.c(0xb08840), .3, 1.0), "black": Mk.mat(Mk.c(0x0c0806), .9)})
 	sd.position = Vector3((x0 + x1) / 2, 0, (z0 + z1) / 2)
 	sd.rotation.y = -PI / 2
 	add_child(sd)
 	var L := z1 - z0
-	_place(_cabinet(L / 2 - .01, h, x1 - x0 - .04, "rack"), Vector3(x0 + .02, 0, z1 - L / 4), -PI / 2)
-	_place(_cabinet(L / 2 - .01, h, x1 - x0 - .04, "rack"), Vector3(x0 + .02, 0, z0 + L / 4), -PI / 2)
+	_place(_cabinet(L / 2 - .01, h, x1 - x0 - .04, "rack", Mats.wood("oak")), Vector3(x0 + .02, 0, z1 - L / 4), -PI / 2)
+	_place(_cabinet(L / 2 - .01, h, x1 - x0 - .04, "rack", Mats.lacquer(Mk.c(0x141414))), Vector3(x0 + .02, 0, z0 + L / 4), -PI / 2)
 
 
 ## Nuage acoustique en lattes de bois suspendu au-dessus de la console et du fauteuil.
@@ -969,7 +969,9 @@ func _place(n: Node3D, pos: Vector3, rot_y: float) -> void:
 
 
 ## Caisson en bois, façade sur z = 0 (local, vers +Z), fond vers -Z. kind : drawers | rack | doors
-func _cabinet(w: float, h: float, d: float, kind: String) -> Node3D:
+func _cabinet(w: float, h: float, d: float, kind: String, wood: Material = null) -> Node3D:
+	if wood == null:
+		wood = _wood
 	var g := Node3D.new()
 	g.name = "Cabinet_" + kind
 	var kick := .07
@@ -981,7 +983,7 @@ func _cabinet(w: float, h: float, d: float, kind: String) -> Node3D:
 	# caisse modélisée dans Blender (blender/cabinet.py) quand la taille existe
 	var cab_file := "cab_%dx%d.glb" % [roundi(w * 100), roundi(d * 100)]
 	if kind == "rack" and ResourceLoader.exists("res://assets/models/" + cab_file):
-		g.add_child(Props.model(cab_file, {"walnut": _wood, "black": dark}))
+		g.add_child(Props.model(cab_file, {"walnut": wood, "black": dark}))
 	else:
 		Mk.mi(Mk.box(Vector3(w - .04, kick, d - .06)), dark, Vector3(0, kick / 2, -d / 2 - .03), g)
 		Mk.mi(Mk.rounded_box(Vector3(w, h - kick, d), .004, _wood, 2), null, Vector3(0, kick + (h - kick) / 2, -d / 2), g)
@@ -1210,18 +1212,20 @@ func _build_back_units() -> void:
 	var fr := Items7080.beer_fridge()
 	fr.position = Vector3(1.66, 0, zb + .3)
 	add_child(fr)
+	_build_lounge()
 	# magnéto à bandes (asset) sur son chariot, sous la fenêtre sur rue
 	var rt := Node3D.new()
 	rt.position = Vector3(.4, 0, (WIN.z0 + WIN.z1) / 2)
 	rt.rotation.y = PI / 2
 	add_child(rt)
-	_cart(rt, Vector3(.72, .66, .46))
+	# chariot de studio indus (cornières acier, tôle perforée) : modèle Blender (blender/furniture.py)
+	rt.add_child(Props.model("steel_cart.glb", {"steel": Mats.brushed_steel(), "perforated": Mats.perforated(), "chrome": Mk.chrome_mat(), "rubber": Mk.mat(Mk.c(0x0c0c0c), .7)}))
 	Props.place(rt, "reel_to_reel.glb", Vector3(0, .66, 0), 0.0)
 	var r := Tex.rng(17)
 	var x := -.32
 	while x < .3:
 		var bw := .03 + r.randf() * .02
-		var box := Mk.mi(Mk.box(Vector3(bw, .19, .19)), _tape_box_mat(int(r.randi() % 4)), Vector3(x + bw / 2, .155, 0), rt)
+		var box := Mk.mi(Mk.box(Vector3(bw, .19, .19)), _tape_box_mat(int(r.randi() % 4)), Vector3(x + bw / 2, .208, 0), rt)
 		box.rotation.y = r.randf_range(-.05, .05)
 		x += bw + .004
 	# stores vénitiens à moitié baissés devant la fenêtre
@@ -1231,6 +1235,39 @@ func _build_back_units() -> void:
 	add_child(bl)
 	# cible de fléchettes sur le mur droit, au fond
 	Props.place(self, "dartboard.glb", Vector3(.1, 1.45, -5.3), PI / 2)
+
+
+## Coin salon, meubles d'époques et de styles mélangés (le studio s'est équipé au fil des années) :
+## table basse formica à pieds compas, lampe champignon space age, fauteuil mid-century en velours
+## côtelé moutarde, flight case de tournée sous le tableau Export. Modèles Blender (blender/furniture.py).
+func _build_lounge() -> void:
+	var teak := Mats.wood("teak", .5)
+	var brass := Mk.mat(Mk.c(0xb8913e), .3, 1.0)
+	var table := Props.model("coffee_table.glb", {"teak": teak, "formica": Mats.formica(Mk.c(0xe6dcc4)), "brass": brass})
+	table.position = Vector3(3.12, 0, -4.58)
+	add_child(table)
+	var lamp := Props.model("mushroom_lamp.glb", {"lacquer_orange": Mats.lacquer(Mk.c(0xd4521c)), "lamp_glow": Mk.glow(Mk.c(0xffc890), 2.2)})
+	lamp.position = Vector3(3.5, .401, -4.6)
+	add_child(lamp)
+	var ll := OmniLight3D.new()
+	ll.light_color = Mk.c(0xffb070)
+	ll.light_energy = .5
+	ll.omni_range = 1.6
+	ll.position = Vector3(3.5, .62, -4.6)
+	add_child(ll)
+	var chair := Props.model("lounge_chair.glb", {"teak": teak, "corduroy": Mats.corduroy(Mk.c(0xc89030))})
+	chair.position = Vector3(1.9, 0, -4.72)
+	chair.rotation.y = PI / 2 - .35
+	add_child(chair)
+	var stencil := Tex.canvas(512, 120, func(ci: CanvasItem, w: float, h: float) -> void:
+		ci.draw_rect(Rect2(0, 0, w, h), Color(0, 0, 0, 0))
+		Tex.silk(ci, "STUDIO A  ·  FRAGILE", w / 2, h * .62, 44, Color(.92, .9, .86, .85), "center", 800), true)
+	var sm := Mk.mat(Color.WHITE, .7, 0.0, {"map": stencil})
+	sm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	var fc := Props.model("flight_case.glb", {"tolex": Mats.tolex(), "alu": Mats.brushed_steel(), "chrome": Mk.chrome_mat(), "rubber": Mk.mat(Mk.c(0x0c0c0c), .7), "stencil": sm})
+	fc.position = Vector3(.33, 0, -2.78)
+	fc.rotation.y = PI / 2
+	add_child(fc)
 
 
 ## Porte capitonnée au fond à droite + voyant ON AIR au-dessus + couloir sombre derrière.
@@ -1275,7 +1312,7 @@ func _build_soffits() -> void:
 			ci.draw_rect(Rect2(0, 0, w2, h2), Mk.c(0x2a2a28))
 			Tex.silk(ci, "MONITOR 77", w2 / 2, h2 * .68, 18, Mk.c(0xc8c0a8), "center", 700))
 		var mm := Props.model("main_monitor.glb", {
-			"walnut": Mk.pbr("dark_wood", .5, {"wear": .35, "tint": Mk.c(0x6a4028), "rough": .55, "clearcoat": .35}),
+			"walnut": Mats.wood("rosewood", .3, .5),
 			"black": Mk.mat(Mk.c(0x0b0a09), .85), "slot": Mk.mat(Mk.c(0x020202), 1.0),
 			"fabric": Mk.pbr("hessian_230", .15, {"tint": Mk.c(0x2a1a10)}),
 			"frame_metal": Mk.mat(Mk.c(0x2a2826), .45, .75), "chrome": Mk.chrome_mat(), "alu": Mk.mat(Mk.c(0x9a9a96), .35, .9, {"cull_off": true}),
@@ -1432,7 +1469,7 @@ func _multitrack() -> Node3D:
 	var model := Props.model("multitrack.glb", {
 		"steel": grey, "mt_face": Mk.mat(Color.WHITE, .5, .5, {"map": face}), "mt_plate": Mk.mat(Color.WHITE, .4, .6, {"map": plate}),
 		"mt_counter": Mk.glow(Color.WHITE, 1.6, led), "mt_vu": Mk.glow(Color(1, .92, .78), .55, vu),
-		"walnut": Mk.mat(Mk.c(0x6a4028), .55, 0.0, {"map": Mk.walnut_tex(), "clearcoat": .3}),
+		"walnut": Mats.wood("teak", .5, .5),
 		"black": Mk.mat(Mk.c(0x1a1a1a), .5, .3), "chrome": Mk.chrome_mat(), "alu": Mk.mat(Mk.c(0xc8c6c0), .3, .95, {"cull_off": true}),
 		"rubber": Mk.mat(Mk.c(0x0c0c0c), .7), "tape": Mk.mat(Mk.c(0x2a1a12), .55, 0.0, {"cull_off": true}),
 		"glass": Mk.mat(Mk.c(0x101010), .05, 0.0, {"alpha": .12, "clearcoat": 1.0}),
@@ -1513,11 +1550,11 @@ func _build_lectern() -> void:
 	g.position = Vector3(.5, 0, -2.15)
 	g.rotation.y = PI / 2 - .1  # plateau tourné vers le fauteuil (+X)
 	add_child(g)
-	Mk.mi(Mk.rounded_box(Vector3(.36, .03, .3), .008, _wood, 2), null, Vector3(0, .015, 0), g)
-	Mk.mi(Mk.rounded_box(Vector3(.07, .98, .07), .01, _wood, 2), null, Vector3(0, .5, -.02), g)
-	var top := Mk.mi(Mk.rounded_box(Vector3(.48, .025, .36), .006, _wood, 2), null, Vector3(0, 1.02, .02), g)
+	Mk.mi(Mk.rounded_box(Vector3(.36, .03, .3), .008, Mats.wood("oak"), 2), null, Vector3(0, .015, 0), g)
+	Mk.mi(Mk.rounded_box(Vector3(.07, .98, .07), .01, Mats.wood("oak"), 2), null, Vector3(0, .5, -.02), g)
+	var top := Mk.mi(Mk.rounded_box(Vector3(.48, .025, .36), .006, Mats.wood("oak"), 2), null, Vector3(0, 1.02, .02), g)
 	top.rotation.x = .35
-	var lip := Mk.mi(Mk.rounded_box(Vector3(.46, .03, .02), .004, _wood, 2), null, Vector3(0, .97, .19), g)
+	var lip := Mk.mi(Mk.rounded_box(Vector3(.46, .03, .02), .004, Mats.wood("oak"), 2), null, Vector3(0, .97, .19), g)
 	lip.rotation.x = .35
 	# carnet de splits ouvert sur le plateau (pages dans le plan XY local, +Z = vers le lecteur)
 	splits = Splits7080.new(_wood)
@@ -1776,6 +1813,8 @@ func yaw_to(p: Vector3) -> float:
 
 ## Renvoie [position, point visé] : vue depuis le fauteuil, ou gros plan sur un module.
 func shot_pose(shot: String, cam: Camera3D, aspect: float) -> Array:
+	if shot == "v_lounge":  # dev : le coin salon (table basse, fauteuil, lampe)
+		return [Vector3(3.3, 1.35, -2.9), Vector3(2.7, .45, -4.8)]
 	if shot == "v_monitor":  # dev : l'écoute encastrée de droite
 		return [Vector3(1.75, 1.45, -1.75), Vector3(.75, 1.45, -.15)]
 	if shot == "v_console":  # dev : la console en trois quarts
