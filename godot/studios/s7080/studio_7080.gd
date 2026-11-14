@@ -966,8 +966,44 @@ func _cabinet(w: float, h: float, d: float, kind: String) -> Node3D:
 						sc.rotation.x = PI / 2
 						sc.position = Vector3(sx * (bw / 2 - .008), yy - uh / 2 + sy, .0205)
 						g.add_child(sc)
+				if u[1] != "vent":
+					_rack_unit_hardware(g, yy - uh / 2, uh, u[0], bw)
 				yy -= uh + .001
 	return g
+
+
+var _rk := {}
+
+
+## Potards, LED et poignées en relief sur une façade de rack (positions calées sur la sérigraphie).
+func _rack_unit_hardware(g: Node3D, cy: float, uh: float, units: int, bw: float) -> void:
+	if _rk.is_empty():
+		_rk.knob = Mk.cyl(.0075, .0085, .012, 18)
+		_rk.skirt = Mk.cyl(.0105, .011, .002, 20)
+		_rk.line = Mk.box(Vector3(.0012, .0006, .006))
+		_rk.kmat = Mk.mat(Mk.c(0x161616), .35, .2, {"clearcoat": .5})
+		_rk.smat = Mk.mat(Mk.c(0x9a968e), .3, 1.0)
+		_rk.wmat = Mk.mat(Mk.c(0xf0ece4), .5)
+		_rk.handle = Mk.chrome_mat()
+		_rk.led = Mk.glow(Mk.c(0xff3020), 2.2)
+	var ky := cy - uh * .05
+	for i in 6:
+		var x := (((320.0 + i * 95.0) / 1024.0) - .5) * bw
+		var kn := Node3D.new()
+		kn.position = Vector3(x, ky, .02)
+		kn.rotation = Vector3(PI / 2, 0, randf_range(-2.3, 2.3))
+		g.add_child(kn)
+		Mk.mi(_rk.skirt, _rk.smat, Vector3(0, .001, 0), kn)
+		Mk.mi(_rk.knob, _rk.kmat, Vector3(0, .008, 0), kn)
+		Mk.mi(_rk.line, _rk.wmat, Vector3(0, .0142, -.003), kn)
+	var led := Mk.mi(Mk.sphere(.0035, 10, 6, true), _rk.led, Vector3(((900.0 / 1024.0) - .5) * bw, cy, .02), g)
+	led.rotation.x = PI / 2
+	if units >= 2:
+		for sx in [-1, 1]:
+			var x: float = sx * (bw / 2 - .024)
+			var t := Vector3(x, cy + uh / 2 - .012, .02)
+			var b := Vector3(x, cy - uh / 2 + .012, .02)
+			Mk.mi(Mk.tube([t, t + Vector3(0, -.003, .022), b + Vector3(0, .003, .022), b], .0038, 16, 8), _rk.handle, Vector3.ZERO, g)
 
 
 ## Entrée de serrure en laiton (rosace + trou de clé).

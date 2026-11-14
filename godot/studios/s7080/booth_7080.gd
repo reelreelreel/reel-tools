@@ -347,6 +347,13 @@ func _upright_piano() -> Node3D:
 	g.add_child(bmi)
 	# cylindre ouvert (rabattu) + barre au-dessus du clavier, pupitre et partition
 	Mk.mi(Mk.rounded_box(Vector3(W - .12, .07, .02), .006, wal, 2), null, Vector3(0, .8, back_z + .33), g)
+	var nb := Tex.canvas(512, 64, func(ci, w, h):
+		ci.draw_rect(Rect2(0, 0, w, h), Color(0, 0, 0, 0))
+		Tex.silk(ci, "REEL  &  SONS", w / 2.0, h * .55, 34, Mk.c(0xd8b050), "center", 800)
+		Tex.silk(ci, "NEW  YORK", w / 2.0, h * .92, 16, Mk.c(0xc8a048), "center", 600), true)
+	var nbm := Mk.mat(Color.WHITE, .3, .9, {"map": nb})
+	nbm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	Mk.mi(Mk.quad(.26, .033), nbm, Vector3(0, .8, back_z + .3405), g)
 	var desk := Mk.mi(Mk.rounded_box(Vector3(W - .2, .3, .018), .006, wal, 2), null, Vector3(0, .99, back_z + .345), g)
 	desk.rotation.x = -.18
 	Mk.mi(Mk.rounded_box(Vector3(W - .2, .02, .05), .004, wal, 2), null, Vector3(0, .845, back_z + .37), g)
