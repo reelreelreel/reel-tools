@@ -226,7 +226,7 @@ static func beer_fridge() -> Node3D:
 	var sign_tex := Tex.canvas(512, 96, func(ci, w, h):
 		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0xb02018))
 		ci.draw_rect(Rect2(6, 6, w - 12, h - 12), Mk.c(0xe8d8b0), false, 4.0)
-		Tex.silk(ci, "BIÈRE  FRAÎCHE", w / 2.0, h * .7, 50, Mk.c(0xf4ead0), "center", 800))
+		Tex.silk(ci, "ICE COLD BEER", w / 2.0, h * .7, 50, Mk.c(0xf4ead0), "center", 800))
 	Mk.mi(Mk.quad(W - .06, .075), Mk.mat(Color.WHITE, .4, 0.0, {"map": sign_tex, "emission": Color.WHITE, "energy": .6, "emission_tex": sign_tex}), Vector3(0, H + .0, D / 2 + .001), g)
 	# clayettes en fil + bouteilles
 	var wire := Mk.mat(Mk.c(0xc8c8c4), .35, .9)

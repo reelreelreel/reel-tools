@@ -97,7 +97,7 @@ func _build_panel() -> void:
 		Tex.silk(ci, "NOTE", P.call(.135), V.call(.035), 18, ink, "center")
 		Tex.silk(ci, "HZ", P.call(.165), V.call(.035), 18, ink, "center")
 		Tex.silk(ci, "FREQ", P.call(.19), V.call(.045), 20, ink, "center")
-		Tex.silk(ci, "LA4", P.call(.245), V.call(.045), 20, ink, "center")
+		Tex.silk(ci, "A4", P.call(.245), V.call(.045), 20, ink, "center")
 		Tex.silk(ci, "450", P.call(.262), V.call(-.032), 16, ink, "left")
 		Tex.silk(ci, "430", P.call(.262), V.call(.03), 16, ink, "left")
 		ci.draw_rect(Rect2(P.call(.243), V.call(-.035), 8, V.call(.03) - V.call(-.035)), Color(0, 0, 0, .9))

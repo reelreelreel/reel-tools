@@ -60,8 +60,8 @@ func _build_face() -> void:
 		Tex.grime(ci, w, h, 809, 1.2)
 		Tex.silk(ci, "OCT", P.call(-.022), V.call(-.048), 20, Color(.9, .88, .82, .6), "center")
 		Tex.silk(ci, "HZ", P.call(.118), V.call(-.065), 22, Color(.9, .88, .82, .6), "center")
-		Tex.silk(ci, "CHARGER", P.call(-.105), V.call(-.048), 18, Color(.9, .88, .82, .6), "center")
-		Tex.silk(ci, "ÉCOUTE", P.call(-.064), V.call(-.048), 18, Color(.9, .88, .82, .6), "center"))
+		Tex.silk(ci, "LOAD", P.call(-.105), V.call(-.048), 18, Color(.9, .88, .82, .6), "center")
+		Tex.silk(ci, "LISTEN", P.call(-.064), V.call(-.048), 18, Color(.9, .88, .82, .6), "center"))
 	var m := Mk.mat(Color.WHITE, .45, .6, {"map": tex, "normal": Mk.scratch_normal(), "normal_scale": .15})
 	Mk.mi(Mk.quad(W - .012, H - .012), m, Vector3.ZERO, face)
 
@@ -86,7 +86,7 @@ func _build_meter() -> void:
 			if k % 5 == 0:
 				Tex.silk(ci, ("%+d" % cents) if cents != 0 else "0", c.x + dir.x * 292, c.y + dir.y * 292, 24, dark, "center")
 		Tex.silk(ci, "CENTS", w / 2.0, 196, 26, dark, "center")
-		Tex.silk(ci, "GLISSE UN SAMPLE  ·  WAV  MP3  AIFF", w / 2.0, 232, 17, Color(.1, .1, .1, .6), "center")
+		Tex.silk(ci, "DROP A SAMPLE  ·  WAV  MP3  AIFF", w / 2.0, 232, 17, Color(.1, .1, .1, .6), "center")
 		Tex.silk(ci, "♭", 60, 200, 40, dark, "center", 400)
 		Tex.silk(ci, "♯", w - 60.0, 200, 40, dark, "center", 400))
 	var win := Node3D.new()

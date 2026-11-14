@@ -1392,7 +1392,7 @@ func _build_street() -> void:
 	# enseigne au néon (rouge) au rez-de-chaussée en face
 	var neon := Tex.canvas(512, 128, func(ci, w, h):
 		ci.draw_rect(Rect2(0, 0, w, h), Color(0, 0, 0, 0))
-		Tex.silk(ci, "HÔTEL  DU  NORD", w * .5 - 210, h * .68, 56, Color(1, 1, 1)), true)
+		Tex.silk(ci, "HOTEL  NORTH STAR", w * .5 - 210, h * .68, 56, Color(1, 1, 1)), true)
 	var nm := StandardMaterial3D.new()
 	nm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	nm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR

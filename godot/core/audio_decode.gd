@@ -8,7 +8,7 @@ const DIRECT := ["wav", "wave"]
 ## Renvoie {ok, path} (le WAV à lire) ou {ok: false, err}.
 static func to_wav(path: String, rate := 0) -> Dictionary:
 	if not FileAccess.file_exists(path):
-		return {"ok": false, "err": "FICHIER INTROUVABLE"}
+		return {"ok": false, "err": "FILE NOT FOUND"}
 	if DIRECT.has(path.get_extension().to_lower()):
 		return {"ok": true, "path": path}
 	var out := OS.get_cache_dir().path_join("reels_tools_decode_%d.wav" % (Time.get_ticks_usec() % 100000))
@@ -23,4 +23,4 @@ static func to_wav(path: String, rate := 0) -> Dictionary:
 	for exe in ["ffmpeg", "/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg"]:
 		if OS.execute(exe, args) == 0 and FileAccess.file_exists(out):
 			return {"ok": true, "path": out}
-	return {"ok": false, "err": "FORMAT NON LU"}
+	return {"ok": false, "err": "UNSUPPORTED FORMAT"}

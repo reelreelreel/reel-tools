@@ -15,12 +15,12 @@ const BH := .62
 const RATES := [44.1, 48.0, 88.2, 96.0]
 const FORMATS := ["WAV 16", "WAV 24", "WAV 32f", "AIFF 24", "MP3 320"]
 const TYPES := ["Mix", "Master"]
-const ELEMENTS := {"artist": "Artiste", "title": "Titre", "type": "Type", "rate": "kHz", "format": "Format", "version": "v"}
+const ELEMENTS := {"artist": "Artist", "title": "Title", "type": "Type", "rate": "kHz", "format": "Format", "version": "v"}
 const DEFAULT_ORDER := ["artist", "title", "type", "rate", "format", "version"]
 const MAX_HISTORY := 8
 
-var artist := "Artiste"
-var title := "Titre"
+var artist := "Artist"
+var title := "Title"
 var version := 1
 var rate_ix := 1
 var fmt_ix := 1
@@ -108,7 +108,7 @@ func _build_session() -> void:
 func _build_tags() -> void:
 	var strip := Tex.canvas(768, 64, func(ci, w, h):
 		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0xece4d2))
-		Tex.silk(ci, "ORDRE DU NOM  ·  glisse une étiquette sur une autre", 16, h / 2.0, 26, Color(.25, .25, .25, .85), "left", 600))
+		Tex.silk(ci, "NAME ORDER  ·  drag a tag onto another", 16, h / 2.0, 26, Color(.25, .25, .25, .85), "left", 600))
 	_paper(strip, Vector2(TAG_X0 + TAG_STEP * 2.5, TAG_Y + .045), Vector2(.42, .035), 0.0, .027)
 	var pin_cols := [Mk.c(0x2a6ab0), Mk.c(0xd43a26), Mk.c(0xf2c230), Mk.c(0x3a8a4a)]
 	var rots := [.04, -.03, .02, -.05, .03, -.02]
@@ -175,7 +175,7 @@ func _build_buttons() -> void:
 		Mk.add_pick_later(dot, b[1], .004)
 	var hint := Tex.canvas(256, 64, func(ci, w, h):
 		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0xf4f0e6))
-		Tex.silk(ci, "nouvelle session", w / 2.0, h / 2.0, 34, Color(.08, .1, .3, .9), "center", 600, "caveat"))
+		Tex.silk(ci, "new session", w / 2.0, h / 2.0, 34, Color(.08, .1, .3, .9), "center", 600, "caveat"))
 	_paper(hint, Vector2(-.035, .235), Vector2(.075, .019), .05, .027)
 	var pol := Tex.canvas(160, 190, func(ci, w, h):
 		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0xf2eee4))
@@ -197,8 +197,8 @@ func _draw_session(ci: CanvasItem, w: float, h: float) -> void:
 		ci.draw_line(Vector2(10, y), Vector2(w - 10, y), Color(.35, .5, .75, .45), 2.0)
 	Tex.silk(ci, "SESSION · EXPORT", w / 2.0, 28, 30, Color(.1, .1, .1, .8), "center", 700)
 	var ink := Color(.08, .1, .35, .95)
-	var rows := [["Artiste", artist, "artist"], ["Titre", title, "title"], ["Version", "v%d" % version, ""],
-		["Fréquence", _rate_txt(), ""], ["Format", FORMATS[fmt_ix], ""]]
+	var rows := [["Artist", artist, "artist"], ["Title", title, "title"], ["Version", "v%d" % version, ""],
+		["Sample rate", _rate_txt(), ""], ["Format", FORMATS[fmt_ix], ""]]
 	for i in rows.size():
 		var y := 88.0 + i * 50.0
 		if active == rows[i][2] and active != "":
@@ -208,7 +208,7 @@ func _draw_session(ci: CanvasItem, w: float, h: float) -> void:
 		if active == rows[i][2] and active != "" and _caret_on:
 			val += "|"
 		Tex.silk(ci, val, 160, y, 40, ink, "left", 600, "caveat")
-	Tex.silk(ci, "clic sur une ligne  ·  Entrée = suivant", w / 2.0, h - 20, 18, Color(.3, .3, .3, .6), "center", 500)
+	Tex.silk(ci, "click a line  ·  Enter = next", w / 2.0, h - 20, 18, Color(.3, .3, .3, .6), "center", 500)
 
 
 func _draw_tag(ci: CanvasItem, w: float, h: float, slot: int) -> void:
@@ -229,9 +229,9 @@ func _draw_note(ci: CanvasItem, w: float, h: float, tp: String, col: Color) -> v
 		Tex.silk(ci, lines[i], 24, 125 + i * 40, 34, ink, "left", 600, "caveat")
 	if done[tp]:
 		ci.draw_polyline(PackedVector2Array([Vector2(260, 310), Vector2(295, 350), Vector2(365, 265)]), Color(.75, .1, .08, .9), 12.0, true)
-		Tex.silk(ci, "exporté", 235, 362, 30, Color(.75, .1, .08, .9), "right", 700, "caveat")
+		Tex.silk(ci, "bounced", 235, 362, 30, Color(.75, .1, .08, .9), "right", 700, "caveat")
 	else:
-		Tex.silk(ci, "clic = copier", 24, h - 26, 26, Color(.08, .1, .3, .55), "left", 600, "caveat")
+		Tex.silk(ci, "click = copy", 24, h - 26, 26, Color(.08, .1, .3, .55), "left", 600, "caveat")
 
 
 func _draw_hist(ci: CanvasItem, w: float, h: float, i: int) -> void:
@@ -310,7 +310,7 @@ func _restore(s: Dictionary) -> void:
 
 
 func _is_blank() -> bool:
-	return (artist == "Artiste" or artist == "") and (title == "Titre" or title == "")
+	return (artist == "Artist" or artist == "") and (title == "Title" or title == "")
 
 
 func _load() -> void:
@@ -354,9 +354,9 @@ func _undone() -> void:
 func on_action(a: String) -> void:
 	if a.begins_with("field:"):
 		active = a.substr(6)
-		if active == "artist" and artist == "Artiste":
+		if active == "artist" and artist == "Artist":
 			artist = ""
-		elif active == "title" and title == "Titre":
+		elif active == "title" and title == "Title":
 			title = ""
 	elif a == "rate":
 		rate_ix = (rate_ix + 1) % RATES.size()
@@ -380,7 +380,7 @@ func on_action(a: String) -> void:
 		if not _is_blank():
 			_archive(_snapshot())
 		artist = ""
-		title = "Titre"
+		title = "Title"
 		version = 1
 		active = "artist"
 		_undone()
@@ -460,7 +460,7 @@ func on_key(e: InputEventKey) -> bool:
 	match e.keycode:
 		KEY_ENTER, KEY_KP_ENTER, KEY_TAB:
 			active = "title" if active == "artist" else ""
-			if active == "title" and title == "Titre":
+			if active == "title" and title == "Title":
 				title = ""
 		KEY_ESCAPE:
 			active = ""

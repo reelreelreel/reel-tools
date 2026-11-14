@@ -22,7 +22,7 @@ static func analyze_file(path: String) -> Dictionary:
 
 static func analyze(samples: PackedFloat32Array, rate: float) -> Dictionary:
 	if samples.size() < rate * .05:
-		return {"ok": false, "err": "SAMPLE TROP COURT"}
+		return {"ok": false, "err": "SAMPLE TOO SHORT"}
 	# sous-échantillonnage (moyenne par blocs = petit passe-bas)
 	var f := maxi(1, int(round(rate / 8000.0)))
 	var x := PackedFloat32Array()
@@ -50,7 +50,7 @@ static func analyze(samples: PackedFloat32Array, rate: float) -> Dictionary:
 		start = 0
 		n = mini(x.size(), int(sr * .5))
 		if n < max_lag * 2:
-			return {"ok": false, "err": "SAMPLE TROP COURT"}
+			return {"ok": false, "err": "SAMPLE TOO SHORT"}
 	var w := n - max_lag
 	# YIN : fonction de différence + moyenne cumulée normalisée
 	var d := PackedFloat32Array()
@@ -103,7 +103,7 @@ static func describe(hz: float) -> Dictionary:
 static func read_wav(path: String, max_seconds := 4.0) -> Dictionary:
 	var b := FileAccess.get_file_as_bytes(path)
 	if b.size() < 44 or b.slice(0, 4).get_string_from_ascii() != "RIFF" or b.slice(8, 12).get_string_from_ascii() != "WAVE":
-		return {"ok": false, "err": "PAS UN WAV"}
+		return {"ok": false, "err": "NOT A WAV"}
 	var pos := 12
 	var fmt := 0
 	var ch := 1
@@ -127,9 +127,9 @@ static func read_wav(path: String, max_seconds := 4.0) -> Dictionary:
 			break
 		pos += 8 + size + (size % 2)
 	if data_off < 0 or ch < 1:
-		return {"ok": false, "err": "WAV ILLISIBLE"}
+		return {"ok": false, "err": "UNREADABLE WAV"}
 	if not (fmt == 1 or fmt == 3):
-		return {"ok": false, "err": "FORMAT WAV NON GERE"}
+		return {"ok": false, "err": "UNSUPPORTED WAV"}
 	var bps := bits / 8
 	var frames := data_len / (bps * ch)
 	frames = mini(frames, int(rate * max_seconds))

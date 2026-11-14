@@ -213,8 +213,8 @@ func _tech() -> void:
 	Mk.mi(Mk.tube([Vector3(.0, .5, .02), Vector3(-.06, .45, .07), Vector3(-.07, .2, .08), Vector3(-.05, .1, .07)], .008, 16, 8), Mk.mat(Mk.c(0x111111), .6), Vector3.ZERO, ext)
 	var lab := Tex.canvas(128, 160, func(ci, w, h):
 		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0xf0ead8))
-		Tex.silk(ci, "EAU + ADDITIF", w / 2.0, 28, 16, Color(.1, .1, .1), "center", 800)
-		Tex.silk(ci, "6 L", w / 2.0, 70, 40, Mk.c(0xb0160e), "center", 800)
+		Tex.silk(ci, "WATER + FOAM", w / 2.0, 28, 16, Color(.1, .1, .1), "center", 800)
+		Tex.silk(ci, "1.6 GAL", w / 2.0, 70, 40, Mk.c(0xb0160e), "center", 800)
 		for k in 5:
 			ci.draw_line(Vector2(14, 95 + k * 12), Vector2(w - 14, 95 + k * 12), Color(.2, .2, .2, .6), 2.0))
 	var lq := Mk.mi(Mk.cyl(.0755, .0755, .14, 32, false), Mk.mat(Color.WHITE, .7, 0.0, {"map": lab}), Vector3(0, .22, 0), ext)
@@ -228,7 +228,7 @@ func _tech() -> void:
 	Mk.mi(Mk.rounded_box(Vector3(.36, .14, .05), .008, Mk.mat(Mk.c(0xe8e4dc), .5), 2), null, Vector3(0, 0, .025), ex)
 	var st := Tex.canvas(360, 140, func(ci, w, h):
 		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0x0e8a3a))
-		Tex.silk(ci, "SORTIE", w * .58, h * .68, 56, Color(1, 1, 1), "center", 800)
+		Tex.silk(ci, "EXIT", w * .58, h * .68, 56, Color(1, 1, 1), "center", 800)
 		ci.draw_rect(Rect2(18, 34, 40, 72), Color(1, 1, 1))
 		ci.draw_rect(Rect2(26, 42, 24, 56), Mk.c(0x0e8a3a)))
 	Mk.mi(Mk.quad(.33, .11), Mk.mat(Color.WHITE, .4, 0.0, {"map": st, "emission": Color.WHITE, "energy": .45, "emission_tex": st}), Vector3(0, 0, .0505), ex)
@@ -540,8 +540,8 @@ func _plaque(cover: Texture2D, kind: String) -> Node3D:
 			ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0xc8a050) if gold else Mk.c(0xc8c8c8))
 			Tex.brushed(ci, w, h, 5, .08)
 			ci.draw_rect(Rect2(6, 6, w - 12, h - 12), Color(.1, .08, .05, .7), false, 2.0)
-			Tex.silk(ci, "DISQUE D'OR" if gold else "DISQUE DE PLATINE", w / 2.0, h * .45, 34, Color(.12, .09, .05), "center", 800)
-			Tex.silk(ci, "décerné à REEL'S TOOLS · enregistré dans ce studio", w / 2.0, h * .78, 17, Color(.12, .09, .05, .85), "center", 600))
+			Tex.silk(ci, "GOLD RECORD" if gold else "PLATINUM RECORD", w / 2.0, h * .45, 34, Color(.12, .09, .05), "center", 800)
+			Tex.silk(ci, "presented to REEL'S TOOLS · recorded in this studio", w / 2.0, h * .78, 17, Color(.12, .09, .05, .85), "center", 600))
 	Mk.mi(Mk.rounded_box(Vector3(.3, .075, .004), .002, Mk.mat(Color.WHITE, .3, 1.0, {"map": _tex[key]}), 1), null, Vector3(0, -.205, .039), g)
 	Mk.mi(Mk.quad(W - .03, H - .03), Mk.mat(Color.WHITE, .03, 0.0, {"alpha": .08, "clearcoat": 1.0}), Vector3(0, 0, .05), g)
 	_picture_light(g, W, H)

@@ -94,7 +94,7 @@ func _build_body() -> void:
 	Mk.mi(Mk.rounded_box(Vector3(W - .01, .022, .004), .002, dark, 1), null, Vector3(0, .028, D / 2 + .001), self)
 	var plate := Tex.canvas(512, 32, func(ci, w, h):
 		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(BROWN))
-		Tex.silk(ci, "REEL'S TOOLS  ·  TÉLÉCOPIEUR  RT-FX2  ·  GRILLES D'ACCORDS", w / 2.0, h * .72, 17, Color(.95, .88, .7, .8), "center"))
+		Tex.silk(ci, "REEL'S TOOLS  ·  TELECOPIER  RT-FX2  ·  CHORD CHARTS", w / 2.0, h * .72, 17, Color(.95, .88, .7, .8), "center"))
 	Mk.mi(Mk.quad(W * .7, .014), Mk.mat(Color.WHITE, .5, 0.0, {"map": plate}), Vector3(0, .028, D / 2 + .0035), self)
 	# capot arrière (rouleau de papier sous un couvercle fumé)
 	var hump_z := -D / 2 + .075
@@ -134,13 +134,13 @@ func _build_panel() -> void:
 		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0x1e1813))
 		Tex.brushed(ci, w, h, 4040, .04, 2500)
 		var ink := Color(.95, .88, .7, .75)
-		var names := ["STYLE", "BPM", "TON.", "MES."]
+		var names := ["STYLE", "BPM", "KEY", "BARS"]
 		for i in 4:
 			Tex.silk(ci, names[i], P.call(_wheel_x(i)), Z.call(.075), 24, ink, "center")
 		for i in 5:
 			Tex.silk(ci, FaxSynth.SOUNDS[i], P.call(_key_x(i)), Z.call(.091), 19, ink, "center")
-		Tex.silk(ci, "LECTURE", P.call(.075), Z.call(.163), 20, ink, "center")
-		Tex.silk(ci, "ENVOI", P.call(.175), Z.call(.163), 22, ink, "center")
+		Tex.silk(ci, "PLAY", P.call(.075), Z.call(.163), 20, ink, "center")
+		Tex.silk(ci, "SEND", P.call(.175), Z.call(.163), 22, ink, "center")
 		ci.draw_line(Vector2(P.call(px0 + .008), Z.call(.08)), Vector2(P.call(px1 - .008), Z.call(.08)), Color(.95, .88, .7, .15), 2.0)
 		Tex.grime(ci, w, h, 4041, 1.0))
 	Mk.mi(Mk.rounded_box(Vector3(pw, .004, pd), .003, Mk.mat(Color.WHITE, .5, .3, {"map": tex}), 2), null, Vector3(cx, BASE_H + .002, cz), self)
@@ -319,8 +319,8 @@ func _draw_sheet(ci: CanvasItem, w: float, h: float) -> void:
 	Tex.silk(ci, Time.get_datetime_string_from_system().replace("T", "  ").left(17), w - 24, 46, 18, faint, "right", 500, "mono")
 	ci.draw_line(Vector2(24, 62), Vector2(w - 24, 62), faint, 2.0)
 	# réglages + grille dans la partie bien visible de la feuille (la retombée devant la machine)
-	var head := "%s   %s   %d BPM   %d MES." % [ChordEngine.STYLES[style], ChordEngine.key_name(key), bpm, bars]
-	Tex.silk(ci, "SON D'ÉCOUTE : " + FaxSynth.SOUNDS[sound], 24, h * .3, 17, faint, "left", 500, "mono")
+	var head := "%s   %s   %d BPM   %d BARS" % [ChordEngine.STYLES[style], ChordEngine.key_name(key), bpm, bars]
+	Tex.silk(ci, "PREVIEW SOUND : " + FaxSynth.SOUNDS[sound], 24, h * .3, 17, faint, "left", 500, "mono")
 	Tex.silk(ci, head, 24, h * .36, 26, ink, "left", 700, "mono")
 	var cols := 4
 	var rows := (bars - 1) / cols + 1
@@ -348,8 +348,8 @@ func _draw_sheet(ci: CanvasItem, w: float, h: float) -> void:
 			ci.draw_line(Vector2(x + 12, y + ch - 12), Vector2(x + cw - 18, y + 12), faint, 1.5)
 			Tex.silk(ci, names[1], x + (cw - 6) / 2, y + ch * .86, 24, ink, "center", 700, "mono")
 	ci.draw_line(Vector2(24, h - 92), Vector2(w - 24, h - 92), faint, 1.5)
-	Tex.silk(ci, "TIRER LA FEUILLE  →  EXPORT MIDI", 24, h - 60, 17, faint, "left", 500, "mono")
-	Tex.silk(ci, "LA FROISSER  →  AUTRE GRILLE", 24, h - 32, 17, faint, "left", 500, "mono")
+	Tex.silk(ci, "TEAR OFF THE SHEET  →  MIDI EXPORT", 24, h - 60, 17, faint, "left", 500, "mono")
+	Tex.silk(ci, "CRUMPLE IT  →  NEW CHART", 24, h - 32, 17, faint, "left", 500, "mono")
 
 
 # ---------------------------------------------------------------- textes
@@ -371,7 +371,7 @@ func _led_text() -> String:
 	if printing:
 		return "IMPRESSION…"
 	if _render_job >= 0:
-		return "PRÉPARATION…"
+		return "WARMING UP…"
 	return "%s %s %d" % [ChordEngine.STYLES[style], ChordEngine.key_name(key), bpm]
 
 

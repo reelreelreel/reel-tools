@@ -3,7 +3,7 @@ class_name FaxSynth
 ## dans un AudioStreamWAV (mono 22 kHz) qui boucle. À lancer dans un thread (≈ 1–3 s pour 8 mesures).
 ## Sons : Rhodes (FM), nappe de cordes, pad, guitare (Karplus-Strong, gratté), pluck.
 
-const SOUNDS := ["RHODES", "NAPPE", "PAD", "GUIT.", "PLUCK"]
+const SOUNDS := ["RHODES", "STRINGS", "PAD", "GUITAR", "PLUCK"]
 const SR := 22050
 
 

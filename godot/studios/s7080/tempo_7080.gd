@@ -89,7 +89,7 @@ func _build_panel(body: Material) -> void:
 		Tex.silk(ci, "RT-140  TEMPO", P.call(W / 2 - .012), V.call(-plen / 2 + .018), 51, ink, "right")
 		ci.draw_rect(Rect2(P.call(-W / 2 + .012), V.call(-plen / 2 + .03), P.call(.05) - P.call(0), 4), red)
 		Tex.silk(ci, "BPM", P.call(-W / 2 + .012), V.call(Z_BPM - .036), 37, ink)
-		Tex.silk(ci, "MS  ·  CLIC = COPIE", P.call(-W / 2 + .012), V.call(Z_MS - .024), 30, ink)
+		Tex.silk(ci, "MS  ·  CLICK = COPY", P.call(-W / 2 + .012), V.call(Z_MS - .024), 30, ink)
 		Tex.silk(ci, "BEAT", P.call(.072), V.call(Z_MS + .022), 27, ink, "center")
 		# liste des valeurs de note
 		for i in notes.size():
@@ -107,7 +107,7 @@ func _build_panel(body: Material) -> void:
 		Tex.silk(ci, "TEMPO", c.x, V.call(KNOB.y - .055), 37, ink, "center")
 		Tex.silk(ci, "÷2", P.call(BTN_HALF.x + .03), V.call(BTN_HALF.y), 34, ink, "left")
 		Tex.silk(ci, "×2", P.call(BTN_DOUBLE.x + .03), V.call(BTN_DOUBLE.y), 34, ink, "left")
-		Tex.silk(ci, "TAP  ·  ESPACE", P.call(0), V.call(TAP.y - .045), 34, ink, "center"))
+		Tex.silk(ci, "TAP  ·  SPACE", P.call(0), V.call(TAP.y - .045), 34, ink, "center"))
 	var face := Mk.mat(Color.WHITE, .5, .75, {"map": tex, "normal": Mk.scratch_normal(), "normal_scale": .2})
 	Mk.mi(Mk.rounded_box(Vector3(W - .006, .004, plen), .001, [body, body, face, body, body, body], 1), null, Vector3.ZERO, deck)
 

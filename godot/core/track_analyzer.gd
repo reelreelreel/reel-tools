@@ -25,7 +25,7 @@ static func analyze_file(path: String) -> Dictionary:
 static func analyze(samples: PackedFloat32Array, rate: float) -> Dictionary:
 	var dur := samples.size() / rate
 	if dur < 4.0:
-		return {"ok": false, "err": "MORCEAU TROP COURT"}
+		return {"ok": false, "err": "TRACK TOO SHORT"}
 	# on prend une minute au cœur du morceau (après l'intro)
 	var start := 0
 	if dur > MAX_SECONDS + 10.0:
@@ -186,7 +186,7 @@ static func _key(x: PackedFloat32Array, sr: float) -> Dictionary:
 
 static func _key_info(root: int, minor: bool, score: float) -> Dictionary:
 	var short: String = NOTES_EN[root] + ("m" if minor else "")
-	var long: String = NOTES_FR[root] + (" mineur" if minor else " majeur")
+	var long: String = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"][root] + (" minor" if minor else " major")
 	var rel_root := posmod(root + (3 if minor else -3), 12)
 	return {"root": root, "minor": minor, "score": score, "short": short, "long": long,
 		"relative": NOTES_EN[rel_root] + ("" if minor else "m")}

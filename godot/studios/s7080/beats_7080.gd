@@ -327,7 +327,7 @@ func _build_drum_unit() -> void:
 		Tex.silk(ci, "RHYTHM COMPOSER", X.call(-.205), Y.call(.04), 13, _ink_dim, "left", 600)
 		for i in BeatEngine.INSTR.size():
 			Tex.silk(ci, BeatEngine.INSTR[i], X.call(_x_instr(i)), Y.call(.04), 12, _ink, "center", 600)
-		var lab := {"GÉNÉRER": FN_X.gen, "SYNC": FN_X.sync, "MIDI": FN_X.export, "LECTURE": FN_X.play}
+		var lab := {"GENERATE": FN_X.gen, "SYNC": FN_X.sync, "MIDI": FN_X.export, "PLAY": FN_X.play}
 		for k in lab:
 			Tex.silk(ci, k, X.call(lab[k]), Y.call(.04), 11, _ink, "center", 600)
 		for k in [["STYLE", -.185], ["BPM", -.15], ["SWING", -.115]]:
@@ -336,7 +336,7 @@ func _build_drum_unit() -> void:
 			Tex.silk(ci, str(i + 1), X.call(_x_step(i)), Y.call(-.054), 10, _ink_dim, "center", 600)
 		for g in 4:
 			ci.draw_rect(Rect2(X.call(_x_step(g * 4) - .01), Y.call(-.05), X.call(_x_step(g * 4 + 3) + .01) - X.call(_x_step(g * 4) - .01), 2), Color(.85, .12, .08, .8) if g % 2 == 0 else _ink_dim)
-		Tex.silk(ci, "MOLETTE SUR UN PAS DE HAT = ROULEMENT", X.call(.205), Y.call(-.016), 9, _ink_dim, "right", 500))
+		Tex.silk(ci, "SCROLL ON A HAT STEP = ROLL", X.call(.205), Y.call(-.016), 9, _ink_dim, "right", 500))
 	_handles(holder, h)
 	# afficheur rouge à points
 	led = Tex.live(512, 128, func(ci, w, hh):
@@ -366,7 +366,7 @@ func _build_bass_unit() -> void:
 	var h := 2 * U - .001
 	var holder := _face(2, BASS_Y, func(ci, X, Y, w, hh):
 		Tex.silk(ci, "RT-808  SUB BASS", X.call(.205), Y.call(-.03), 20, _ink, "right", 800)
-		Tex.silk(ci, "PAS : CHOISIR  ·  TOUCHE : NOTE", X.call(.205), Y.call(-.039), 9, _ink_dim, "right", 500)
+		Tex.silk(ci, "STEP : SELECT  ·  KEY : NOTE", X.call(.205), Y.call(-.039), 9, _ink_dim, "right", 500)
 		for i in 16:
 			Tex.silk(ci, str(i + 1), X.call(_x_step(i)), Y.call(.037), 9, _ink_dim, "center", 600)
 		ci.draw_rect(Rect2(X.call(-.2), Y.call(-.014), X.call(.0) - X.call(-.2), 2), _ink_dim))
@@ -406,7 +406,7 @@ func _led_lines() -> Array:
 	elif synced and fax and not fax.prog.is_empty():
 		l2 = "SYNC " + ChordEngine.summary(fax.prog).replace(" | ", " ")
 	else:
-		l2 = "TON. %s  %s" % [ChordEngine.key_name(fax.key) if fax else "-", BeatEngine.INSTR[instr]]
+		l2 = "KEY %s  %s" % [ChordEngine.key_name(fax.key) if fax else "-", BeatEngine.INSTR[instr]]
 	return [l1, l2.left(22)]
 
 
@@ -475,7 +475,7 @@ func set_sync(on: bool) -> void:
 	if synced and fax:
 		bpm = fax.bpm
 		Store.set_v("beats_bpm", bpm)
-		_say("CALÉ SUR LE FAX")
+		_say("SYNCED TO FAX")
 	_refresh()
 
 
@@ -554,7 +554,7 @@ func on_action(a: String) -> void:
 	elif a == "gen":
 		seed += 1
 		_generate()
-		_say("NOUVEAU RYTHME")
+		_say("NEW PATTERN")
 		_refresh()
 	elif a == "sync":
 		set_sync(not synced)
@@ -584,7 +584,7 @@ func on_action(a: String) -> void:
 		var semi := int(a.substr(4))
 		bass[bass_sel] = semi
 		_bass_hit(BeatEngine.bass_note(_root_at(0), semi))
-		_say("PAS %d : +%d DEMI-TONS" % [bass_sel + 1, semi])
+		_say("STEP %d : +%d SEMIS" % [bass_sel + 1, semi])
 		_save_pattern()
 		_refresh()
 	elif a.begins_with("knob:"):
@@ -596,7 +596,7 @@ func _turn(k: String, steps: int) -> void:
 		"style":
 			style = posmod(style + steps, ChordEngine.STYLES.size())
 			Store.set_v("beats_style", style)
-			_say("GÉNÉRER POUR CE STYLE")
+			_say("PRESS GENERATE")
 		"bpm":
 			bpm = clampi(bpm + steps, 60, 180)
 			Store.set_v("beats_bpm", bpm)
@@ -642,7 +642,7 @@ func on_wheel(a: String, dir: float, fine: bool) -> void:
 		var v: int = drums[instr][i]
 		v = posmod(v + int(dir), 5)
 		drums[instr][i] = v
-		_say("PAS %d : %s" % [i + 1, ["SILENCE", "1 COUP", "ROULEMENT x2", "ROULEMENT x3", "ROULEMENT x4"][v]])
+		_say("STEP %d : %s" % [i + 1, ["OFF", "1 HIT", "ROLL x2", "ROLL x3", "ROLL x4"][v]])
 		_save_pattern()
 		_refresh()
 

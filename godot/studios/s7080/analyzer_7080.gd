@@ -62,7 +62,7 @@ func _build_top() -> void:
 		var r := Tex.rng(68)
 		for i in 60:  # usure autour des bobines et des têtes
 			ci.draw_circle(Vector2(w * (.5 + r.randf_range(-.35, .35)), h * r.randf_range(.1, .9)), r.randf_range(4, 30), Color(.2, .15, .1, .04))
-		Tex.silk(ci, "REEL'S TOOLS  ·  RT-R2A  ANALYSEUR", w / 2.0, h * .93, 20, Color(.08, .08, .08, .8), "center")
+		Tex.silk(ci, "REEL'S TOOLS  ·  RT-R2A  TRACK ANALYZER", w / 2.0, h * .93, 20, Color(.08, .08, .08, .8), "center")
 		Tex.silk(ci, "7½", w * .86, h * .77, 16, Color(.08, .08, .08, .7), "center")
 		Tex.silk(ci, "15 IPS", w * .93, h * .77, 16, Color(.08, .08, .08, .7), "center"))
 	var plate := Mk.mat(Color.WHITE, .5, .6, {"map": plate_tex, "normal": Mk.scratch_normal(), "normal_scale": .2})
@@ -155,12 +155,12 @@ func _build_front(black: Material) -> void:
 		Tex.brushed(ci, w, h, 70, .05, 2500)
 		Tex.grime(ci, w, h, 71, 1.5)
 		var ink := Color(.9, .88, .82, .7)
-		for b in [[-.19, "CHARGER"], [-.155, "LECTURE"], [-.12, "STOP"]]:
+		for b in [[-.19, "LOAD"], [-.155, "PLAY"], [-.12, "STOP"]]:
 			Tex.silk(ci, b[1], P.call(b[0]), h * .88, 15, ink, "center")
 		Tex.silk(ci, "L", P.call(-.072), h * .9, 14, ink, "center")
 		Tex.silk(ci, "R", P.call(-.027), h * .9, 14, ink, "center")
-		Tex.silk(ci, "COMPTEUR", P.call(-.155), h * .1, 13, Color(.9, .88, .82, .5), "center")
-		Tex.silk(ci, "GLISSE UN MORCEAU  ·  WAV  MP3  AIFF", P.call(.105), h * .95, 14, Color(.9, .88, .82, .45), "center"))
+		Tex.silk(ci, "COUNTER", P.call(-.155), h * .1, 13, Color(.9, .88, .82, .5), "center")
+		Tex.silk(ci, "DROP A TRACK  ·  WAV  MP3  AIFF", P.call(.105), h * .95, 14, Color(.9, .88, .82, .45), "center"))
 	var fm := Mk.mat(Color.WHITE, .45, .5, {"map": ftex})
 	Mk.mi(Mk.rounded_box(Vector3(W, .004, plen), .001, [fm, fm, fm, fm, fm, fm], 1), null, Vector3.ZERO, front)
 	# écran vert (plus grand)
@@ -210,13 +210,13 @@ func _draw_screen(ci: CanvasItem, w: float, h: float) -> void:
 	var f := Tex.font("mono")
 	match state:
 		"idle":
-			ci.draw_string(f, Vector2(24, 70), "RT-R2A  ANALYSEUR", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, g)
-			ci.draw_string(f, Vector2(24, 140), "GLISSE UN MORCEAU", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, dim)
-			ci.draw_string(f, Vector2(24, 185), "OU APPUIE SUR CHARGER", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, dim)
+			ci.draw_string(f, Vector2(24, 70), "RT-R2A  ANALYZER", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, g)
+			ci.draw_string(f, Vector2(24, 140), "DROP A TRACK", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, dim)
+			ci.draw_string(f, Vector2(24, 185), "OR PRESS LOAD", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, dim)
 			if int(_t * 2.0) % 2 == 0:
 				ci.draw_rect(Rect2(24, 215, 18, 30), g)
 		"busy":
-			ci.draw_string(f, Vector2(24, 70), "ANALYSE EN COURS", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, g)
+			ci.draw_string(f, Vector2(24, 70), "ANALYZING...", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, g)
 			ci.draw_string(f, Vector2(24, 115), file_name.left(26), HORIZONTAL_ALIGNMENT_LEFT, -1, 26, dim)
 			var pts := PackedVector2Array()
 			for x in range(0, int(w), 6):
@@ -231,20 +231,20 @@ func _draw_screen(ci: CanvasItem, w: float, h: float) -> void:
 			var alts := []
 			for a in b.alts:
 				alts.append(_fmt_bpm(a))
-			ci.draw_string(f, Vector2(330, 62), "ou " + " / ".join(alts), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, dim)
+			ci.draw_string(f, Vector2(330, 62), "or " + " / ".join(alts), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, dim)
 			ci.draw_string(f, Vector2(24, 150), "KEY", HORIZONTAL_ALIGNMENT_LEFT, -1, 26, dim)
 			ci.draw_string(f, Vector2(110, 154), k.best.short, HORIZONTAL_ALIGNMENT_LEFT, -1, 52, g)
 			ci.draw_string(f, Vector2(250, 150), k.best.long.to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, 26, g)
 			var ka := []
 			for a in k.alts:
 				ka.append(a.short)
-			ci.draw_string(f, Vector2(24, 222), "AUTRES : " + "  ".join(ka), HORIZONTAL_ALIGNMENT_LEFT, -1, 26, dim)
+			ci.draw_string(f, Vector2(24, 222), "ALSO : " + "  ".join(ka), HORIZONTAL_ALIGNMENT_LEFT, -1, 26, dim)
 			ci.draw_string(f, Vector2(24, 268), "RELATIVE : " + k.best.relative, HORIZONTAL_ALIGNMENT_LEFT, -1, 26, dim)
 			ci.draw_string(f, Vector2(24, 306), file_name.left(34), HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(.49, 1, .61, .3))
 		"error":
-			ci.draw_string(f, Vector2(24, 90), "ERREUR", HORIZONTAL_ALIGNMENT_LEFT, -1, 36, g)
+			ci.draw_string(f, Vector2(24, 90), "ERROR", HORIZONTAL_ALIGNMENT_LEFT, -1, 36, g)
 			ci.draw_string(f, Vector2(24, 150), str(result.get("err", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, 28, dim)
-			ci.draw_string(f, Vector2(24, 200), "ESSAIE UN AUTRE FICHIER", HORIZONTAL_ALIGNMENT_LEFT, -1, 26, dim)
+			ci.draw_string(f, Vector2(24, 200), "TRY ANOTHER FILE", HORIZONTAL_ALIGNMENT_LEFT, -1, 26, dim)
 	# lignes de balayage
 	for y in range(0, int(h), 4):
 		ci.draw_rect(Rect2(0, y, w, 1), Color(0, 0, 0, .25))

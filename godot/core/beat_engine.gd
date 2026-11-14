@@ -142,4 +142,4 @@ static func to_midi(drums: Array, bass: PackedInt32Array, bpm: float, swing: flo
 	return MidiWriter.build_tracks([
 		{"name": "Batterie", "channel": 9, "program": 0, "notes": dnotes},
 		{"name": "808", "channel": 0, "program": 38, "notes": bnotes},
-	], bpm, "REEL Boîtes à rythmes")
+	], bpm, "REEL Drum Machines")
