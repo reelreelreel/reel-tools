@@ -526,10 +526,19 @@ func _console(at: Vector3, rot: float, L: float, D: float, n: int) -> void:
 		# section master
 		var mx: float = x_start + pw * n
 		ci.draw_rect(Rect2(mx, 0, P.call(master_w), h), Mk.c(0x46525e))
-		Tex.silk(ci, "8028", mx + P.call(master_w) / 2, h * .62, 15, Color(.92, .9, .84, .7), "center", 800)
-		Tex.silk(ci, "MASTER", mx + P.call(master_w) / 2, 18, 20, Color(.95, .8, .5, .9), "center")
+		Tex.silk(ci, "8028", mx + P.call(master_w) * .9, h * .985, 12, Color(.92, .9, .84, .5), "right", 800)
+		Tex.silk(ci, "MASTER", mx + P.call(master_w) / 2, 18, 16, Color(.95, .8, .5, .8), "center", 700)
 		for k in 2:
 			ci.draw_rect(Rect2(mx + P.call(master_w) * (.3 + k * .4) - 3, h * .74, 6, h * .23), Color(0, 0, 0, .85))
+		var Dm := func(d: float) -> float: return d / plen * h
+		var lab := Color(.92, .9, .84, .6)
+		Tex.silk(ci, "MONITOR", mx + P.call(master_w) * .5, Dm.call(.035), 12, lab, "center", 700)
+		Tex.silk(ci, "C/R LEVEL", mx + P.call(master_w) * .5, Dm.call(.147), 11, lab, "center", 600)
+		Tex.silk(ci, "OSC", mx + P.call(master_w) * .25, Dm.call(.2), 11, lab, "center", 600)
+		Tex.silk(ci, "LEVEL", mx + P.call(master_w) * .75, Dm.call(.2), 11, lab, "center", 600)
+		Tex.silk(ci, "TALKBACK", mx + P.call(master_w) * .5, Dm.call(.248), 11, lab, "center", 600)
+		Tex.silk(ci, "DIM", mx + P.call(master_w) * .38, Dm.call(.285), 10, lab, "center", 600)
+		Tex.silk(ci, "MONO", mx + P.call(master_w) * .62, Dm.call(.285), 10, lab, "center", 600)
 		Tex.silk(ci, "L", mx + P.call(master_w) * .3, h * .72, 16, Color(.9, .88, .82, .7), "center")
 		Tex.silk(ci, "R", mx + P.call(master_w) * .7, h * .72, 16, Color(.9, .88, .82, .7), "center")
 		Tex.grime(ci, w, h, 13, 2))
@@ -560,6 +569,9 @@ func _console(at: Vector3, rot: float, L: float, D: float, n: int) -> void:
 		"cord_red": Mk.mat(Mk.c(0xd43a26), .45, 0.0, {"clearcoat": .3}), "cord_yellow": Mk.mat(Mk.c(0xf2c230), .45, 0.0, {"clearcoat": .3}),
 		"cord_blue": Mk.mat(Mk.c(0x2a6ab0), .45, 0.0, {"clearcoat": .3}), "cord_black": Mk.mat(Mk.c(0x1e1e1e), .45, 0.0, {"clearcoat": .3}),
 		"cable": Mk.mat(Mk.c(0x4a4a4c), .55),
+		"sel_on": Mk.mat(Mk.c(0x6a4a10), .35, 0.0, {"emission": Mk.c(0xffb030), "energy": 2.0}),
+		"talk_red": Mk.mat(Mk.c(0xa01810), .3, 0.0, {"clearcoat": .6}),
+		"grille": Mk.mat(Mk.c(0x141414), .5, .7),
 	}
 	for k in row_caps:
 		mats["cap_" + k] = Mk.mat(Mk.c(row_caps[k]), .4, 0.0, {"clearcoat": .5})

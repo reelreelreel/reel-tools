@@ -156,8 +156,34 @@ for i in range(N):
 mx0 = L / 2 - .01 - MASTER
 BIG = lathe("tmp", [(0, 0), (.0125, 0), (.0125, .002), (.0115, .004), (.0112, .014), (.0105, .0158), (0, .016)], "black", segs=40).data
 bpy.data.objects.remove(bpy.data.objects["tmp"])
-for k in range(3):
-    inst("MasterKnob", BIG, (mx0 + MASTER * (.25 + k * .25), -(-PLEN / 2 + .07 + k * .06), H0), deck)
+def mpos(fx, d, h=0.0):  # position dans la section master : fraction de largeur, distance depuis l'arrière
+    return (mx0 + MASTER * fx, PLEN / 2 - d, H0 + h)
+# sélecteurs de source d'écoute (deux rangées de touches carrées, une allumée)
+for row in range(2):
+    for i in range(4):
+        box("MonSel", (.0145, .0145, .006), mpos(.17 + .22 * i, .05 + row * .021, .003), "sel_on" if (row, i) == (0, 1) else "btn", deck, bev=.0018, seg=2)
+# gros potard de niveau d'écoute (control room) avec jupe crantée
+CR = lathe("tmp", [(0, 0), (.019, 0), (.019, .0016), (.0175, .0032), (.0128, .0036), (.0125, .004), (.0122, .019), (.0112, .0212), (0, .0216)], "black", segs=56).data
+bpy.data.objects.remove(bpy.data.objects["tmp"])
+crk = inst("CRLevel", CR, mpos(.5, .118), deck, (0, 0, .7))
+inst("CRLine", LINE, (0, -.009, .022), crk)
+# oscillateur : sélecteur tête de poulet + niveau
+CH = extrude_profile("tmp", [(-.016, 0), (.016, 0), (.006, .012), (-.006, .012)], .009, "black", bev=.0015, seg=2).data
+bpy.data.objects.remove(bpy.data.objects["tmp"])
+osc = inst("OscSelect", KNOB, mpos(.25, .175), deck, (0, 0, -.4))
+inst("OscPointer", CH, (0, 0, .0125), osc, (0, 0, 0))
+inst("OscLevel", KNOB, mpos(.75, .175), deck, (0, 0, .9))
+inst("OscCap", CAPS["cream"], (0, 0, .0124), [c for c in deck.children if c.name.startswith("OscLevel")][0])
+# talkback : gros bouton champignon rouge + grille du micro d'ordre
+tb = lathe("Talkback", [(0, 0), (.009, 0), (.009, .006), (.013, .007), (.0135, .011), (.012, .0135), (0, .014)], "talk_red", deck, segs=40)
+tb.location = mpos(.27, .222)
+cyl("TalkMicRing", .014, .003, mpos(.73, .222, .0015), "alu", deck, segs=40, bev=.001)
+cyl("TalkMicGrille", .011, .001, mpos(.73, .222, .003), "grille", deck, segs=40)
+# inverseurs DIM / MONO
+for i, fx in enumerate((.38, .62)):
+    cyl("ToggleNut", .0045, .003, mpos(fx, .265, .0015), "chrome", deck, segs=6)
+    bat = cyl("ToggleBat", .0013, .016, mpos(fx, .265, .009), "chrome", deck, segs=10, r2=.0022)
+    bat.rotation_euler = (-.45 if i == 0 else .45, 0, 0)
 for k in range(2):
     box("MasterFader", (.022, .03, .016), (mx0 + MASTER * (.3 + k * .4), -(PLEN / 2 - .06), H0 + .008), "cap_red", deck, bev=.004)
     box("MasterSlot", (.006, PLEN * .23, .002), (mx0 + MASTER * (.3 + k * .4), -(-PLEN / 2 + PLEN * .855), H0 - .0002), "slot", deck)
@@ -217,4 +243,4 @@ for i in range(5):
 out = __file__.rsplit("/", 2)[0] + "/godot/assets/models/console_8028.glb"
 lib.export(out)
 if "--preview" in sys.argv:
-    lib.preview("/tmp/console_preview.png", (.55, -.95, .55), (.25, 0, .1), lens=35, samples=20, light_energy=120)
+    lib.preview("/tmp/console_preview.png", (1.15, -.55, .45), (.95, .05, .1), lens=40, samples=20, light_energy=80)

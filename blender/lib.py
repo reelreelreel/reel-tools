@@ -44,6 +44,9 @@ PREVIEW = {
     "cord_blue": ((.1, .25, .6), 0.0, .4),
     "cord_black": ((.02, .02, .02), 0.0, .4),
     "cable": ((.15, .15, .16), 0.0, .5),
+    "sel_on": ((1, .7, .2), 0.0, .3),
+    "talk_red": ((.7, .06, .04), 0.0, .3),
+    "grille": ((.05, .05, .05), .8, .5),
 }
 
 
@@ -62,7 +65,7 @@ def mat(name):
     b.inputs["Base Color"].default_value = (*col, 1)
     b.inputs["Metallic"].default_value = metal
     b.inputs["Roughness"].default_value = rough
-    if name.startswith("led_") or name == "mute_on":
+    if name.startswith("led_") or name in ("mute_on", "sel_on"):
         b.inputs["Emission Color"].default_value = (*col, 1)
         b.inputs["Emission Strength"].default_value = 4.0
     if name == "glass":
@@ -163,7 +166,7 @@ def lathe(name, profile, material, parent=None, segs=48, loc=(0, 0, 0)):
         B = rings[(j + 1) % segs]
         for i in range(n - 1):
             vs = [A[i], B[i], B[i + 1], A[i + 1]]
-            if len({v.index for v in vs}) == 4:
+            if len(set(vs)) == 4:
                 try:
                     bm.faces.new(vs)
                 except ValueError:
