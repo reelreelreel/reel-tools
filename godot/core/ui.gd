@@ -1,7 +1,7 @@
 class_name AppUI
 extends CanvasLayer
-## Interface de l'appli : volontairement simple et neutre (police système, gris translucide),
-## commune à tous les studios — la D.A reste dans les studios.
+## Interface de l'appli : moderne et épurée (verre dépoli qui floute la scène derrière, typo système
+## fine, peu d'éléments), commune à tous les studios — la D.A reste dans les studios.
 ##   · petite étiquette au nom de la machine, posée dessus, qui n'apparaît qu'au survol de la souris
 ##     dans la vue d'ensemble (clic = y aller, chiffres 1–7 au clavier)
 ##   · deux petites icônes en haut à droite : recherche rapide (Cmd+K ou /) et réglages (Cmd+,)
@@ -58,7 +58,9 @@ func _init(m: Node) -> void:
 	layer = 20
 	var sf := SystemFont.new()
 	sf.font_names = PackedStringArray([".AppleSystemUIFont", "SF Pro Text", "Helvetica Neue", "Inter", "Segoe UI", "Roboto", "Arial", "sans-serif"])
+	sf.font_weight = 400
 	sf.antialiasing = TextServer.FONT_ANTIALIASING_GRAY
+	sf.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_AUTO
 	font = sf
 	var th := _theme()
 	ui_scale = maxf(1.0, DisplayServer.screen_get_scale())
@@ -85,6 +87,19 @@ func _box(bg: Color, radius := 10, pad := 10) -> StyleBoxFlat:
 	return sb
 
 
+var _frost: ShaderMaterial
+
+
+## Applique le verre dépoli à un panneau (fond flou + teinte sombre, coins arrondis du StyleBox).
+func _glass(c: Control, radius := 14, pad := 14) -> void:
+	if _frost == null:
+		_frost = ShaderMaterial.new()
+		_frost.shader = load("res://core/shaders/frost.gdshader")
+	var sb := _box(Color(1, 1, 1, 1), radius, pad)
+	c.add_theme_stylebox_override("panel", sb)
+	c.material = _frost
+
+
 func _theme() -> Theme:
 	var th := Theme.new()
 	th.default_font = font
@@ -97,7 +112,14 @@ func _theme() -> Theme:
 	th.set_color("font_pressed_color", "Button", Color.WHITE)
 	th.set_color("font_disabled_color", "Button", dim)
 	th.set_color("font_placeholder_color", "LineEdit", dim)
-	th.set_stylebox("panel", "PanelContainer", _box(Color(.11, .11, .11, .82), 12, 12))
+	th.set_stylebox("panel", "PanelContainer", _box(Color(.08, .08, .09, .78), 14, 14))
+	th.set_color("font_color", "Label", fg)
+	var track := _box(Color(1, 1, 1, .16), 2, 0)
+	track.content_margin_top = 2
+	track.content_margin_bottom = 2
+	th.set_stylebox("slider", "HSlider", track)
+	th.set_stylebox("grabber_area", "HSlider", _box(Color(1, 1, 1, .55), 2, 0))
+	th.set_stylebox("grabber_area_highlight", "HSlider", _box(Color(1, 1, 1, .75), 2, 0))
 	th.set_stylebox("normal", "Button", _box(Color(1, 1, 1, 0), 7, 6))
 	th.set_stylebox("hover", "Button", _box(Color(1, 1, 1, .09), 7, 6))
 	th.set_stylebox("pressed", "Button", _box(Color(1, 1, 1, .16), 7, 6))
@@ -146,15 +168,15 @@ func _build_tags(root: Control) -> void:
 		b.focus_mode = Control.FOCUS_NONE
 		b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		b.add_theme_font_size_override("font_size", 11)
-		b.add_theme_stylebox_override("normal", _box(Color(.08, .08, .08, .55), 6, 0))
-		b.add_theme_stylebox_override("hover", _box(Color(.08, .08, .08, .85), 6, 0))
-		b.add_theme_stylebox_override("pressed", _box(Color(.2, .2, .2, .9), 6, 0))
+		b.add_theme_stylebox_override("normal", _box(Color(.06, .06, .07, .6), 10, 0))
+		b.add_theme_stylebox_override("hover", _box(Color(.06, .06, .07, .82), 10, 0))
+		b.add_theme_stylebox_override("pressed", _box(Color(.18, .18, .2, .9), 10, 0))
 		for sb in ["normal", "hover", "pressed"]:
 			var st := b.get_theme_stylebox(sb) as StyleBoxFlat
-			st.content_margin_left = 7
-			st.content_margin_right = 7
-			st.content_margin_top = 2
-			st.content_margin_bottom = 3
+			st.content_margin_left = 10
+			st.content_margin_right = 10
+			st.content_margin_top = 3
+			st.content_margin_bottom = 4
 		var shot: String = SHOTS[i][0]
 		b.pressed.connect(func(): main.go(shot))
 		b.modulate.a = 0.0
@@ -282,11 +304,12 @@ func _build_settings(root: Control) -> void:
 	settings = PanelContainer.new()
 	settings.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
 	settings.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	settings.offset_left = -300
+	settings.offset_left = -310
 	settings.offset_right = -14
 	settings.offset_top = 50
 	settings.offset_bottom = -14
 	settings.visible = false
+	_glass(settings, 16, 16)
 	root.add_child(settings)
 	var sc := ScrollContainer.new()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -295,22 +318,68 @@ func _build_settings(root: Control) -> void:
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sc.add_child(v)
 
-	# studio
-	_section(v, "Studio")
-	var cur: String = Store.get_v("studio", "7080")
-	for st in STUDIOS:
+	# ambiance : heure du jour
+	_section(v, "Ambiance")
+	var auto := CheckButton.new()
+	auto.text = "Suivre l'heure du Mac"
+	auto.focus_mode = Control.FOCUS_NONE
+	var ov: float = Store.get_v("tod_override", -1.0)
+	auto.button_pressed = ov < 0.0
+	v.add_child(auto)
+	var hl := _label("", 12, .8)
+	v.add_child(hl)
+	var hrow := HBoxContainer.new()
+	hrow.add_theme_constant_override("separation", 10)
+	v.add_child(hrow)
+	var hs := HSlider.new()
+	hs.min_value = 0.0
+	hs.max_value = 24.0
+	hs.step = .25
+	hs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hs.focus_mode = Control.FOCUS_NONE
+	hs.value = ov if ov >= 0.0 else 21.0
+	hrow.add_child(hs)
+	var refresh_h := func() -> void:
+		var h: float = main.studio.tod_hour() if main.studio else hs.value
+		hl.text = "%02d:%02d  ·  %s" % [int(h), int(fmod(h, 1.0) * 60.0), Studio7080.tod_name(h)]
+		hs.editable = not auto.button_pressed
+		hs.modulate.a = .4 if auto.button_pressed else 1.0
+	auto.toggled.connect(func(p: bool):
+		main.studio.set_tod_override(-1.0 if p else hs.value)
+		refresh_h.call())
+	hs.value_changed.connect(func(x: float):
+		if not auto.button_pressed:
+			main.studio.set_tod_override(x)
+		refresh_h.call())
+	settings.visibility_changed.connect(refresh_h)
+	refresh_h.call()
+
+	# lampe à lave
+	_section(v, "Lampe à lave")
+	var lrow := HBoxContainer.new()
+	lrow.add_theme_constant_override("separation", 8)
+	v.add_child(lrow)
+	var lava_btns: Array[Button] = []
+	for i in Lava7080.COLORS.size():
 		var b := Button.new()
-		b.text = st[1] + ("" if st[2] else "  ·  bientôt")
-		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.disabled = not st[2]
+		b.custom_minimum_size = Vector2(26, 26)
+		b.tooltip_text = Lava7080.COLORS[i][0]
 		b.focus_mode = Control.FOCUS_NONE
-		if st[0] == cur:
-			b.add_theme_stylebox_override("normal", _box(Color(1, 1, 1, .14), 7, 6))
-		v.add_child(b)
+		b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		lava_btns.append(b)
+		lrow.add_child(b)
+		var idx := i
+		b.pressed.connect(func():
+			if main.studio and main.studio.lava:
+				main.studio.lava.set_color(idx)
+			_paint_lava(lava_btns, idx))
+	_paint_lava(lava_btns, int(Store.get_v("lava_color", 0)))
+	settings.visibility_changed.connect(func(): _paint_lava(lava_btns, int(Store.get_v("lava_color", 0))))
+	v.add_child(_label("Astuce : clique sur la lampe dans la pièce pour changer de couleur.", 11, .45))
 
 	# personnalisation
-	_section(v, "Personnalisation")
-	v.add_child(_label("Couleur de la lampe", 12, .8))
+	_section(v, "Lampe de bureau")
+	v.add_child(_label("Couleur de l'ampoule", 12, .8))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	v.add_child(row)
@@ -331,6 +400,19 @@ func _build_settings(root: Control) -> void:
 			_paint_swatches(swatches, idx))
 	_paint_swatches(swatches, lamp_i)
 	_apply_lamp(lamp_i)
+
+	# studio
+	_section(v, "Studio")
+	var cur: String = Store.get_v("studio", "7080")
+	for st in STUDIOS:
+		var b := Button.new()
+		b.text = st[1] + ("" if st[2] else "  ·  bientôt")
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.disabled = not st[2]
+		b.focus_mode = Control.FOCUS_NONE
+		if st[0] == cur:
+			b.add_theme_stylebox_override("normal", _box(Color(1, 1, 1, .14), 7, 6))
+		v.add_child(b)
 
 	# sons
 	_section(v, "Sons")
@@ -373,13 +455,24 @@ func _build_settings(root: Control) -> void:
 
 	# raccourcis
 	_section(v, "Raccourcis")
-	for kv in [["1 – 8", "Aller à une machine"], ["← →", "Machine précédente / suivante"], ["Échap", "Vue d'ensemble"], ["Cmd+K", "Rechercher une machine"], ["F  ·  T  ·  M", "Plein écran · Premier plan · Mini"], ["Espace", "Tap tempo (Tempo)"], ["Glisser un fichier", "Accordeur ou Analyse"]]:
+	for kv in [["1 – 9", "Aller à une machine"], ["← →", "Machine précédente / suivante"], ["Échap", "Vue d'ensemble"], ["Cmd+K", "Rechercher une machine"], ["F  ·  T  ·  M", "Plein écran · Premier plan · Mini"], ["Espace", "Tap tempo (Tempo)"], ["Glisser un fichier", "Accordeur ou Analyse"]]:
 		var h := HBoxContainer.new()
 		var k := _label(kv[0], 12, .9)
 		k.custom_minimum_size.x = 110
 		h.add_child(k)
 		h.add_child(_label(kv[1], 12, .6))
 		v.add_child(h)
+
+
+func _paint_lava(list: Array[Button], sel: int) -> void:
+	for i in list.size():
+		var wax: Color = Lava7080.COLORS[i][1]
+		var liq: Color = Lava7080.COLORS[i][2]
+		var sb := _box(wax.lerp(liq, .25), 13, 0)
+		sb.border_color = Color.WHITE if i == sel else Color(1, 1, 1, .15)
+		sb.set_border_width_all(2 if i == sel else 1)
+		for st in ["normal", "hover", "pressed"]:
+			list[i].add_theme_stylebox_override(st, sb)
 
 
 func _paint_swatches(list: Array[Button], sel: int) -> void:
@@ -458,6 +551,7 @@ func _build_search(root: Control) -> void:
 	search.offset_right = 190
 	search.offset_top = 80
 	search.visible = false
+	_glass(search, 16, 12)
 	root.add_child(search)
 	var v := VBoxContainer.new()
 	search.add_child(v)
@@ -550,7 +644,9 @@ func _go_search(shot: String) -> void:
 # ---------------------------------------------------------------- confirmations
 func _build_toast(root: Control) -> void:
 	var p := PanelContainer.new()
-	p.add_theme_stylebox_override("panel", _box(Color(.11, .11, .11, .85), 9, 9))
+	_glass(p, 18, 10)
+	(p.get_theme_stylebox("panel") as StyleBoxFlat).content_margin_left = 16
+	(p.get_theme_stylebox("panel") as StyleBoxFlat).content_margin_right = 16
 	p.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	p.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	p.offset_top = 18

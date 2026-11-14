@@ -18,7 +18,7 @@ func _init() -> void:
 	fx.visible = Studio7080.LOOK_FX
 	add_child(fx)
 
-	hint = _label("CLIQUE UNE MACHINE  ·  ÉCHAP POUR REVENIR", 11, Color(.925, .894, .839, .7))
+	hint = _label("Clique une machine  ·  Échap pour revenir", 11, Color(.95, .95, .95, .45))
 	hint.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	var k := maxf(1.0, DisplayServer.screen_get_scale())
 	hint.offset_top = -44 * k
