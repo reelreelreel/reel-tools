@@ -393,6 +393,12 @@ static func chesterfield(W := 2.15, D := .92, H := .84) -> Node3D:
 	g.name = "Chesterfield"
 	var cuir := Mk.pbr("leather_brown", .14, {"wear": 0.6, "tint": Mk.c(0xf0a868), "rough": .85, "clearcoat": .18, "clearcoat_rough": .5, "normal_scale": 2.2})
 	var cuir_dark := Mk.pbr("leather_brown", .12, {"wear": 0.6, "tint": Mk.c(0xb87048), "rough": .85, "clearcoat": .15, "normal_scale": 2.0})
+	# modèle Blender (blender/chesterfield.py) : capitonnage en losanges, accoudoirs roulés, clous
+	if ResourceLoader.exists("res://assets/models/chesterfield.glb"):
+		var m := Props.model("chesterfield.glb", {"leather_cognac": cuir, "leather_dark": cuir_dark, "walnut": walnut(), "brass": Mk.mat(Mk.c(0xb8913e), .3, 1.0)})
+		m.scale = Vector3(W / 2.1, 1.0, 1.0)
+		g.add_child(m)
+		return g
 	var crease := Mk.mat(Mk.c(0x2a140a), .85)
 	var arm_w := .24
 	var seat_h := .44

@@ -199,18 +199,19 @@ def extrude_profile(name, pts, length, material, parent=None, loc=(0, 0, 0), bev
     return o
 
 
-def tube(name, points, r, material, parent=None, res=8, segs=48):
+def tube(name, points, r, material, parent=None, res=8, segs=48, poly=False):
     cu = bpy.data.curves.new(name, "CURVE")
     cu.dimensions = "3D"
     cu.bevel_depth = r
     cu.bevel_resolution = res // 2
     cu.resolution_u = max(2, segs // max(1, len(points) - 1))
-    sp = cu.splines.new("NURBS")
+    sp = cu.splines.new("POLY" if poly else "NURBS")
     sp.points.add(len(points) - 1)
     for i, p in enumerate(points):
         sp.points[i].co = (*p, 1)
-    sp.use_endpoint_u = True
-    sp.order_u = min(4, len(points))
+    if not poly:
+        sp.use_endpoint_u = True
+        sp.order_u = min(4, len(points))
     o = bpy.data.objects.new(name, cu)
     bpy.context.collection.objects.link(o)
     o.data.materials.append(mat(material))
@@ -341,3 +342,14 @@ def cut(target, cutters):
         bpy.data.objects.remove(c)
     smooth(target, 35)
     return target
+
+
+def rounded_rect(x0, x1, y0, y1, z, r, n=6):
+    """Points d'un rectangle à coins arrondis (pour un passepoil qui suit un coussin)."""
+    pts = []
+    for cx, cy, a0 in ((x1 - r, y0 + r, -90), (x1 - r, y1 - r, 0), (x0 + r, y1 - r, 90), (x0 + r, y0 + r, 180)):
+        for k in range(n + 1):
+            a = math.radians(a0 + 90 * k / n)
+            pts.append((cx + r * math.cos(a), cy + r * math.sin(a), z))
+    pts.append(pts[0])
+    return pts
