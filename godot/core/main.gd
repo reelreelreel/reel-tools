@@ -333,7 +333,7 @@ func _process(delta: float) -> void:
 	cam.position = cam_pos + Vector3(par.x * amp + sin(t * .31) * .006 * dr, -par.y * amp * .5 + sin(t * .23) * .004 * dr, 0)
 	cam.look_at(cam_look, Vector3.UP)
 	var focus := cam.position.distance_to(cam_look)
-	var wide := current == "overview"
+	var wide := current == "overview" or current.begins_with("v_")
 	attrs.dof_blur_far_distance = focus * (1.12 if wide else 1.06)
 	attrs.dof_blur_far_transition = focus * (.9 if wide else .5)
 	attrs.dof_blur_near_distance = focus * (.55 if wide else .8)

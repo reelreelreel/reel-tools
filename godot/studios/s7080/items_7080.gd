@@ -382,3 +382,194 @@ static func blinds(w: float, h: float, down := .55, tilt := .9) -> Node3D:
 	Mk.mi(Mk.cyl(.006, .004, .03, 10), head, Vector3(w / 2 - .03, h / 2 - h * .7, .03), g)
 	Mk.mi(Mk.cyl(.003, .003, h * .55, 8), Mk.mat(Mk.c(0xe8e4dc), .3, 0.0, {"alpha": .6}), Vector3(w / 2 - .06, h / 2 - h * .275, .03), g)
 	return g
+
+
+# ---------------------------------------------------------------- canapé Chesterfield
+## Chesterfield 3 places en cuir cognac patiné (façade vers +Z) : dossier et accoudoirs roulés à la
+## même hauteur, capitonnage en losanges (boutons + plis), accoudoirs enroulés avec volute, trois
+## coussins d'assise bombés, ceinture avec rangée de clous laiton, pieds boules en noyer.
+static func chesterfield(W := 2.15, D := .92, H := .84) -> Node3D:
+	var g := Node3D.new()
+	g.name = "Chesterfield"
+	var cuir := Mk.pbr("leather_brown", .14, {"tint": Mk.c(0xf0a868), "rough": .85, "clearcoat": .18, "clearcoat_rough": .5, "normal_scale": 2.2})
+	var cuir_dark := Mk.pbr("leather_brown", .12, {"tint": Mk.c(0xb87048), "rough": .85, "clearcoat": .15, "normal_scale": 2.0})
+	var crease := Mk.mat(Mk.c(0x2a140a), .85)
+	var arm_w := .24
+	var seat_h := .44
+	var back_d := .22
+	var feet_h := .09
+	# pieds boules + plinthe
+	for sx in [-1, 1]:
+		for sz in [-1, 1]:
+			Mk.mi(Mk.lathe([[0, 0], [.03, 0], [.045, .025], [.045, .05], [.03, .075], [.035, .09], [0, .09]], 20), walnut(), Vector3(sx * (W / 2 - .08), 0, sz * (D / 2 - .08)), g)
+	# caisse basse (ceinture)
+	Mk.mi(Mk.rounded_box(Vector3(W, seat_h - .14 - feet_h, D), .03, cuir_dark, 3), null, Vector3(0, feet_h + (seat_h - .14 - feet_h) / 2, 0), g)
+	# dossier capitonné
+	var bz := -D / 2 + back_d / 2
+	var by0 := seat_h - .14
+	var back := Mk.mi(Mk.rounded_box(Vector3(W - .02, H - by0, back_d), .07, cuir, 5), null, Vector3(0, by0 + (H - by0) / 2, bz), g)
+	back.name = "Back"
+	var inner_w0 := W - 2 * arm_w
+	var qh := H - .12 - (seat_h + .02)
+	var quilt := Mk.mi(quilt_mesh(inner_w0 + .02, qh, .15, .11, .028), cuir, Vector3(0, seat_h + .02 + qh / 2, bz + back_d / 2 + .004), g)
+	quilt.name = "Tufting"
+	# rouleau du dossier
+	var roll := Mk.mi(Mk.cyl(.085, .085, W - .02, 32), cuir, Vector3(0, H - .055, bz + .01), g)
+	roll.rotation.z = PI / 2
+	# accoudoirs roulés
+	for sx in [-1, 1]:
+		var ax: float = sx * (W / 2 - arm_w / 2)
+		Mk.mi(Mk.rounded_box(Vector3(arm_w, H - by0 - .06, D - .02), .06, cuir, 5), null, Vector3(ax, by0 + (H - by0 - .06) / 2, .01), g)
+		var ar := Mk.mi(Mk.cyl(.11, .11, D - .02, 32), cuir, Vector3(ax + sx * .035, H - .07, .01), g)
+		ar.rotation.x = PI / 2
+		# volute en façade
+		var vol := Mk.mi(Mk.cyl(.115, .115, .025, 32), cuir_dark, Vector3(ax + sx * .035, H - .07, D / 2 + .002), g)
+		vol.rotation.x = PI / 2
+		Mk.mi(Mk.rounded_box(Vector3(arm_w - .02, H - by0 - .15, .03), .01, cuir_dark, 2), null, Vector3(ax, by0 + (H - by0 - .15) / 2, D / 2), g)
+		# plis rayonnants de la volute
+		for k in 10:
+			var a := k * TAU / 10
+			var pl := Mk.mi(Mk.box(Vector3(.004, .08, .004)), crease, Vector3(ax + sx * .035 + cos(a) * .06, H - .07 + sin(a) * .06, D / 2 + .016), g)
+			pl.rotation.z = a + PI / 2
+	# coussins d'assise
+	var inner_w := W - 2 * arm_w
+	for i in 3:
+		var cw := inner_w / 3
+		var cx := -inner_w / 2 + cw * (i + .5)
+		var cu := Mk.mi(Mk.rounded_box(Vector3(cw - .008, .15, D - back_d - .02), .05, cuir, 5), null, Vector3(cx, seat_h - .065, bz + back_d / 2 + (D - back_d - .02) / 2), g)
+		cu.name = "Cushion"
+		var cd := D - back_d - .02
+		var cz := bz + back_d / 2 + cd / 2
+		var pip := [Vector3(cx - cw / 2 + .03, seat_h + .008, cz + cd / 2 - .002), Vector3(cx + cw / 2 - .03, seat_h + .008, cz + cd / 2 - .002)]
+		Mk.mi(Mk.tube(pip, .006, 8, 6), cuir_dark, Vector3.ZERO, g)
+		cu.rotation.z = (i - 1) * .004
+	# capitonnage du dossier et de l'intérieur des accoudoirs : boutons + plis en losanges
+	var pts := []
+	var px := .15
+	var py := .11
+	var row := 0
+	var yy := seat_h + .1
+	while yy < H - .1:
+		var off := px / 2 if row % 2 == 1 else 0.0
+		var xx := -inner_w / 2 + .08 + off
+		while xx < inner_w / 2 - .06:
+			pts.append(Vector3(xx, yy, bz + back_d / 2 + .008))
+			xx += px
+		yy += py / 2
+		row += 1
+	var tufts := []
+	for p in pts:
+		tufts.append(Transform3D(Basis(Vector3.RIGHT, PI / 2).scaled(Vector3(1, .45, 1)), p))
+	for sx in [-1, 1]:
+		var ix: float = sx * (W / 2 - arm_w) + sx * -.002
+		var r2 := 0
+		var y2 := seat_h + .05
+		while y2 < H - .14:
+			var z2 := -D / 2 + back_d + .08 + (.08 if r2 % 2 else 0.0)
+			while z2 < D / 2 - .08:
+				tufts.append(Transform3D(Basis(Vector3.BACK, -sx * PI / 2).scaled(Vector3(1, .45, 1)), Vector3(ix, y2, z2)))
+				z2 += .16
+			y2 += .065
+			r2 += 1
+	var bm := MultiMesh.new()
+	bm.transform_format = MultiMesh.TRANSFORM_3D
+	bm.mesh = Mk.sphere(.016, 12, 6, true)
+	bm.instance_count = tufts.size()
+	for i in tufts.size():
+		bm.set_instance_transform(i, tufts[i])
+	var bmi := MultiMeshInstance3D.new()
+	bmi.multimesh = bm
+	bmi.material_override = cuir_dark
+	g.add_child(bmi)
+	var cr := []
+	for p in pts:
+		for a in [.75, -.75, PI / 2 + .75, PI / 2 - .75]:
+			var dir := Vector3(cos(a), sin(a), 0)
+			var q: Vector3 = p + dir * .045 + Vector3(0, 0, -.003)
+			if q.y < H - .09 and q.y > seat_h and absf(q.x) < inner_w / 2 - .03:
+				cr.append(Transform3D(Basis(Vector3.BACK, a), q))
+	var cm := MultiMesh.new()
+	cm.transform_format = MultiMesh.TRANSFORM_3D
+	cm.mesh = Mk.box(Vector3(.065, .007, .01))
+	cm.instance_count = cr.size()
+	for i in cr.size():
+		cm.set_instance_transform(i, cr[i])
+	var cmi := MultiMeshInstance3D.new()
+	cmi.multimesh = cm
+	cmi.material_override = crease
+	g.add_child(cmi)
+	# rangée de clous laiton sur la ceinture et le bas des accoudoirs
+	var nails := []
+	var x := -W / 2 + .03
+	while x < W / 2 - .03:
+		nails.append(Vector3(x, feet_h + .03, D / 2 + .004))
+		x += .028
+	for sx in [-1, 1]:
+		var z := -D / 2 + .03
+		while z < D / 2 - .03:
+			nails.append(Vector3(sx * (W / 2 + .004), feet_h + .03, z))
+			z += .028
+	var nm := MultiMesh.new()
+	nm.transform_format = MultiMesh.TRANSFORM_3D
+	nm.mesh = Mk.sphere(.0065, 10, 5, true)
+	nm.instance_count = nails.size()
+	for i in nails.size():
+		var p: Vector3 = nails[i]
+		var bas := Basis(Vector3.RIGHT, PI / 2) if absf(p.z) > D / 2 else Basis(Vector3.BACK, -signf(p.x) * PI / 2)
+		nm.set_instance_transform(i, Transform3D(bas.scaled(Vector3(1, .6, 1)), p))
+	var nmi := MultiMeshInstance3D.new()
+	nmi.multimesh = nm
+	nmi.material_override = brass()
+	g.add_child(nmi)
+	# coussin en toile
+	var cush := Mk.mi(Mk.rounded_box(Vector3(.42, .38, .12), .06, Mk.pbr("hessian_230", .2, {"tint": Mk.c(0xc86a2a)}), 5), null, Vector3(-W / 2 + .45, seat_h + .19, bz + back_d / 2 + .08), g)
+	cush.rotation = Vector3(-.25, .2, .12)
+	return g
+
+
+
+## Panneau capitonné en vrai relief (plan XY, face +Z, centré) : coussins en losanges entre des
+## creux disposés en quinconce (pas px x py), profondeur `depth`.
+static func quilt_mesh(w: float, h: float, px: float, py: float, depth: float, res := 0.012) -> ArrayMesh:
+	var nx := int(w / res) + 1
+	var ny := int(h / res) + 1
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var hf := func(x: float, y: float) -> float:
+		# distance « losange » au creux le plus proche (réseau en quinconce)
+		var gx := (x + w / 2) / px
+		var gy := (y + h / 2) / (py / 2)
+		var best := 9.0
+		var ry := floori(gy)
+		for r in [ry - 1, ry, ry + 1, ry + 2]:
+			var off: float = .5 if posmod(r, 2) == 1 else 0.0
+			var cx: float = round(gx - off) + off
+			for c in [cx - 1.0, cx, cx + 1.0]:
+				var d: float = absf(gx - c) + absf(gy - r) * .5
+				best = minf(best, d)
+		var t := clampf(best / .5, 0.0, 1.0)
+		var edge := minf(minf(x + w / 2, w / 2 - x), minf(y + h / 2, h / 2 - y))
+		var fall := clampf(edge / .03, 0.0, 1.0)
+		return depth * pow(t, .55) * fall
+	for j in ny:
+		for i in nx:
+			var x := -w / 2 + w * i / (nx - 1)
+			var y := -h / 2 + h * j / (ny - 1)
+			var z: float = hf.call(x, y)
+			var e := .004
+			var dx: float = (hf.call(x + e, y) - hf.call(x - e, y)) / (2 * e)
+			var dy: float = (hf.call(x, y + e) - hf.call(x, y - e)) / (2 * e)
+			st.set_normal(Vector3(-dx, -dy, 1).normalized())
+			st.set_uv(Vector2(x / .3, -y / .3))
+			st.add_vertex(Vector3(x, y, z))
+	for j in ny - 1:
+		for i in nx - 1:
+			var a := j * nx + i
+			st.add_index(a)
+			st.add_index(a + 1)
+			st.add_index(a + nx)
+			st.add_index(a + 1)
+			st.add_index(a + nx + 1)
+			st.add_index(a + nx)
+	st.generate_tangents()
+	return st.commit()

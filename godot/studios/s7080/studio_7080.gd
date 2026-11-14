@@ -1056,7 +1056,19 @@ func _module_cables() -> void:
 func _build_back_units() -> void:
 	var zb := -ROOM.z
 	# canapé cuir (asset) contre le mur du fond, sous le diffuseur
-	Props.place(self, "sofa_leather.glb", Vector3(3.27, 0, zb + .45), 0.0, {"scale": .005, "turn": PI / 2})
+	sofa = Items7080.chesterfield(2.1)
+	sofa.position = Vector3(3.12, 0, zb + .5)
+	add_child(sofa)
+	# applique chaude qui lèche le canapé et le diffuseur
+	var sl := SpotLight3D.new()
+	sl.light_color = Mk.c(0xffc890)
+	sl.light_energy = 2.2
+	sl.spot_range = 3.2
+	sl.spot_angle = 38.0
+	sl.spot_angle_attenuation = 1.4
+	sl.shadow_enabled = true
+	_aim(sl, Vector3(3.1, ROOM.y - .05, -4.6), Vector3(3.12, .45, zb + .5))
+	add_child(sl)
 	# multipiste 24 pistes contre le mur gauche, au fond
 	var mt := _multitrack()
 	mt.position = Vector3(4.6, 0, zb + .68)
@@ -1091,6 +1103,7 @@ func _build_back_units() -> void:
 
 ## Porte capitonnée au fond à droite + voyant ON AIR au-dessus + couloir sombre derrière.
 var on_air_mat: StandardMaterial3D
+var sofa: Node3D
 
 
 func _build_door() -> void:
@@ -1600,7 +1613,9 @@ func shot_pose(shot: String, cam: Camera3D, aspect: float) -> Array:
 		return _via(beats, Beats7080.FOCUS, Vector3(0, .12, 1), Beats7080.W / 2 + .02, Beats7080.FOCUS_H, cam, aspect, 1.06)
 	if shot == "tempo":
 		return _via(tempo.deck, Vector3(0, 0, .0), Vector3(0, 1, .55), Tempo7080.W / 2, tempo.plen / 2, cam, aspect, 1.08)
-	for k in [["v_fax", fax], ["v_beats", beats], ["v_tempo", tempo], ["v_analyse", analyzer]]:
+	if shot == "v_sofa_close":
+		return [Vector3(3.0, 1.15, -4.2), sofa.global_position + Vector3(0, .5, 0)]
+	for k in [["v_sofa", sofa], ["v_fax", fax], ["v_beats", beats], ["v_tempo", tempo], ["v_analyse", analyzer]]:
 		if shot == k[0]:
 			var tgt: Vector3 = (k[1] as Node3D).global_position + Vector3(0, .25, 0)
 			return [EYE, EYE + (tgt - EYE).normalized() * 2.5]

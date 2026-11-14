@@ -852,7 +852,7 @@ func _floor_objects() -> void:
 func _pouf() -> void:
 	var g := Node3D.new()
 	g.name = "Pouf"
-	_put(g, Vector3(2.05, 0, -5.0), .4)
+	_put(g, Vector3(2.15, 0, -4.35), .4)
 	var fab := Mk.pbr("floral_jacquard", .35, {"tint": Mk.c(0xb8b0c0)})
 	var prof := [[0.0, .02]]
 	for i in 13:
