@@ -62,7 +62,7 @@ func _build_top() -> void:
 		var r := Tex.rng(68)
 		for i in 60:  # usure autour des bobines et des têtes
 			ci.draw_circle(Vector2(w * (.5 + r.randf_range(-.35, .35)), h * r.randf_range(.1, .9)), r.randf_range(4, 30), Color(.2, .15, .1, .04))
-		Tex.silk(ci, "REEL'S TOOLS  ·  RT-R2A  TRACK ANALYZER", w / 2.0, h * .93, 20, Color(.08, .08, .08, .8), "center")
+		Tex.silk(ci, "REEL'S  RT-R2A", w * .965, h * .93, 13, Color(.08, .08, .08, .7), "right", 700)
 		Tex.silk(ci, "7½", w * .86, h * .77, 16, Color(.08, .08, .08, .7), "center")
 		Tex.silk(ci, "15 IPS", w * .93, h * .77, 16, Color(.08, .08, .08, .7), "center"))
 	var plate := Mk.mat(Color.WHITE, .5, .6, {"map": plate_tex, "normal": Mk.scratch_normal(), "normal_scale": .2})

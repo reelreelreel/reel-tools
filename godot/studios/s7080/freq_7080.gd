@@ -105,7 +105,7 @@ func _build_panel() -> void:
 		for i in 4:
 			var x: float = P.call(.29 + i * .016)
 			ci.draw_rect(Rect2(x, V.call(-.035), 6, V.call(.03) - V.call(-.035)), Color(0, 0, 0, .9))
-		Tex.silk(ci, "REEL'S TOOLS  RT-F37  FREQUENCY SYNTHESIZER", P.call(.35), V.call(ZP / 2 - .01), 22, Color(.92, .9, .85, .6), "right")
+		Tex.silk(ci, "RT-F37", P.call(.35), V.call(ZP / 2 - .01), 14, Color(.92, .9, .85, .5), "right", 700)
 		Tex.grime(ci, w, h, 607, 1.5))
 	var m := Mk.mat(Color.WHITE, .5, .3, {"map": tex})
 	Mk.mi(Mk.rounded_box(Vector3(L - .004, .003, ZP), .001, [m, m, m, m, m, m], 1), null, Vector3.ZERO, top)

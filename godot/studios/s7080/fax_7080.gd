@@ -94,7 +94,7 @@ func _build_body() -> void:
 	Mk.mi(Mk.rounded_box(Vector3(W - .01, .022, .004), .002, dark, 1), null, Vector3(0, .028, D / 2 + .001), self)
 	var plate := Tex.canvas(512, 32, func(ci, w, h):
 		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(BROWN))
-		Tex.silk(ci, "REEL'S TOOLS  ·  TELECOPIER  RT-FX2  ·  CHORD CHARTS", w / 2.0, h * .72, 17, Color(.95, .88, .7, .8), "center"))
+		Tex.silk(ci, "RT-FX2", w * .95, h * .72, 12, Color(.95, .88, .7, .6), "right", 700))
 	Mk.mi(Mk.quad(W * .7, .014), Mk.mat(Color.WHITE, .5, 0.0, {"map": plate}), Vector3(0, .028, D / 2 + .0035), self)
 	# capot arrière (rouleau de papier sous un couvercle fumé)
 	var hump_z := -D / 2 + .075

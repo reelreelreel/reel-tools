@@ -532,7 +532,7 @@ func _console(at: Vector3, rot: float, L: float, D: float, n: int) -> void:
 		# section master
 		var mx: float = x_start + pw * n
 		ci.draw_rect(Rect2(mx, 0, P.call(master_w), h), Mk.c(0x46525e))
-		Tex.silk(ci, "REEL'S  8028", mx + P.call(master_w) / 2, h * .62, 22, Color(.92, .9, .84, .85), "center", 800)
+		Tex.silk(ci, "8028", mx + P.call(master_w) / 2, h * .62, 15, Color(.92, .9, .84, .7), "center", 800)
 		Tex.silk(ci, "MASTER", mx + P.call(master_w) / 2, 18, 20, Color(.95, .8, .5, .9), "center")
 		for k in 2:
 			ci.draw_rect(Rect2(mx + P.call(master_w) * (.3 + k * .4) - 3, h * .74, 6, h * .23), Color(0, 0, 0, .85))

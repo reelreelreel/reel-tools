@@ -323,7 +323,7 @@ const FN_X := {"gen": .08, "sync": .108, "export": .136, "play": .19}
 func _build_drum_unit() -> void:
 	var h := 3 * U - .001
 	var holder := _face(3, DRUM_Y, func(ci, X, Y, w, hh):
-		Tex.silk(ci, "RT-707", X.call(-.205), Y.call(.052), 30, _ink, "left", 800)
+		Tex.silk(ci, "RT-707", X.call(-.205), Y.call(.052), 20, _ink, "left", 800)
 		Tex.silk(ci, "RHYTHM COMPOSER", X.call(-.205), Y.call(.04), 13, _ink_dim, "left", 600)
 		for i in BeatEngine.INSTR.size():
 			Tex.silk(ci, BeatEngine.INSTR[i], X.call(_x_instr(i)), Y.call(.04), 12, _ink, "center", 600)
@@ -365,7 +365,7 @@ func _build_drum_unit() -> void:
 func _build_bass_unit() -> void:
 	var h := 2 * U - .001
 	var holder := _face(2, BASS_Y, func(ci, X, Y, w, hh):
-		Tex.silk(ci, "RT-808  SUB BASS", X.call(.205), Y.call(-.03), 20, _ink, "right", 800)
+		Tex.silk(ci, "RT-808", X.call(.205), Y.call(-.03), 15, _ink, "right", 800)
 		Tex.silk(ci, "STEP : SELECT  ·  KEY : NOTE", X.call(.205), Y.call(-.039), 9, _ink_dim, "right", 500)
 		for i in 16:
 			Tex.silk(ci, str(i + 1), X.call(_x_step(i)), Y.call(.037), 9, _ink_dim, "center", 600)

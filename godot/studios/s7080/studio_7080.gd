@@ -1380,7 +1380,7 @@ func _multitrack() -> Node3D:
 			var y0 := 60 + row * 190
 			for k in 30:
 				ci.draw_rect(Rect2(90 + k * 28, y0, 14, 120), Color(0, 0, 0, .75))
-		Tex.silk(ci, "RT-24  MASTER RECORDER", 60, h - 30, 26, Color(.1, .1, .1, .85))
+		Tex.silk(ci, "RT-24", 60, h - 30, 18, Color(.1, .1, .1, .75), "left", 800)
 		Tex.grime(ci, w, h, 42, 1.2))
 	Mk.mi(Mk.rounded_box(Vector3(W - .06, .7, D - .04), .006, [grey, grey, grey, grey, Mk.mat(Color.WHITE, .5, .5, {"map": face}), grey], 2), null, Vector3(0, .08 + .35, 0), g)
 	for sx in [-1, 1]:

@@ -415,7 +415,7 @@ func _electric_piano() -> Node3D:
 	var alu := Mk.mat(Mk.c(0xc0beb8), .3, 1.0, {"normal": Mk.scratch_normal(), "normal_scale": .2})
 	var name_tex := Tex.canvas(1024, 64, func(ci, w, h):
 		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0x1a1a1a))
-		Tex.silk(ci, "REEL'S  ELECTRIC PIANO  ·  STAGE 73", w * .5, h * .72, 34, Mk.c(0xd8d4cc), "center", 700))
+		Tex.silk(ci, "STAGE 73", w * .5, h * .72, 24, Mk.c(0xd8d4cc), "center", 700))
 	var nm := Mk.mi(Mk.quad(W - .1, .05), Mk.mat(Color.WHITE, .4, .5, {"map": name_tex}), Vector3(0, y0 + .2, .019), g)
 	nm.rotation.x = -.6
 	Mk.mi(Mk.rounded_box(Vector3(W - .04, .02, .03), .004, alu, 2), null, Vector3(0, y0 + .125, .045), g)
