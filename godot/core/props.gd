@@ -59,3 +59,26 @@ static func _walk(n: Node, xf: Transform3D, keep: Array, kept: bool, acc: Array)
 		if c is Node3D:
 			t = xf * (c as Node3D).transform
 		_walk(c, t, keep, k, acc)
+
+
+## Modèle fait dans Blender (assets/models/*.glb, scripts dans /blender) : chaque matériau du fichier
+## porte un nom ; on le remplace par le vrai matériau de la scène (`mats` : nom -> Material).
+## Les noms absents gardent le matériau du fichier (simple couleur d'aperçu).
+static func model(file: String, mats: Dictionary) -> Node3D:
+	var path := "res://assets/models/" + file
+	if not _scenes.has(path):
+		_scenes[path] = load(path)
+	var inst: Node3D = (_scenes[path] as PackedScene).instantiate()
+	var stack: Array[Node] = [inst]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		stack.append_array(n.get_children())
+		if n is MeshInstance3D:
+			var mi := n as MeshInstance3D
+			for i in mi.mesh.get_surface_count():
+				var m := mi.mesh.surface_get_material(i)
+				var nm := m.resource_name if m else ""
+				nm = nm.get_slice(".", 0)   # « walnut.001 » -> « walnut »
+				if mats.has(nm):
+					mi.set_surface_override_material(i, mats[nm])
+	return inst

@@ -870,33 +870,26 @@ func _build_control_desk() -> void:
 	var z0: float = MAIN_DESK[2]
 	var z1: float = MAIN_DESK[3]
 	var h := DESK_TOP - DESK_T
-	var top := Mk.mi(Mk.rounded_box(Vector3(x1 - x0, DESK_T, z1 - z0), .01, _wood, 3), null, Vector3((x0 + x1) / 2, DESK_TOP - DESK_T / 2, (z0 + z1) / 2), self)
+	# plateau, chant mouluré, accoudoir capitonné, repose-pieds : modèle Blender (blender/desk.py)
+	var dm := {"walnut": _wood, "leather_cognac": _leather(x1 - x0), "brass": Mk.mat(Mk.c(0xb08840), .3, 1.0), "black": Mk.mat(Mk.c(0x0c0806), .9)}
+	var top := Props.model("desk_main.glb", dm)
 	top.name = "ConsoleDesk"
-	# chant en alu brossé + rebord cuir devant
-	var alu := Mk.mat(Mk.c(0xa8a49c), .3, 1.0, {"normal": Mk.scratch_normal(), "normal_scale": .2})
-	Mk.mi(Mk.box(Vector3(x1 - x0, .012, .004)), alu, Vector3((x0 + x1) / 2, DESK_TOP - .03, z0 - .002), self)
-	Mk.mi(Mk.rounded_box(Vector3(x1 - x0 - .1, .07, .12), .033, _leather(x1 - x0), 4), null, Vector3((x0 + x1) / 2, DESK_TOP - .04, z0 - .055), self)
+	top.position = Vector3((x0 + x1) / 2, 0, (z0 + z1) / 2)
+	top.rotation.y = PI
+	add_child(top)
 	# baies 19" à gauche et à droite sous le plateau, espace pour les jambes au milieu
 	_place(_cabinet(.66, h, z1 - z0 - .04, "rack"), Vector3(x0 + .35, 0, z0 + .02), PI)
 	_place(_cabinet(.66, h, z1 - z0 - .04, "rack"), Vector3(x1 - .35, 0, z0 + .02), PI)
-	var kx0 := x0 + .68
-	var kx1 := x1 - .68
-	Mk.mi(Mk.box(Vector3(kx1 - kx0, h, .02)), _wood, Vector3((kx0 + kx1) / 2, h / 2, z1 - .02), self)
-	Mk.mi(Mk.box(Vector3(kx1 - kx0, .03, z1 - z0 - .05)), Mk.mat(Mk.c(0x0c0806), .9), Vector3((kx0 + kx1) / 2, h - .015, (z0 + z1) / 2), self)
-	# repose-pieds en laiton
-	var brass := Mk.mat(Mk.c(0xb08840), .3, 1.0)
-	var fr := Mk.mi(Mk.cyl(.012, .012, kx1 - kx0, 16), brass, Vector3((kx0 + kx1) / 2, .14, z0 + .25), self)
-	fr.rotation.z = PI / 2
 	# ailes
 	for side in [-1, 1]:
 		var c: Vector3 = WINGS[side]
 		var yaw := wing_yaw(side)
 		var b := Basis(Vector3.UP, yaw)
 		var fwd := b * Vector3(0, 0, 1)
-		var wt := Mk.mi(Mk.rounded_box(Vector3(WING_W, DESK_T, WING_D), .01, _wood, 3), null, Vector3(c.x, DESK_TOP - DESK_T / 2, c.z), self)
-		wt.rotation.y = yaw
-		var arm := Mk.mi(Mk.rounded_box(Vector3(WING_W - .08, .07, .12), .033, _leather(WING_W), 4), null, Vector3(c.x, DESK_TOP - .04, c.z) + fwd * (WING_D / 2 + .055), self)
-		arm.rotation.y = yaw
+		var wm := Props.model("desk_wing.glb", {"walnut": _wood, "leather_cognac": _leather(WING_W), "brass": Mk.mat(Mk.c(0xb08840), .3, 1.0), "black": Mk.mat(Mk.c(0x0c0806), .9)})
+		wm.position = Vector3(c.x, 0, c.z)
+		wm.rotation.y = yaw
+		add_child(wm)
 		_place(_cabinet(WING_W - .02, h, WING_D - .04, "rack"), c + fwd * (WING_D / 2 - .02), yaw)
 
 
@@ -1806,6 +1799,8 @@ func yaw_to(p: Vector3) -> float:
 
 ## Renvoie [position, point visé] : vue depuis le fauteuil, ou gros plan sur un module.
 func shot_pose(shot: String, cam: Camera3D, aspect: float) -> Array:
+	if shot == "v_console":  # dev : la console en trois quarts
+		return [Vector3(1.55, 1.32, -1.95), Vector3(2.35, .86, -.8)]
 	if shot == "v_rack":  # dev : les racks sous le bureau producteur
 		return [Vector3(3.75, .5, -2.45), Vector3(4.4, .42, -2.45)]
 	if shot == "v_plaque":  # dev : le double disque d'or

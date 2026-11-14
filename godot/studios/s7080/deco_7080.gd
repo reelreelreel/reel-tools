@@ -486,12 +486,6 @@ func _console(at: Vector3, rot: float, L: float, D: float, n: int) -> void:
 	# console façon 80-series 70s : caisse et pupitre gris-bleu « navire », potards gris à capuchons colorés
 	var body := Mk.mat(Mk.c(0x4a5866), .45, .35, {"normal": Mk.scratch_normal(), "normal_scale": .12})
 	# caisse en biseau (plus haute à l'arrière), joues en noyer
-	var prof := PackedVector2Array([Vector2(-D / 2, 0), Vector2(D / 2, 0), Vector2(D / 2, .045), Vector2(-D / 2, .12)])
-	var box := Mk.mi(Mk.prism(prof, L), body, Vector3(L / 2, 0, 0), g)
-	box.rotation.y = -PI / 2
-	for sx in [-1, 1]:
-		var cheek := Mk.mi(Mk.prism(PackedVector2Array([Vector2(-D / 2 - .01, 0), Vector2(D / 2 + .01, 0), Vector2(D / 2 + .01, .06), Vector2(-D / 2 - .01, .2), Vector2(-D / 2 + .05, .2)]), .025), _walnut, Vector3(sx * (L / 2 + .0125) + .0125, 0, 0), g)
-		cheek.rotation.y = -PI / 2
 	# pupitre incliné
 	var master_w := .2     # section master à droite
 	var sw := (L - .02 - master_w) / n
@@ -539,77 +533,9 @@ func _console(at: Vector3, rot: float, L: float, D: float, n: int) -> void:
 		Tex.silk(ci, "L", mx + P.call(master_w) * .3, h * .72, 16, Color(.9, .88, .82, .7), "center")
 		Tex.silk(ci, "R", mx + P.call(master_w) * .7, h * .72, 16, Color(.9, .88, .82, .7), "center")
 		Tex.grime(ci, w, h, 13, 2))
-	Mk.mi(Mk.rounded_box(Vector3(L - .02, .004, plen), .001, [body, body, Mk.mat(Color.WHITE, .5, .4, {"map": tex}), body, body, body], 1), null, Vector3.ZERO, deck)
-	var knob_mesh := Mk.cyl(.0058, .0068, .011, 16)
-	var skirt_mesh := Mk.cyl(.0088, .0092, .0028, 20)
-	var slot_mat := Mk.mat(Mk.c(0x030303), 1.0)
-	var btn_mat := Mk.mat(Mk.c(0xb8b4aa), .45)
-	var fader_mesh := Mk.prism(PackedVector2Array([Vector2(-.008, 0), Vector2(.008, 0), Vector2(.008, .011), Vector2(.0062, .0128), Vector2(0, .0108), Vector2(-.0062, .0128), Vector2(-.008, .011)]), .022)
-	var skirt := Mk.mat(Mk.c(0x5a5c5e), .35, .2)
-	var screw_mesh := Mk.sphere(.0022, 10, 4, true)
-	var screw_mat := Mk.mat(Mk.c(0x9a968f), .32, 1.0)
-	var cap_mesh := Mk.cyl(.0045, .0045, .003, 14)
-	var big_knob := Mk.cyl(.011, .012, .014, 20)
-	var row_caps := [0xc8281a, 0x3a6aa0, 0x9a9a98, 0x9a9a98, 0x3a6aa0, 0xd8d2c4, 0xd8d2c4, 0xd8d2c4]
-	var grey_knob := Mk.mat(Mk.c(0x8a8c8e), .35, .1, {"clearcoat": .4})
-	var cap_mats := []
-	for cc in row_caps:
-		cap_mats.append(Mk.mat(Mk.c(cc), .4, 0.0, {"clearcoat": .5}))
-	var line := Mk.mat(Mk.c(0xf2efe8), .6)
-	var fader_cap := Mk.mat(Mk.c(0xd8d2c4), .4)
-	var mute_on := Mk.mat(Mk.c(0x400808), .3, 0.0, {"emission": Mk.c(0xff3020), "energy": 2.0})
-	var mute_off := Mk.mat(Mk.c(0x5a1a14), .4)
-	var solo := Mk.mat(Mk.c(0x6a5a14), .4)
-	var r := Tex.rng(31)
-	for i in n:
-		var x := -L / 2 + .01 + sw * (i + .5)
-		for k in rows.size():
-			var v: float = row_v.call(k)
-			var holder := Node3D.new()
-			holder.position = Vector3(x, 0, v)
-			holder.rotation.y = r.randf_range(-2.4, 2.4)
-			deck.add_child(holder)
-			Mk.mi(skirt_mesh, skirt, Vector3(0, .0016, 0), holder)
-			Mk.mi(knob_mesh, grey_knob, Vector3(0, .0075, 0), holder)
-			Mk.mi(cap_mesh, cap_mats[k], Vector3(0, .0142, 0), holder)
-			Mk.mi(Mk.box(Vector3(.001, .0005, .004)), line, Vector3(0, .0158, -.002), holder)
-		# vis de fixation du module (haut et bas de chaque tranche)
-		for zz in [-plen / 2 + .009, plen / 2 - .007]:
-			Mk.mi(screw_mesh, screw_mat, Vector3(x, .002, zz), deck)
-		# mute / solo
-		var mv: float = row_v.call(rows.size()) - .004
-		Mk.mi(Mk.rounded_box(Vector3(.014, .006, .01), .002, mute_on if r.randf() < .25 else mute_off, 1), null, Vector3(x - .009, .004, mv), deck)
-		Mk.mi(Mk.rounded_box(Vector3(.014, .006, .01), .002, solo, 1), null, Vector3(x + .009, .004, mv), deck)
-		# fente de fader + capuchon concave (forme de vrai bouton de fader) + tige
-		Mk.mi(Mk.box(Vector3(.0032, .0012, plen * .19)), slot_mat, Vector3(x, .0019, -plen / 2 + plen * .875), deck)
-		var fv := plen / 2 - .02 - r.randf() * .085
-		Mk.mi(Mk.box(Vector3(.003, .004, .003)), _black, Vector3(x, .003, fv), deck)
-		Mk.mi(fader_mesh, fader_cap, Vector3(x, .0045, fv - .011), deck)
-		Mk.mi(Mk.box(Vector3(.0142, .0006, .0012)), line, Vector3(x, .0045 + .0112, fv), deck)
-		# boutons poussoirs (phase, filtre) sous le gain
-		for bx in [-.0055, .0055]:
-			Mk.mi(Mk.rounded_box(Vector3(.0068, .0045, .0068), .0012, btn_mat, 1), null, Vector3(x + bx, .0035, -plen / 2 + .053), deck)
-	# master : gros potards + deux faders
-	var mx0 := L / 2 - .01 - master_w
-	for k in 3:
-		Mk.mi(big_knob, _black, Vector3(mx0 + master_w * (.25 + k * .25), .008, -plen / 2 + .07 + k * .06), deck)
-	for k in 2:
-		Mk.mi(Mk.rounded_box(Vector3(.022, .016, .03), .004, Mk.mat(Mk.c(0xb3241a), .4), 2), null, Vector3(mx0 + master_w * (.3 + k * .4), .01, plen / 2 - .06), deck)
-	# accoudoir rembourré sur l'avant (cuir noir, boudin) + nez en noyer
-	var roll := Mk.mat(Mk.c(0x0e0c0b), .45, 0.0, {"clearcoat": .3, "clearcoat_rough": .5, "normal": _grain(), "normal_scale": .15})
-	Mk.mi(Mk.rounded_box(Vector3(L + .05, .016, .06), .004, _walnut, 2), null, Vector3(0, .008, D / 2 + .028), g)
-	Mk.mi(Mk.rounded_box(Vector3(L + .03, .046, .058), .021, roll, 4), null, Vector3(0, .039, D / 2 + .028), g)
-	# pont de VU + baie de patch à l'arrière
-	var bridge := Node3D.new()
-	bridge.position = Vector3(0, .18, -D / 2 + .03)
-	bridge.rotation.x = -.25
-	g.add_child(bridge)
-	Mk.mi(Mk.rounded_box(Vector3(L, .12, .05), .006, body, 2), null, Vector3.ZERO, bridge)
-	for sx in [-1, 1]:
-		Mk.mi(Mk.rounded_box(Vector3(.028, .135, .062), .008, _walnut, 2), null, Vector3(sx * (L / 2 + .014), 0, -.004), bridge)
-	# visière au-dessus des VU
-	Mk.mi(Mk.rounded_box(Vector3(L * .88, .006, .03), .002, body, 1), null, Vector3(-L * .036, .049, .038), bridge)
-	var vu := Tex.canvas(256, 160, func(ci, w, h):
+	# la géométrie vient du modèle Blender (blender/console_8028.py) ; ici, les vrais matériaux
+	deck.queue_free()
+	var vu := Tex.canvas(256, 160, func(ci: CanvasItem, w: float, h: float) -> void:
 		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0xe9d9aa))
 		ci.draw_arc(Vector2(128, 190), 150, -2.3, -.84, 32, Mk.c(0x1a1a1a), 2.0, true)
 		ci.draw_arc(Vector2(128, 190), 154, -1.12, -.84, 16, Mk.c(0xb3241a), 4.0, true)
@@ -617,51 +543,29 @@ func _console(at: Vector3, rot: float, L: float, D: float, n: int) -> void:
 			var a := -2.3 + k * .146
 			ci.draw_line(Vector2(128, 190) + Vector2(cos(a), sin(a)) * 150, Vector2(128, 190) + Vector2(cos(a), sin(a)) * 162, Mk.c(0xb3241a) if k > 7 else Mk.c(0x1a1a1a), 2.0, true)
 		Tex.silk(ci, "VU", 128, 120, 26, Mk.c(0x1a1a1a), "center"))
-	var vu_mat := Mk.mat(Color.WHITE, .8, 0.0, {"map": vu, "emission": Mk.c(0xffb060), "energy": .35, "emission_tex": vu})
 	var vu_glass := Mk.mat(Color(.9, .95, 1.0), .04, 0.0, {"alpha": .1, "clearcoat": 1.0, "clearcoat_rough": .02})
-	var vus := []
-	for k in 6:
-		vus.append(-L * .36 + k * L * .144)
-	for vx in vus:
-		Mk.mi(Mk.rounded_box(Vector3(.115, .075, .008), .003, _black, 1), null, Vector3(vx, .01, .024), bridge)
-		Mk.mi(Mk.quad(.1, .062), vu_mat, Vector3(vx, .01, .0285), bridge)
-		# vitre bombée devant le cadran + vis de pivot de l'aiguille
-		Mk.mi(Mk.rounded_box(Vector3(.104, .066, .004), .0019, vu_glass, 2), null, Vector3(vx, .01, .0312), bridge)
-		var piv := Mk.mi(Mk.sphere(.0035, 12, 6, true), _black, Vector3(vx - .008, -.02, .029), bridge)
-		piv.rotation.x = PI / 2
-		var nd := Mk.mi(Mk.box(Vector3(.001, .05, .001)), _black, Vector3(vx - .008, .0, .029), bridge)
-		nd.rotation.z = r.randf_range(.1, .6)
-	# échelles de LED entre les VU
-	for col in 2:
-		for i in 10:
-			var on := i < 6 + col
-			var m := Mk.glow(Mk.c(0x40ff60) if i < 7 else (Mk.c(0xffc020) if i < 9 else Mk.c(0xff3020)), 1.6 if on else .08)
-			Mk.mi(Mk.box(Vector3(.008, .004, .003)), m, Vector3(L * .43 - .012 + col * .024, -.03 + i * .007, .026), bridge)
-	# baie de patch sur le dessus du pont
-	var patch := Node3D.new()
-	patch.position = Vector3(0, .062, .0)
-	patch.rotation.x = -PI / 2 + .25
-	bridge.add_child(patch)
-	Mk.mi(Mk.rounded_box(Vector3(L - .04, .04, .006), .002, Mk.mat(Mk.c(0x1a1a1a), .5, .5), 1), null, Vector3.ZERO, patch)
-	var jack := Mk.cyl(.0032, .0032, .004, 10)
-	var jm := Mk.mat(Mk.c(0x050505), .6)
-	for row in 2:
-		for i in int((L - .08) / .03):
-			var j := Mk.mi(jack, jm, Vector3(-L / 2 + .04 + i * .03, -.009 + row * .018, .003), patch)
-			j.rotation.x = PI / 2
-	# cordons de patch
-	var cord_cols := [0xd43a26, 0xf2c230, 0x2a6ab0, 0x1e1e1e]
-	for i in cord_cols.size():
-		var a := Vector3(-L / 2 + .04 + (3 + i * 5) * .03, -.009, .006)
-		var b := Vector3(-L / 2 + .04 + (7 + i * 4) * .03, .009, .006)
-		var mid := (a + b) / 2 + Vector3(0, -.02 - i * .006, .05 + i * .01)
-		Mk.mi(Mk.tube([a, a + Vector3(0, 0, .02), mid, b + Vector3(0, 0, .02), b], .0022, 24, 6), Mk.mat(Mk.c(cord_cols[i]), .45, 0.0, {"clearcoat": .3}), Vector3.ZERO, patch)
-	# multipaire gris (le « snake ») qui part derrière vers la cabine
-	Mk.mi(Mk.tube([Vector3(.45, .08, -D / 2), Vector3(.5, .02, -D / 2 - .08), Vector3(.55, -.3, -D / 2 - .12), Vector3(.62, -.8, -D / 2 - .06)], .011, 24, 10), Mk.mat(Mk.c(0x4a4a4c), .55), Vector3.ZERO, g)
-	# faisceau de câbles qui part derrière la console vers le sol
-	for i in 5:
-		var x := -.3 + i * .14
-		Mk.mi(Mk.tube([Vector3(x, .1, -D / 2), Vector3(x + .02, .06, -D / 2 - .06), Vector3(x * .5, -.2, -D / 2 - .1), Vector3(x * .3, -.8, -D / 2 - .05)], .005, 20, 6), _black, Vector3.ZERO, g)
+	var roll := Mk.mat(Mk.c(0x0e0c0b), .45, 0.0, {"clearcoat": .3, "clearcoat_rough": .5, "normal": _grain(), "normal_scale": .15})
+	var row_caps := {"red": 0xc8281a, "blue": 0x3a6aa0, "grey": 0x9a9a98, "cream": 0xd8d2c4}
+	var mats := {
+		"body": body, "walnut": _walnut, "leather": roll, "deck_print": Mk.mat(Color.WHITE, .5, .4, {"map": tex}),
+		"brass": Mk.mat(Mk.c(0xb08840), .3, 1.0), "alu": Mk.mat(Mk.c(0x9a968f), .32, 1.0), "chrome": Mk.chrome_mat(),
+		"black": _black, "black_metal": Mk.mat(Mk.c(0x1a1a1a), .5, .5),
+		"knob_grey": Mk.mat(Mk.c(0x8a8c8e), .35, .1, {"clearcoat": .4}),
+		"fader_cap": Mk.mat(Mk.c(0xd8d2c4), .4), "btn": Mk.mat(Mk.c(0xb8b4aa), .45),
+		"mute_on": Mk.mat(Mk.c(0x400808), .3, 0.0, {"emission": Mk.c(0xff3020), "energy": 2.0}),
+		"mute_off": Mk.mat(Mk.c(0x5a1a14), .4), "solo": Mk.mat(Mk.c(0x6a5a14), .4),
+		"slot": Mk.mat(Mk.c(0x030303), 1.0), "glass": vu_glass,
+		"vu_face": Mk.mat(Color.WHITE, .8, 0.0, {"map": vu, "emission": Mk.c(0xffb060), "energy": .35, "emission_tex": vu}),
+		"led_green": Mk.glow(Mk.c(0x40ff60), 1.6), "led_amber": Mk.glow(Mk.c(0xffc020), 1.6), "led_red": Mk.glow(Mk.c(0xff3020), 1.6),
+		"cord_red": Mk.mat(Mk.c(0xd43a26), .45, 0.0, {"clearcoat": .3}), "cord_yellow": Mk.mat(Mk.c(0xf2c230), .45, 0.0, {"clearcoat": .3}),
+		"cord_blue": Mk.mat(Mk.c(0x2a6ab0), .45, 0.0, {"clearcoat": .3}), "cord_black": Mk.mat(Mk.c(0x1e1e1e), .45, 0.0, {"clearcoat": .3}),
+		"cable": Mk.mat(Mk.c(0x4a4a4c), .55),
+	}
+	for k in row_caps:
+		mats["cap_" + k] = Mk.mat(Mk.c(row_caps[k]), .4, 0.0, {"clearcoat": .5})
+	mats["cap_red"] = mats["cap_red"]
+	var model := Props.model("console_8028.glb", mats)
+	g.add_child(model)
 
 
 ## Téléphone à cadran 70s : socle, cadran à disque perforé chromé + butée, combiné sur fourche,
