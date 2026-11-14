@@ -329,6 +329,11 @@ func _build_environment() -> void:
 	env.adjustment_enabled = LOOK_FX
 	env.adjustment_saturation = 0.93
 	env.adjustment_contrast = 1.07
+	if OS.has_environment("REEL_LOWMEM"):
+		# captures de dev (rendu logiciel) : moins de mémoire
+		env.volumetric_fog_enabled = false
+		env.sdfgi_cascades = 2
+		env.ssil_enabled = false
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)

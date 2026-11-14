@@ -27,7 +27,6 @@ func _init() -> void:
 	_floor_lamp()
 	_desk_objects()
 	_floor_objects()
-	_wall_frames()
 
 
 func _put(n: Node3D, pos: Vector3, rot_y := 0.0, parent: Node3D = null) -> Node3D:

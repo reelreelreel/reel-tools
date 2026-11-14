@@ -448,41 +448,120 @@ func _machine_labels() -> void:
 		d.position = Vector3(0, .25, .05)
 
 
-# ---------------------------------------------------------------- cadres pour les images de Maxime
-## Chaque image de res://assets/frames/ (jpg, png) est encadrée dans un emplacement libre des murs.
-const FRAME_SLOTS := [
-	[Vector3(1.75, 1.8, -5.995), 0.0, .5],
-	[Vector3(4.995, 1.82, -3.55), -PI / 2, .45],
-	[Vector3(4.995, 1.95, -2.05), -PI / 2, .38],
-	[Vector3(.005, 2.02, -1.95), PI / 2, .34],
-	[Vector3(4.58, 1.8, -5.995), 0.0, .42],
+# ---------------------------------------------------------------- affiches et certifications (images de Maxime)
+## Images dans res://assets/frames/ (copiées depuis « REEL TOOLS/AFFICHE 70s » sur son Mac).
+## Affiches : [image, position, cap, largeur]. Certifications : [image, position, cap, "or" | "platine"].
+const POSTERS := [
+	["1_bowie", Vector3(1.75, 1.8, -5.995), 0.0, .5],
+	["2_floyd", Vector3(4.995, 1.82, -3.55), -PI / 2, .45],
+	["5_kiss", Vector3(4.58, 1.8, -5.995), 0.0, .42],
+	["3_wonder", Vector3(.005, 2.02, -1.95), PI / 2, .34],
+]
+const PLAQUES := [
+	["4_ewf", Vector3(4.995, 1.58, -1.25), -PI / 2, "or"],
+	["3_wonder", Vector3(4.995, 1.92, -4.6), -PI / 2, "platine"],
+	["5_kiss", Vector3(4.995, 1.72, -5.3), -PI / 2, "or"],
+	["4_ewf", Vector3(4.995, 2.02, -2.05), -PI / 2, "platine"],
 ]
 
 
+func _img(name: String) -> Texture2D:
+	for e in ["jpg", "png", "jpeg", "webp"]:
+		var p := "res://assets/frames/%s.%s" % [name, e]
+		if ResourceLoader.exists(p):
+			return load(p)
+	return null
+
+
 func _frames() -> void:
-	var files := []
-	var dir := DirAccess.open("res://assets/frames")
-	if dir == null:
-		return
-	for f in dir.get_files():
-		var e := f.get_extension().to_lower()
-		if e in ["jpg", "jpeg", "png", "webp"]:
-			files.append("res://assets/frames/" + f)
-	files.sort()
 	var black := Mk.mat(Mk.c(0x0b0908), .35, 0.0, {"clearcoat": .6})
-	for i in mini(files.size(), FRAME_SLOTS.size()):
-		var tex: Texture2D = load(files[i])
+	for it in POSTERS:
+		var tex := _img(it[0])
 		if tex == null:
 			continue
-		var slot: Array = FRAME_SLOTS[i]
-		var w: float = slot[2]
-		var ar := float(tex.get_height()) / tex.get_width()
-		var h := w * ar
+		var w: float = it[3]
+		var h := w * float(tex.get_height()) / tex.get_width()
 		var g := Node3D.new()
-		g.position = slot[0]
-		g.rotation.y = slot[1]
+		g.position = it[1]
+		g.rotation.y = it[2]
 		add_child(g)
 		Mk.mi(Mk.rounded_box(Vector3(w + .06, h + .06, .03), .004, black, 2), null, Vector3(0, 0, .015), g)
 		Mk.mi(Mk.quad(w + .02, h + .02), Mk.mat(Mk.c(0xf2ead8), .9), Vector3(0, 0, .031), g)
 		Mk.mi(Mk.quad(w, h), Mk.mat(Color.WHITE, .6, 0.0, {"map": tex}), Vector3(0, 0, .032), g)
 		Mk.mi(Mk.quad(w + .05, h + .05), Mk.mat(Color.WHITE, .03, 0.0, {"alpha": .08, "clearcoat": 1.0}), Vector3(0, 0, .036), g)
+		_picture_light(g, w + .06, h + .06)
+	for it in PLAQUES:
+		var tex := _img(it[0])
+		if tex == null:
+			continue
+		var g := _plaque(tex, it[3])
+		g.position = it[1]
+		g.rotation.y = it[2]
+		add_child(g)
+
+
+## Certification façon disque d'or / de platine : cadre noir laqué, fond de velours, disque métal
+## gravé avec étiquette, pochette en réduction, plaque gravée en laiton, verre.
+func _plaque(cover: Texture2D, kind: String) -> Node3D:
+	var g := Node3D.new()
+	var W := .44
+	var H := .56
+	var gold := kind == "or"
+	var frame := Mk.mat(Mk.c(0x0b0908), .3, 0.0, {"clearcoat": .8})
+	Mk.mi(Mk.rounded_box(Vector3(W, H, .035), .006, frame, 2), null, Vector3(0, 0, .0175), g)
+	for sx in [-1, 1]:
+		Mk.mi(Mk.box(Vector3(.02, H, .02)), frame, Vector3(sx * (W / 2 - .01), 0, .045), g)
+	for sy in [-1, 1]:
+		Mk.mi(Mk.box(Vector3(W, .02, .02)), frame, Vector3(0, sy * (H / 2 - .01), .045), g)
+	Mk.mi(Mk.quad(W - .05, H - .05), Mk.mat(Mk.c(0x14100e), 1.0, 0.0, {"normal": Mk.noise_tex(2.0, 128, 1), "normal_scale": .5}), Vector3(0, 0, .036), g)
+	# disque : sillons gravés (anneaux) + étiquette centrale
+	if not _tex.has("grooves"):
+		_tex["grooves"] = Tex.canvas(512, 512, func(ci, w, h):
+			var c := Vector2(w / 2.0, h / 2.0)
+			ci.draw_rect(Rect2(0, 0, w, h), Color(0, 0, 0, 0))
+			ci.draw_circle(c, w * .5, Color(1, 1, 1))
+			for k in 60:
+				var r: float = w * (.17 + k * .0055)
+				ci.draw_arc(c, r, 0, TAU, 128, Color(.55, .55, .55, .35 if k % 3 else .6), 1.2)
+			ci.draw_arc(c, w * .5 - 2, 0, TAU, 128, Color(.7, .7, .7), 3.0)
+			ci.draw_circle(c, w * .16, Color(.85, .85, .85))
+			ci.draw_circle(c, w * .012, Color(.1, .1, .1)), true)
+	var metal := Mk.mat(Mk.c(0xe8c060) if gold else Mk.c(0xe8eaec), .25, .75, {"map": _tex["grooves"], "emission": Mk.c(0x4a3a18) if gold else Mk.c(0x3a3a3c), "energy": .6})
+	metal.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
+	var disc := Mk.mi(Mk.quad(.27, .27), metal, Vector3(-.02, .07, .038), g)
+	disc.name = "Record"
+	# pochette en réduction qui chevauche le disque
+	Mk.mi(Mk.box(Vector3(.14, .14 * float(cover.get_height()) / cover.get_width(), .004)), Mk.mat(Color.WHITE, .5, 0.0, {"map": cover}), Vector3(.12, -.04, .041), g)
+	# plaque gravée
+	var key := "plate" + kind
+	if not _tex.has(key):
+		_tex[key] = Tex.canvas(512, 128, func(ci, w, h):
+			ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0xc8a050) if gold else Mk.c(0xc8c8c8))
+			Tex.brushed(ci, w, h, 5, .08)
+			ci.draw_rect(Rect2(6, 6, w - 12, h - 12), Color(.1, .08, .05, .7), false, 2.0)
+			Tex.silk(ci, "DISQUE D'OR" if gold else "DISQUE DE PLATINE", w / 2.0, h * .45, 34, Color(.12, .09, .05), "center", 800)
+			Tex.silk(ci, "décerné à REEL'S TOOLS · enregistré dans ce studio", w / 2.0, h * .78, 17, Color(.12, .09, .05, .85), "center", 600))
+	Mk.mi(Mk.rounded_box(Vector3(.3, .075, .004), .002, Mk.mat(Color.WHITE, .3, 1.0, {"map": _tex[key]}), 1), null, Vector3(0, -.205, .039), g)
+	Mk.mi(Mk.quad(W - .03, H - .03), Mk.mat(Color.WHITE, .03, 0.0, {"alpha": .08, "clearcoat": 1.0}), Vector3(0, 0, .05), g)
+	_picture_light(g, W, H)
+	return g
+
+
+## Applique de tableau en laiton au-dessus d'un cadre (repère du cadre, face +Z).
+func _picture_light(g: Node3D, w: float, h: float) -> void:
+	var brass := Mk.mat(Mk.c(0xb8913e), .3, 1.0)
+	Mk.mi(Mk.rounded_box(Vector3(.05, .03, .02), .005, brass, 2), null, Vector3(0, h / 2 + .05, .01), g)
+	Mk.mi(Mk.tube([Vector3(0, h / 2 + .05, .02), Vector3(0, h / 2 + .09, .07), Vector3(0, h / 2 + .08, .13)], .005, 12, 6), brass, Vector3.ZERO, g)
+	var bar := Mk.mi(Mk.cyl(.018, .018, w * .6, 20), brass, Vector3(0, h / 2 + .07, .14), g)
+	bar.rotation.z = PI / 2
+	var slot := Mk.mi(Mk.box(Vector3(w * .55, .004, .012)), Mk.glow(Mk.c(0xffd8a0), 3.0), Vector3(0, h / 2 + .052, .14), g)
+	slot.name = "PictureLamp"
+	var sp := SpotLight3D.new()
+	sp.light_color = Mk.c(0xffd2a0)
+	sp.light_energy = .9
+	sp.spot_range = h + .4
+	sp.spot_angle = 40.0
+	sp.spot_angle_attenuation = 1.5
+	sp.position = Vector3(0, h / 2 + .05, .14)
+	sp.basis = Basis.looking_at(Vector3(0, -1, -.28), Vector3.BACK)
+	g.add_child(sp)
