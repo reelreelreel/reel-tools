@@ -391,23 +391,10 @@ func _mess() -> void:
 # ---------------------------------------------------------------- ambiance
 ## Lampe à lave 70s : socle cône alu, globe de verre, cire orange en boules, lueur.
 func _lava_lamp(at: Vector3) -> void:
-	var g := Node3D.new()
-	g.position = at
-	add_child(g)
-	var alu := Mk.mat(Mk.c(0xb8b4ac), .25, 1.0)
-	Mk.mi(Mk.lathe([[0, 0], [.07, 0], [.045, .13], [0, .13]], 32), alu, Vector3.ZERO, g)
-	Mk.mi(Mk.lathe([[.045, .13], [.055, .2], [.04, .33], [.03, .33]], 32), Mk.mat(Mk.c(0xffb050), .05, 0.0, {"alpha": .45, "emission": Mk.c(0xff7a20), "energy": .6, "cull_off": true}), Vector3.ZERO, g)
-	Mk.mi(Mk.lathe([[.03, .33], [.034, .38], [0, .38]], 24), alu, Vector3.ZERO, g)
-	var wax := Mk.mat(Mk.c(0xff4a10), .3, 0.0, {"emission": Mk.c(0xff5a18), "energy": 2.0})
-	for p in [[Vector3(.0, .16, 0), .032], [Vector3(.01, .24, .005), .018], [Vector3(-.008, .29, 0), .013], [Vector3(.005, .205, -.01), .012]]:
-		var b := Mk.mi(Mk.sphere(p[1], 16, 8), wax, p[0], g)
-		b.scale = Vector3(1, 1.25, 1)
-	var l := OmniLight3D.new()
-	l.light_color = Mk.c(0xff7a30)
-	l.light_energy = .8
-	l.omni_range = 1.4
-	l.position = Vector3(0, .25, 0)
-	g.add_child(l)
+	var l := Lava7080.new()
+	l.position = at
+	add_child(l)
+	s.lava = l
 
 
 # ---------------------------------------------------------------- étiquettes sur les machines

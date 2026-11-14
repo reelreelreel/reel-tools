@@ -179,6 +179,8 @@ func _tune_render() -> void:
 	var skip: Array = modules.values()
 	if street_car:
 		skip.append(street_car)
+	if lava:
+		skip.append(lava)
 	var before := 0
 	var after := 0
 	for ch in get_children():
@@ -1552,6 +1554,13 @@ func _build_lectern() -> void:
 ## immeuble en face avec fenêtres éclairées et enseigne au néon. Une voiture passe de temps en temps.
 var street_car: Node3D
 var street: Street7080
+var lava: Lava7080
+
+
+## Clic sur un objet du décor (« deco:<nom> »), depuis n'importe quel plan.
+func on_deco(what: String) -> void:
+	if what == "lava" and lava:
+		lava.next_color()
 
 
 func _build_street() -> void:
@@ -1789,6 +1798,8 @@ func yaw_to(p: Vector3) -> float:
 
 ## Renvoie [position, point visé] : vue depuis le fauteuil, ou gros plan sur un module.
 func shot_pose(shot: String, cam: Camera3D, aspect: float) -> Array:
+	if shot == "v_lava":  # dev : la lampe à lave
+		return [Vector3(1.75, 1.32, -5.05), Vector3(1.6, 1.2, -5.68)]
 	if shot == "v_street":  # dev : le nez à la fenêtre
 		return [Vector3(.75, 1.42, (WIN.z0 + WIN.z1) / 2), Vector3(-6, 1.9, (WIN.z0 + WIN.z1) / 2 + .4)]
 	if shot == "splits":
@@ -1870,6 +1881,8 @@ func animate(t: float, dt: float, reduced: bool) -> void:
 	_animate_spots(dt)
 	_animate_tod(dt)
 	street.animate(t)
+	if lava and not reduced:
+		lava.animate(t)
 	# voyant ON AIR : allumé quand une machine joue
 	if on_air_mat:
 		var live: bool = beats.playing or (fax.player != null and fax.player.playing)

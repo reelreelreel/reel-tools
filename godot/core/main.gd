@@ -275,6 +275,9 @@ func _mouse_button(e: InputEventMouseButton) -> void:
 		return
 	if big > 12:
 		return
+	if a.begins_with("deco:"):
+		studio.on_deco(a.substr(5))
+		return
 	var sp := _split(a)
 	if not sp.is_empty():
 		if sp[2] == current:
