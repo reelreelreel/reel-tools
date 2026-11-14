@@ -911,9 +911,10 @@ func _build_side_desk() -> void:
 	var z0: float = SIDE_DESK[2]
 	var z1: float = SIDE_DESK[3]
 	var h := DESK_TOP - DESK_T
-	Mk.mi(Mk.rounded_box(Vector3(x1 - x0, DESK_T, z1 - z0), .01, _wood, 3), null, Vector3((x0 + x1) / 2, DESK_TOP - DESK_T / 2, (z0 + z1) / 2), self)
-	var arm := Mk.mi(Mk.rounded_box(Vector3(z1 - z0 - .1, .07, .12), .033, _leather(z1 - z0), 4), null, Vector3(x0 - .05, DESK_TOP - .04, (z0 + z1) / 2), self)
-	arm.rotation.y = PI / 2
+	var sd := Props.model("desk_side.glb", {"walnut": _wood, "leather_cognac": _leather(z1 - z0), "brass": Mk.mat(Mk.c(0xb08840), .3, 1.0), "black": Mk.mat(Mk.c(0x0c0806), .9)})
+	sd.position = Vector3((x0 + x1) / 2, 0, (z0 + z1) / 2)
+	sd.rotation.y = -PI / 2
+	add_child(sd)
 	var L := z1 - z0
 	_place(_cabinet(L / 2 - .01, h, x1 - x0 - .04, "rack"), Vector3(x0 + .02, 0, z1 - L / 4), -PI / 2)
 	_place(_cabinet(L / 2 - .01, h, x1 - x0 - .04, "rack"), Vector3(x0 + .02, 0, z0 + L / 4), -PI / 2)
@@ -973,19 +974,24 @@ func _cabinet(w: float, h: float, d: float, kind: String) -> Node3D:
 	g.name = "Cabinet_" + kind
 	var kick := .07
 	var dark := Mk.mat(Mk.c(0x120c08), .7)
-	Mk.mi(Mk.box(Vector3(w - .04, kick, d - .06)), dark, Vector3(0, kick / 2, -d / 2 - .03), g)
-	Mk.mi(Mk.rounded_box(Vector3(w, h - kick, d), .004, _wood, 2), null, Vector3(0, kick + (h - kick) / 2, -d / 2), g)
 	var brass := Mk.mat(Mk.c(0xc89a48), .28, 1.0)
 	var fh := h - kick
-	# cadre de façade (montants + traverse haute), les tiroirs / portes sont encastrés dedans
 	var fw := .024
-	for sx in [-1, 1]:
-		Mk.mi(Mk.rounded_box(Vector3(fw, fh, .014), .003, _wood, 2), null, Vector3(sx * (w / 2 - fw / 2), kick + fh / 2, .007), g)
-	Mk.mi(Mk.rounded_box(Vector3(w - 2 * fw, .03, .014), .003, _wood, 2), null, Vector3(0, h - .015, .007), g)
 	var iw := w - 2 * fw
-	# moulure basse (quart-de-rond) au-dessus de la plinthe en retrait
-	var mold := Mk.mi(Mk.prism(PackedVector2Array([Vector2(0, 0), Vector2(.016, 0), Vector2(.014, .008), Vector2(.008, .014), Vector2(0, .016)]), w), _wood, Vector3(w / 2, kick - .004, 0), g)
-	mold.rotation.y = -PI / 2
+	# caisse modélisée dans Blender (blender/cabinet.py) quand la taille existe
+	var cab_file := "cab_%dx%d.glb" % [roundi(w * 100), roundi(d * 100)]
+	if kind == "rack" and ResourceLoader.exists("res://assets/models/" + cab_file):
+		g.add_child(Props.model(cab_file, {"walnut": _wood, "black": dark}))
+	else:
+		Mk.mi(Mk.box(Vector3(w - .04, kick, d - .06)), dark, Vector3(0, kick / 2, -d / 2 - .03), g)
+		Mk.mi(Mk.rounded_box(Vector3(w, h - kick, d), .004, _wood, 2), null, Vector3(0, kick + (h - kick) / 2, -d / 2), g)
+		# cadre de façade (montants + traverse haute), les tiroirs / portes sont encastrés dedans
+		for sx in [-1, 1]:
+			Mk.mi(Mk.rounded_box(Vector3(fw, fh, .014), .003, _wood, 2), null, Vector3(sx * (w / 2 - fw / 2), kick + fh / 2, .007), g)
+		Mk.mi(Mk.rounded_box(Vector3(w - 2 * fw, .03, .014), .003, _wood, 2), null, Vector3(0, h - .015, .007), g)
+		# moulure basse (quart-de-rond) au-dessus de la plinthe en retrait
+		var mold := Mk.mi(Mk.prism(PackedVector2Array([Vector2(0, 0), Vector2(.016, 0), Vector2(.014, .008), Vector2(.008, .014), Vector2(0, .016)]), w), _wood, Vector3(w / 2, kick - .004, 0), g)
+		mold.rotation.y = -PI / 2
 	match kind:
 		"drawers":
 			var n := 3

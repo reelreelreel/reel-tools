@@ -71,3 +71,5 @@ if "--preview" in sys.argv:
     lib.preview("/tmp/desk_preview.png", (.9, -2.0, 1.15), (0, -.4, .6), lens=35, samples=20, light_energy=150)
 desk("DeskWing", .85, .8, footrest=False)
 lib.export(OUT + "desk_wing.glb")
+desk("DeskSide", 1.98, .62, footrest=False)
+lib.export(OUT + "desk_side.glb")
