@@ -483,7 +483,8 @@ func _console(at: Vector3, rot: float, L: float, D: float, n: int) -> void:
 	var g := Node3D.new()
 	g.name = "MixConsole"
 	_put(g, at, rot)  # avant de la console = +Z local
-	var body := Mk.mat(Mk.c(0x2a2622), .5, .3)
+	# console façon 80-series 70s : caisse et pupitre gris-bleu « navire », potards gris à capuchons colorés
+	var body := Mk.mat(Mk.c(0x4a5866), .45, .35, {"normal": Mk.scratch_normal(), "normal_scale": .12})
 	# caisse en biseau (plus haute à l'arrière), joues en noyer
 	var prof := PackedVector2Array([Vector2(-D / 2, 0), Vector2(D / 2, 0), Vector2(D / 2, .045), Vector2(-D / 2, .12)])
 	var box := Mk.mi(Mk.prism(prof, L), body, Vector3(L / 2, 0, 0), g)
@@ -500,35 +501,38 @@ func _console(at: Vector3, rot: float, L: float, D: float, n: int) -> void:
 	deck.position = Vector3(0, (.12 + .045) / 2 + .001, 0)
 	deck.rotation.x = slope
 	g.add_child(deck)
-	var rows := ["GAIN", "HI", "HI-MID", "LO-MID", "LO", "AUX 1", "AUX 2", "PAN"]
+	var rows := ["MIC / LINE", "HF", "MID", "MID FREQ", "LF", "AUX 1", "AUX 2", "PAN"]
 	var row_v := func(k: int) -> float: return -plen / 2 + .035 + k * .034
 	var tex := Tex.canvas(2048, int(2048 * plen / L), func(ci, w, h):
 		var P := func(m: float) -> float: return m / L * w
 		var V := func(m: float) -> float: return (m + plen / 2) / plen * h
-		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0x3a3632))
-		Tex.brushed(ci, w, h, 12, .04, 2500)
+		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0x5c6a78))
+		Tex.brushed(ci, w, h, 12, .045, 2500)
 		var x_start: float = P.call(.01)
 		var pw: float = P.call(sw)
 		# bandes de couleur par section EQ
-		ci.draw_rect(Rect2(x_start, V.call(row_v.call(1)) - 18, pw * n, V.call(row_v.call(4)) - V.call(row_v.call(1)) + 36), Color(.2, .3, .45, .25))
-		ci.draw_rect(Rect2(x_start, V.call(row_v.call(5)) - 18, pw * n, V.call(row_v.call(6)) - V.call(row_v.call(5)) + 36), Color(.45, .3, .15, .25))
+		# section EQ légèrement plus claire, section aux plus sombre (plaques séparées)
+		ci.draw_rect(Rect2(x_start, V.call(row_v.call(1)) - 18, pw * n, V.call(row_v.call(4)) - V.call(row_v.call(1)) + 36), Color(1, 1, 1, .06))
+		ci.draw_rect(Rect2(x_start, V.call(row_v.call(5)) - 18, pw * n, V.call(row_v.call(6)) - V.call(row_v.call(5)) + 36), Color(0, 0, 0, .12))
+		for k in [1, 5, 7]:
+			ci.draw_rect(Rect2(x_start, V.call(row_v.call(k)) - 22, pw * n, 2), Color(0, 0, 0, .45))
 		for i in n:
 			var x0: float = x_start + i * pw
 			ci.draw_rect(Rect2(x0, 0, 2, h), Color(0, 0, 0, .6))
 			Tex.silk(ci, str(i + 1), x0 + pw / 2, 18, 20, Color(.9, .88, .82, .85), "center", 700)
 			for k in rows.size():
 				Tex.silk(ci, rows[k], x0 + pw / 2, V.call(row_v.call(k)) + 26, 10, Color(.9, .88, .82, .55), "center", 600)
-			# bande de scribble avec le nom de la piste
-			var names := ["KICK", "SNARE", "HH", "TOMS", "OH L", "OH R", "BASS", "GTR 1", "GTR 2", "KEYS", "PIANO", "ORGAN", "VOX", "VOX 2", "CHOEURS", "CUIVRES", "PERC", "FX", "VERB", "DELAY"]
-			ci.draw_rect(Rect2(x0 + pw * .08, h * .70, pw * .84, h * .045), Mk.c(0xe8e0c8))
-			Tex.silk(ci, names[i % names.size()], x0 + pw / 2, h * .722, 18, Color(.1, .1, .3, .85), "center", 600, "caveat")
+			# plaque de numéro de voie gravée
+			ci.draw_rect(Rect2(x0 + pw * .2, h * .70, pw * .6, h * .04), Mk.c(0x1e2228))
+			Tex.silk(ci, "%02d" % (i + 1), x0 + pw / 2, h * .73, 20, Color(.92, .9, .84, .9), "center", 700, "mono")
 			# rainure de fader + graduations
 			ci.draw_rect(Rect2(x0 + pw / 2 - 3, h * .78, 6, h * .19), Color(0, 0, 0, .85))
 			for k in 9:
 				ci.draw_rect(Rect2(x0 + pw / 2 + 9, h * (.785 + k * .022), 7 if k % 2 else 12, 2), Color(.9, .88, .82, .6))
 		# section master
 		var mx: float = x_start + pw * n
-		ci.draw_rect(Rect2(mx, 0, P.call(master_w), h), Mk.c(0x2a2826))
+		ci.draw_rect(Rect2(mx, 0, P.call(master_w), h), Mk.c(0x46525e))
+		Tex.silk(ci, "REEL'S  8028", mx + P.call(master_w) / 2, h * .62, 22, Color(.92, .9, .84, .85), "center", 800)
 		Tex.silk(ci, "MASTER", mx + P.call(master_w) / 2, 18, 20, Color(.95, .8, .5, .9), "center")
 		for k in 2:
 			ci.draw_rect(Rect2(mx + P.call(master_w) * (.3 + k * .4) - 3, h * .74, 6, h * .23), Color(0, 0, 0, .85))
@@ -541,12 +545,13 @@ func _console(at: Vector3, rot: float, L: float, D: float, n: int) -> void:
 	var slot_mat := Mk.mat(Mk.c(0x030303), 1.0)
 	var btn_mat := Mk.mat(Mk.c(0xb8b4aa), .45)
 	var fader_mesh := Mk.prism(PackedVector2Array([Vector2(-.008, 0), Vector2(.008, 0), Vector2(.008, .011), Vector2(.0062, .0128), Vector2(0, .0108), Vector2(-.0062, .0128), Vector2(-.008, .011)]), .022)
-	var skirt := Mk.mat(Mk.c(0x2c2c2e), .35, .2)
+	var skirt := Mk.mat(Mk.c(0x5a5c5e), .35, .2)
 	var screw_mesh := Mk.sphere(.0022, 10, 4, true)
 	var screw_mat := Mk.mat(Mk.c(0x9a968f), .32, 1.0)
 	var cap_mesh := Mk.cyl(.0045, .0045, .003, 14)
 	var big_knob := Mk.cyl(.011, .012, .014, 20)
-	var row_caps := [0xd43a26, 0x2a6ab0, 0x3a8a4a, 0x3a8a4a, 0x2a6ab0, 0xe8742a, 0xe8742a, 0xd8d2c4]
+	var row_caps := [0xc8281a, 0x3a6aa0, 0x9a9a98, 0x9a9a98, 0x3a6aa0, 0xd8d2c4, 0xd8d2c4, 0xd8d2c4]
+	var grey_knob := Mk.mat(Mk.c(0x8a8c8e), .35, .1, {"clearcoat": .4})
 	var cap_mats := []
 	for cc in row_caps:
 		cap_mats.append(Mk.mat(Mk.c(cc), .4, 0.0, {"clearcoat": .5}))
@@ -565,7 +570,7 @@ func _console(at: Vector3, rot: float, L: float, D: float, n: int) -> void:
 			holder.rotation.y = r.randf_range(-2.4, 2.4)
 			deck.add_child(holder)
 			Mk.mi(skirt_mesh, skirt, Vector3(0, .0016, 0), holder)
-			Mk.mi(knob_mesh, _black, Vector3(0, .0075, 0), holder)
+			Mk.mi(knob_mesh, grey_knob, Vector3(0, .0075, 0), holder)
 			Mk.mi(cap_mesh, cap_mats[k], Vector3(0, .0142, 0), holder)
 			Mk.mi(Mk.box(Vector3(.001, .0005, .004)), line, Vector3(0, .0158, -.002), holder)
 		# vis de fixation du module (haut et bas de chaque tranche)

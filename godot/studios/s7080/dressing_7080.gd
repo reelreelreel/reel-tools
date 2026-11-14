@@ -637,3 +637,14 @@ func _machine_details() -> void:
 	var fx := Freq7080.L / 2 - .015
 	var fz := Freq7080.D / 2 - .012
 	_screws(f, [Vector3(-fx, Freq7080.H + .0008, -fz), Vector3(fx, Freq7080.H + .0008, -fz), Vector3(-fx, Freq7080.H + .0008, fz - .2), Vector3(fx, Freq7080.H + .0008, fz - .2)], true, .0028)
+	# Export : vis de fixation du cadre au mur + plaque gravée
+	var e := s.export
+	var ex := Export7080.BW / 2 + .008
+	var ey := Export7080.BH / 2 + .008
+	_screws(e, [Vector3(-ex, -ey, .026), Vector3(ex, -ey, .026), Vector3(-ex, ey, .026), Vector3(ex, ey, .026)], false, .0035)
+	_badge(e, Vector3(Export7080.BW / 2 - .06, -Export7080.BH / 2 - .012, .026), "SESSION BOARD", "STUDIO A", .09)
+	# Fax : grille de haut-parleur sur le capot + vis du bandeau
+	var fa := s.fax
+	_vent_plate(fa, Vector3(.13, Fax7080.BASE_H + .0505, -Fax7080.D / 2 + .075), .14, .07)
+	_screws(fa, [Vector3(-Fax7080.W / 2 + .015, .028, Fax7080.D / 2 + .004), Vector3(Fax7080.W / 2 - .015, .028, Fax7080.D / 2 + .004)], false, .0025)
+
