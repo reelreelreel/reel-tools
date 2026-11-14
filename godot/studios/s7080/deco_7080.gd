@@ -16,8 +16,8 @@ var _brass: StandardMaterial3D
 
 func _init() -> void:
 	name = "Deco7080"
-	_leather_brown = Mk.pbr("leather_brown", .45, {"tint": Mk.c(0xf0dcd0), "clearcoat": .1, "clearcoat_rough": .6})
-	_walnut = Mk.pbr("fine_grained_wood", .7, {"tint": Mk.c(0xd8c0a8), "rough": .8, "clearcoat": .3, "clearcoat_rough": .3})
+	_leather_brown = Mk.pbr("leather_brown", .45, {"wear": 0.6, "tint": Mk.c(0xf0dcd0), "clearcoat": .1, "clearcoat_rough": .6})
+	_walnut = Mk.pbr("fine_grained_wood", .7, {"wear": 0.45, "tint": Mk.c(0xd8c0a8), "rough": .8, "clearcoat": .3, "clearcoat_rough": .3})
 	_black = Mk.mat(Mk.c(0x121212), .45, .1)
 	_chrome = Mk.chrome_mat()
 	_brass = Mk.mat(Mk.c(0xc89a48), .3, 1.0)
@@ -290,7 +290,7 @@ func _chair() -> void:
 	var alu := Mk.mat(Mk.c(0xc8c6c2), .22, 1.0, {"normal": Mk.scratch_normal(), "normal_scale": .15})
 	var plastic := Mk.mat(Mk.c(0x161514), .55, 0.0)
 	var pad := _leather_brown
-	var piping := Mk.pbr("leather_brown", .45, {"tint": Mk.c(0x9a8478), "clearcoat": .1, "clearcoat_rough": .6})
+	var piping := Mk.pbr("leather_brown", .45, {"wear": 0.6, "tint": Mk.c(0x9a8478), "clearcoat": .1, "clearcoat_rough": .6})
 	# piètement : 5 branches profilées (plus épaisses au moyeu), roulettes doubles
 	var leg_prof := PackedVector2Array([Vector2(.03, .065), Vector2(.335, .045), Vector2(.345, .055), Vector2(.335, .072), Vector2(.03, .118)])
 	var leg_mesh := Mk.prism(leg_prof, .034)
@@ -852,7 +852,7 @@ func _floor_objects() -> void:
 func _pouf() -> void:
 	var g := Node3D.new()
 	g.name = "Pouf"
-	_put(g, Vector3(2.15, 0, -4.35), .4)
+	_put(g, Vector3(3.85, 0, -3.75), .4)
 	var fab := Mk.pbr("floral_jacquard", .35, {"tint": Mk.c(0xb8b0c0)})
 	var prof := [[0.0, .02]]
 	for i in 13:
@@ -915,7 +915,7 @@ func _plant() -> void:
 # ---------------------------------------------------------------- cadres sur le mur en liège
 func _wall_frames() -> void:
 	# [position, rotation y, couleur du disque] : mur gauche après le synthé, mur droit après la vitre
-	var items := [[Vector3(ROOM_X - .03, 1.55, -1.25), -PI / 2, Mk.c(0xd4a838)], [Vector3(ROOM_X - .03, 1.7, -4.55), -PI / 2, Mk.c(0xc8c8cc)], [Vector3(ROOM_X - .03, 1.7, -5.25), -PI / 2, Mk.c(0xd4a838)]]
+	var items := [[Vector3(ROOM_X - .03, 1.55, -1.25), -PI / 2, Mk.c(0xd4a838)], [Vector3(ROOM_X - .03, 1.88, -4.55), -PI / 2, Mk.c(0xc8c8cc)], [Vector3(ROOM_X - .03, 1.7, -5.25), -PI / 2, Mk.c(0xd4a838)]]
 	for it in items:
 		var g := Node3D.new()
 		g.position = it[0]

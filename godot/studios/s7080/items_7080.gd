@@ -30,7 +30,7 @@ static func black_metal() -> Material:
 
 
 static func walnut() -> Material:
-	return _mat("walnut", func(): return Mk.pbr("dark_wood", .7, {"tint": Mk.c(0xc89878), "rough": .8, "clearcoat": .4, "clearcoat_rough": .35}))
+	return _mat("walnut", func(): return Mk.pbr("dark_wood", .7, {"wear": 0.5, "tint": Mk.c(0xc89878), "rough": .8, "clearcoat": .4, "clearcoat_rough": .35}))
 
 
 # ---------------------------------------------------------------- porte capitonnée
@@ -41,7 +41,7 @@ static func door(W := .92, H := 2.08) -> Node3D:
 	var g := Node3D.new()
 	g.name = "StudioDoor"
 	var wal := walnut()
-	var cuir := Mk.pbr("leather_brown", .35, {"tint": Mk.c(0x9a4a3a), "clearcoat": .3, "clearcoat_rough": .5, "normal_scale": 1.2})
+	var cuir := Mk.pbr("leather_brown", .35, {"wear": 0.6, "tint": Mk.c(0x9a4a3a), "clearcoat": .3, "clearcoat_rough": .5, "normal_scale": 1.2})
 	var t := .07
 	# chambranle (moulure en deux pas)
 	for sx in [-1, 1]:
@@ -82,7 +82,7 @@ static func door(W := .92, H := 2.08) -> Node3D:
 		bm.set_instance_transform(i, Transform3D(Basis(Vector3.RIGHT, PI / 2).scaled(Vector3(1, .5, 1)), pts[i]))
 	var bmi := MultiMeshInstance3D.new()
 	bmi.multimesh = bm
-	bmi.material_override = Mk.pbr("leather_brown", .2, {"tint": Mk.c(0x7a3a2e), "clearcoat": .4})
+	bmi.material_override = Mk.pbr("leather_brown", .2, {"wear": 0.6, "tint": Mk.c(0x7a3a2e), "clearcoat": .4})
 	leaf.add_child(bmi)
 	# plis entre les boutons : petites rainures en diagonale
 	var crease := Mk.mat(Mk.c(0x2a100c), .8)
@@ -295,7 +295,7 @@ static func ns10() -> Node3D:
 	var W := .215
 	var H := .38
 	var D := .2
-	var ash := Mk.pbr("dark_wood", .4, {"tint": Mk.c(0x2a2624), "rough": .7, "clearcoat": .15})
+	var ash := Mk.pbr("dark_wood", .4, {"wear": 0.5, "tint": Mk.c(0x2a2624), "rough": .7, "clearcoat": .15})
 	var baffle := Mk.mat(Mk.c(0x111111), .6)
 	Mk.mi(Mk.rounded_box(Vector3(W, H, D), .004, [ash, ash, ash, ash, baffle, ash], 2), null, Vector3(0, H / 2, 0), g)
 	# cône : profil de révolution (suspension en bourrelet, cône, cache)
@@ -391,8 +391,8 @@ static func blinds(w: float, h: float, down := .55, tilt := .9) -> Node3D:
 static func chesterfield(W := 2.15, D := .92, H := .84) -> Node3D:
 	var g := Node3D.new()
 	g.name = "Chesterfield"
-	var cuir := Mk.pbr("leather_brown", .14, {"tint": Mk.c(0xf0a868), "rough": .85, "clearcoat": .18, "clearcoat_rough": .5, "normal_scale": 2.2})
-	var cuir_dark := Mk.pbr("leather_brown", .12, {"tint": Mk.c(0xb87048), "rough": .85, "clearcoat": .15, "normal_scale": 2.0})
+	var cuir := Mk.pbr("leather_brown", .14, {"wear": 0.6, "tint": Mk.c(0xf0a868), "rough": .85, "clearcoat": .18, "clearcoat_rough": .5, "normal_scale": 2.2})
+	var cuir_dark := Mk.pbr("leather_brown", .12, {"wear": 0.6, "tint": Mk.c(0xb87048), "rough": .85, "clearcoat": .15, "normal_scale": 2.0})
 	var crease := Mk.mat(Mk.c(0x2a140a), .85)
 	var arm_w := .24
 	var seat_h := .44

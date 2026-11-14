@@ -64,7 +64,7 @@ func _init(e: TempoEngine) -> void:
 	engine = e
 	name = "Studio7080"
 	_build_environment()
-	_wood = Mk.pbr("dark_wood", .9, {"tint": Mk.c(0xc8a090), "rough": .85, "clearcoat": .35, "clearcoat_rough": .35})
+	_wood = Mk.pbr("dark_wood", .9, {"wear": 0.5, "tint": Mk.c(0xc8a090), "rough": .85, "clearcoat": .35, "clearcoat_rough": .35})
 	_build_floor_ceiling()
 	_build_front_wall()
 	_build_right_wall()
@@ -128,7 +128,7 @@ func _init(e: TempoEngine) -> void:
 	modules["fax"] = fax
 	# --- gauche, au fond : tour de racks sur roulettes avec les boîtes à rythmes
 	beats = Beats7080.new(fax)
-	beats.position = Vector3(4.62, 0, -4.38)
+	beats.position = Vector3(4.62, 0, -4.45)
 	beats.rotation.y = face_seat(beats.position)
 	add_child(beats)
 	modules["beats"] = beats
@@ -141,6 +141,9 @@ func face_seat(p: Vector3) -> float:
 
 func _ready() -> void:
 	_module_cables()
+	var dr := Dressing7080.new(self)
+	add_child(dr)
+	dr.build()
 	_build_module_spots()
 
 
@@ -358,7 +361,7 @@ func _reflection_room() -> Image:
 
 ## Lambris : planches Poly Haven (wood_planks), teintées plus sombre et chaud.
 func _wall_boards() -> StandardMaterial3D:
-	return Mk.pbr("wood_planks", 1.4, {"tint": Mk.c(0xa87c60), "rough": .9, "local": false})
+	return Mk.pbr("wood_planks", 1.4, {"wear": 0.35, "tint": Mk.c(0xa87c60), "rough": .9, "local": false})
 
 
 func _boards() -> Texture2D:
@@ -655,7 +658,7 @@ var _jutes := {}
 
 func _slat_mat() -> Material:
 	if _slat == null:
-		_slat = Mk.pbr("wood_planks", .9, {"tint": Mk.c(0xb08868), "rough": .8, "clearcoat": .15})
+		_slat = Mk.pbr("wood_planks", .9, {"wear": 0.35, "tint": Mk.c(0xb08868), "rough": .8, "clearcoat": .15})
 	return _slat
 
 
@@ -1019,7 +1022,7 @@ func _leather(length: float) -> StandardMaterial3D:
 	var key := "leather%.2f" % length
 	if _rack_mats.has(key):
 		return _rack_mats[key]
-	var m: StandardMaterial3D = Mk.pbr("leather_brown", .25, {"tint": Mk.c(0x4a3228), "rough": .85, "clearcoat": .3, "clearcoat_rough": .45, "normal_scale": 1.3}).duplicate()
+	var m: StandardMaterial3D = Mk.pbr("leather_brown", .25, {"wear": 0.6, "tint": Mk.c(0x4a3228), "rough": .85, "clearcoat": .3, "clearcoat_rough": .45, "normal_scale": 1.3}).duplicate()
 	_rack_mats[key] = m
 	return m
 
@@ -1045,9 +1048,6 @@ func _module_cables() -> void:
 	var gaff := Mk.mat(Mk.c(0x1a1a1a), .7)
 	var roll := Mk.mi(Mk.torus_ring(.045, .022), gaff, Vector3(4.88, y + .02, -2.88), self)
 	roll.scale = Vector3(1, .9, 1)
-	var tape := Mk.mat(Mk.c(0xe8e0c8), .8)
-	for i in 6:
-		Mk.mi(Mk.box(Vector3(.06, .001, .018)), tape, Vector3(1.55 + i * .37, DESK_TOP + .001, -1.33), self)
 
 
 # ---------------------------------------------------------------- fond de la pièce : matériel

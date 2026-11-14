@@ -122,7 +122,7 @@ func _x_step(i: int) -> float:
 
 
 func _build_tower() -> void:
-	var walnut := Mk.pbr("fine_grained_wood", .5, {"tint": Mk.c(0xc8a890), "rough": .75, "clearcoat": .35})
+	var walnut := Mk.pbr("fine_grained_wood", .5, {"wear": 0.45, "tint": Mk.c(0xc8a890), "rough": .75, "clearcoat": .35})
 	var dark := Mk.mat(Mk.c(0x0a0a0a), .7)
 	_black_al = Mk.mat(Mk.c(0x161618), .32, .85, {"normal": Mk.scratch_normal(), "normal_scale": .12})
 	var t := .028

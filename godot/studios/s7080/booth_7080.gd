@@ -20,8 +20,8 @@ var _brass_cym: Material
 
 func _init() -> void:
 	name = "Booth"
-	_wood_nat = Mk.pbr("fine_grained_wood", .45, {"tint": Mk.c(0xe8b878), "rough": .5, "clearcoat": .8, "clearcoat_rough": .15})
-	_walnut = Mk.pbr("dark_wood", .6, {"tint": Mk.c(0x8a5a40), "rough": .55, "clearcoat": .9, "clearcoat_rough": .12})
+	_wood_nat = Mk.pbr("fine_grained_wood", .45, {"wear": 0.45, "tint": Mk.c(0xe8b878), "rough": .5, "clearcoat": .8, "clearcoat_rough": .15})
+	_walnut = Mk.pbr("dark_wood", .6, {"wear": 0.5, "tint": Mk.c(0x8a5a40), "rough": .55, "clearcoat": .9, "clearcoat_rough": .12})
 	_chrome = Mk.chrome_mat()
 	_black = Mk.mat(Mk.c(0x111111), .45, .4)
 	_brass_cym = Mk.mat(Mk.c(0xc89a44), .28, 1.0, {"normal": Mk.noise_tex(.9, 256, 2), "normal_scale": .25})
@@ -51,7 +51,7 @@ func _init() -> void:
 
 # ---------------------------------------------------------------- pièce
 func _room() -> void:
-	var parquet := Mk.pbr("plank_flooring", 1.4, {"tint": Mk.c(0xb08868), "clearcoat": .3, "clearcoat_rough": .4, "local": false})
+	var parquet := Mk.pbr("plank_flooring", 1.4, {"wear": 0.4, "tint": Mk.c(0xb08868), "clearcoat": .3, "clearcoat_rough": .4, "local": false})
 	var cx := (X0 + X1) / 2
 	var cz := (Z0 + Z1) / 2
 	Mk.mi(Mk.plane(X1 - X0, Z1 - Z0), parquet, Vector3(cx, 0, cz), self)
@@ -59,7 +59,7 @@ func _room() -> void:
 	ceil.rotation.x = PI
 	# murs : lattes en bas, toile de jute au-dessus, panneaux acoustiques
 	var jute: StandardMaterial3D = Mk.pbr("hessian_230", .45, {"tint": Mk.c(0xb87038), "rough": 1.0}).duplicate()
-	var slat := Mk.pbr("wood_planks", .9, {"tint": Mk.c(0xb08868), "rough": .8})
+	var slat := Mk.pbr("wood_planks", .9, {"wear": 0.35, "tint": Mk.c(0xb08868), "rough": .8})
 	var dark := Mk.mat(Mk.c(0x0a0705), .95)
 	var walls := [  # [centre, cap, longueur]
 		[Vector3(cx, 0, Z1), PI, X1 - X0],
@@ -278,7 +278,7 @@ func _drum_kit() -> Node3D:
 	# siège
 	var th := Vector3(0, 0, -.72)
 	_tripod(k, th, .25, .25, .46)
-	Mk.mi(Mk.rounded_box(Vector3(.36, .09, .36), .04, Mk.pbr("leather_brown", .3, {"tint": Mk.c(0x5a4a40)}), 4), null, th + Vector3(0, .5, 0), k)
+	Mk.mi(Mk.rounded_box(Vector3(.36, .09, .36), .04, Mk.pbr("leather_brown", .3, {"wear": 0.6, "tint": Mk.c(0x5a4a40)}), 4), null, th + Vector3(0, .5, 0), k)
 	# baguettes posées sur le tom basse
 	for i in 2:
 		var st := _rod(k, Vector3(.33, .705 + i * .012, -.3 + i * .03), Vector3(.62, .705 + i * .012, -.2 + i * .03), .0065, _wood_nat)
@@ -384,7 +384,7 @@ func _upright_piano() -> Node3D:
 	var bench := Node3D.new()
 	bench.position = Vector3(0, 0, .55)
 	g.add_child(bench)
-	Mk.mi(Mk.rounded_box(Vector3(.8, .07, .36), .02, Mk.pbr("leather_brown", .3, {"tint": Mk.c(0x6a3a2a), "clearcoat": .2}), 3), null, Vector3(0, .5, 0), bench)
+	Mk.mi(Mk.rounded_box(Vector3(.8, .07, .36), .02, Mk.pbr("leather_brown", .3, {"wear": 0.6, "tint": Mk.c(0x6a3a2a), "clearcoat": .2}), 3), null, Vector3(0, .5, 0), bench)
 	Mk.mi(Mk.rounded_box(Vector3(.78, .04, .34), .01, wal, 2), null, Vector3(0, .45, 0), bench)
 	for sx in [-1, 1]:
 		for sz in [-1, 1]:
@@ -400,7 +400,7 @@ func _electric_piano() -> Node3D:
 	g.name = "ElectricPiano"
 	var W := 1.16
 	var D := .52
-	var tolex: StandardMaterial3D = Mk.pbr("leather_brown", .15, {"tint": Mk.c(0x2a2828), "rough": .9}).duplicate()
+	var tolex: StandardMaterial3D = Mk.pbr("leather_brown", .15, {"wear": 0.6, "tint": Mk.c(0x2a2828), "rough": .9}).duplicate()
 	var y0 := .62
 	Mk.mi(Mk.rounded_box(Vector3(W, .12, D), .02, tolex, 3), null, Vector3(0, y0 + .06, 0), g)
 	# couvercle (harpe) bombé
@@ -504,7 +504,7 @@ func _vocal_mic() -> Node3D:
 	for sx in [-1, 1]:
 		var cup := Mk.mi(Mk.cyl(.045, .045, .03, 24), Mk.mat(Mk.c(0x1a1a1a), .5), Vector3(sx * .09, -.08, 0), hp)
 		cup.rotation.z = PI / 2
-		var cush := Mk.mi(Mk.torus_ring(.035, .012), Mk.pbr("leather_brown", .1, {"tint": Mk.c(0x2a2020)}), Vector3(sx * .07, -.08, 0), hp)
+		var cush := Mk.mi(Mk.torus_ring(.035, .012), Mk.pbr("leather_brown", .1, {"wear": 0.6, "tint": Mk.c(0x2a2020)}), Vector3(sx * .07, -.08, 0), hp)
 		cush.rotation.z = PI / 2
 	Mk.mi(Mk.tube([Vector3(.09, -.1, 0), Vector3(.1, -.4, .05), Vector3(.2, -1.0, .2), Vector3(.5, -1.09, .5)], .003, 24, 6), _black, Vector3.ZERO, hp)
 	# câble XLR du micro jusqu'au mur avant

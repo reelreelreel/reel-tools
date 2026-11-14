@@ -82,8 +82,41 @@ static func pbr(name: String, size := 1.0, opts := {}) -> StandardMaterial3D:
 	m.uv1_triplanar_sharpness = 8.0
 	m.uv1_scale = Vector3.ONE / size
 	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	if opts.get("wear", 0.0) > 0.0:
+		# usure portée par la texture : patine (variation sombre / claire) + micro-rayures en détail
+		m.detail_enabled = true
+		m.detail_uv_layer = BaseMaterial3D.DETAIL_UV_1
+		m.detail_blend_mode = BaseMaterial3D.BLEND_MODE_MUL
+		m.detail_albedo = wear_tex(opts.wear)
+		m.detail_normal = scratch_normal()
 	_cache[key] = m
 	return m
+
+
+## Texture de patine (multiplicative, ~blanc) : zones plus sombres (mains, frottements) et plus claires
+## (vernis usé), à grande échelle.
+static func wear_tex(amount: float) -> Texture2D:
+	var key := "wear%.2f" % amount
+	if _cache.has(key):
+		return _cache[key]
+	var n := FastNoiseLite.new()
+	n.frequency = .012
+	n.fractal_octaves = 4
+	var n2 := FastNoiseLite.new()
+	n2.seed = 7
+	n2.frequency = .06
+	var img := Image.create(512, 512, false, Image.FORMAT_RGB8)
+	for y in 512:
+		for x in 512:
+			var v := n.get_noise_2d(x, y) * .8 + n2.get_noise_2d(x, y) * .35
+			var k := clampf(1.0 - absf(v) * amount * 1.4, .55, 1.0)
+			if v > .25:
+				k = clampf(k + (v - .25) * amount * .9, .55, 1.12)
+			img.set_pixel(x, y, Color(k, k * .99, k * .97))
+	img.generate_mipmaps()
+	var t := ImageTexture.create_from_image(img)
+	_cache[key] = t
+	return t
 
 
 ## Écran / LED : noir, qui émet de la lumière (bloom). Avec une texture : shader d'écran.
