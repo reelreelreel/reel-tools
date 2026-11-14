@@ -21,6 +21,7 @@ func _init(studio: Studio7080) -> void:
 
 func build() -> void:
 	_tech()
+	_machine_details()
 	_lava_lamp(Vector3(1.6, .968, -5.68))
 	_frames()
 
@@ -565,3 +566,74 @@ func _picture_light(g: Node3D, w: float, h: float) -> void:
 	sp.position = Vector3(0, h / 2 + .05, .14)
 	sp.basis = Basis.looking_at(Vector3(0, -1, -.28), Vector3.BACK)
 	g.add_child(sp)
+
+
+
+# ---------------------------------------------------------------- détails des machines
+## Vis de fixation (tête bombée cruciforme) aux points donnés, dans le repère de `parent`, tête
+## tournée vers `normal` (+Z ou +Y local).
+func _screws(parent: Node3D, pts: Array, up := false, r := .0032) -> void:
+	for p in pts:
+		var sc := Mk.screw_head(r)
+		if not up:
+			sc.rotation.x = PI / 2
+		sc.rotation.y = randf() * TAU
+		sc.position = p
+		parent.add_child(sc)
+
+
+## Grille d'aération (fentes) posée à plat (+Y) : plaque métal sombre percée.
+func _vent_plate(parent: Node3D, at: Vector3, w: float, d: float) -> void:
+	if not _tex.has("slots"):
+		_tex["slots"] = Tex.canvas(512, 256, func(ci, ww, hh):
+			ci.draw_rect(Rect2(0, 0, ww, hh), Mk.c(0x2a2a2a))
+			Tex.brushed(ci, ww, hh, 31, .05)
+			var x := 24.0
+			while x < ww - 24:
+				ci.draw_rect(Rect2(x, 30, 9, hh - 60), Color(0, 0, 0, .95))
+				ci.draw_rect(Rect2(x + 9, 30, 1.5, hh - 60), Color(1, 1, 1, .12))
+				x += 22)
+	var q := Mk.mi(Mk.rounded_box(Vector3(w, .002, d), .001, Mk.mat(Color.WHITE, .5, .6, {"map": _tex["slots"]}), 1), null, at, parent)
+	q.name = "Vent"
+	var hw := w / 2 - .008
+	var hd := d / 2 - .008
+	_screws(parent, [at + Vector3(-hw, .0015, -hd), at + Vector3(hw, .0015, -hd), at + Vector3(-hw, .0015, hd), at + Vector3(hw, .0015, hd)], true, .0025)
+
+
+## Plaque gravée en alu (nom + numéro de série) posée sur une face (+Z local de `parent`).
+func _badge(parent: Node3D, at: Vector3, txt: String, sub: String, w := .07) -> void:
+	var key := "badge:" + txt
+	if not _tex.has(key):
+		_tex[key] = Tex.canvas(512, 128, func(ci, ww, hh):
+			ci.draw_rect(Rect2(0, 0, ww, hh), Mk.c(0xb8b4ac))
+			Tex.brushed(ci, ww, hh, txt.hash(), .1)
+			ci.draw_rect(Rect2(4, 4, ww - 8, hh - 8), Color(.1, .1, .1, .7), false, 2.0)
+			Tex.silk(ci, txt, ww / 2.0, hh * .5, 44, Color(.08, .08, .08), "center", 800)
+			Tex.silk(ci, sub, ww / 2.0, hh * .82, 20, Color(.08, .08, .08, .8), "center", 600))
+	var b := Mk.mi(Mk.rounded_box(Vector3(w, w / 4, .0015), .001, Mk.mat(Color.WHITE, .3, .9, {"map": _tex[key]}), 1), null, at, parent)
+	b.name = "Badge"
+	_screws(parent, [at + Vector3(-w / 2 + .004, 0, .0012), at + Vector3(w / 2 - .004, 0, .0012)], false, .0016)
+
+
+func _machine_details() -> void:
+	seed(7)
+	# Accordeur : vis de façade, grille d'aération sur le dessus, plaque de série
+	var t := s.tuner
+	var tw := Tuner7080.W / 2 - .012
+	var th := Tuner7080.H / 2 - .012
+	_screws(t.face, [Vector3(-tw, -th, .002), Vector3(tw, -th, .002), Vector3(-tw, th, .002), Vector3(tw, th, .002)])
+	_vent_plate(t, Vector3(0, Tuner7080.H + .001, -Tuner7080.DEPTH / 2), Tuner7080.W - .06, Tuner7080.DEPTH - .05)
+	# Analyse : vis aux coins de la platine, plaque de série
+	var a := s.analyzer
+	var ax := Analyzer7080.W / 2 - .012
+	_screws(a, [Vector3(-ax, .0905, -Analyzer7080.D / 2 + .012), Vector3(ax, .0905, -Analyzer7080.D / 2 + .012), Vector3(-ax, .0905, -Analyzer7080.D / 2 + .218), Vector3(ax, .0905, -Analyzer7080.D / 2 + .218)], true)
+	# Tempo : vis aux coins du panneau incliné
+	var dk := s.tempo.deck
+	var dx := Tempo7080.W / 2 - .01
+	var dz := s.tempo.plen / 2 - .01
+	_screws(dk, [Vector3(-dx, .0025, -dz), Vector3(dx, .0025, -dz), Vector3(-dx, .0025, dz), Vector3(dx, .0025, dz), Vector3(-dx, .0025, 0), Vector3(dx, .0025, 0)], true, .0026)
+	# Fréquences : vis du capot, grille d'aération à l'arrière du dessus
+	var f := s.freq
+	var fx := Freq7080.L / 2 - .015
+	var fz := Freq7080.D / 2 - .012
+	_screws(f, [Vector3(-fx, Freq7080.H + .0008, -fz), Vector3(fx, Freq7080.H + .0008, -fz), Vector3(-fx, Freq7080.H + .0008, fz - .2), Vector3(fx, Freq7080.H + .0008, fz - .2)], true, .0028)

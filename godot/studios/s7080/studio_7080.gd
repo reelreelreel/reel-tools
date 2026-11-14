@@ -84,7 +84,7 @@ func _init(e: TempoEngine) -> void:
 	_build_lights()
 	deco = Deco7080.new()
 	add_child(deco)
-	var walnut := Mk.mat(Mk.c(0x6a4028), .55, 0.0, {"map": Mk.walnut_tex(), "clearcoat": .3})
+	var walnut := Mk.pbr("dark_wood", .45, {"wear": .5, "tint": Mk.c(0xb07858), "rough": .6, "clearcoat": .45, "clearcoat_rough": .3})
 	# --- devant, aile gauche du meuble : Tempo, tourné vers le fauteuil
 	tempo = Tempo7080.new(engine, walnut)
 	tempo.position = Vector3(CONSOLE_X + CONSOLE_L / 2 + .025 + Tempo7080.W / 2, DESK_TOP, CONSOLE_Z)
