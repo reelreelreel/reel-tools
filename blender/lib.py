@@ -327,3 +327,17 @@ def armrest(length, w=.062, h=.05, pleat=.11):
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     return bm
 
+
+
+def cut(target, cutters):
+    """Perce `target` avec les objets `cutters` (différence booléenne), puis supprime les outils."""
+    for c in cutters:
+        m = target.modifiers.new("cut", "BOOLEAN")
+        m.operation = "DIFFERENCE"
+        m.solver = "EXACT"
+        m.object = c
+        apply_mods(target)
+    for c in cutters:
+        bpy.data.objects.remove(c)
+    smooth(target, 35)
+    return target

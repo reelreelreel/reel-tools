@@ -1260,7 +1260,7 @@ func _build_soffits() -> void:
 		var c := Vector3(cx, 0, -.21)
 		g.position = c
 		var to := listener - Vector3(cx, 1.7, -.24)
-		g.rotation.y = atan2(to.x, to.z) * .55 + (PI if false else 0.0)
+		g.rotation.y = atan2(to.x, to.z)  # la façade (+Z local) vise la place de l'ingé
 		add_child(g)
 		var W := .98
 		var H := ROOM.y - .85
@@ -1271,7 +1271,29 @@ func _build_soffits() -> void:
 		# socle sous le soffit (lambris comme le mur) + tablette
 		Mk.mi(Mk.rounded_box(Vector3(W, .85, D - .04), .008, [pm, pm, _wood, pm, pm, pm], 2), null, Vector3(0, .425, -.02), g)
 		Mk.mi(Mk.rounded_box(Vector3(W + .02, .05, D + .02), .008, _wood, 2), null, Vector3(0, .85, 0), g)
-		_main_monitor(g, Vector3(0, .85, D / 2), W, H)
+		var badge := Tex.canvas(256, 48, func(ci: CanvasItem, w2: float, h2: float) -> void:
+			ci.draw_rect(Rect2(0, 0, w2, h2), Mk.c(0x2a2a28))
+			Tex.silk(ci, "MONITOR 77", w2 / 2, h2 * .68, 18, Mk.c(0xc8c0a8), "center", 700))
+		var mm := Props.model("main_monitor.glb", {
+			"walnut": Mk.pbr("dark_wood", .5, {"wear": .35, "tint": Mk.c(0x6a4028), "rough": .55, "clearcoat": .35}),
+			"black": Mk.mat(Mk.c(0x0b0a09), .85), "slot": Mk.mat(Mk.c(0x020202), 1.0),
+			"fabric": Mk.pbr("hessian_230", .15, {"tint": Mk.c(0x2a1a10)}),
+			"frame_metal": Mk.mat(Mk.c(0x2a2826), .45, .75), "chrome": Mk.chrome_mat(), "alu": Mk.mat(Mk.c(0x9a9a96), .35, .9, {"cull_off": true}),
+			"surround": Mk.mat(Mk.c(0x1c1a18), .75, 0.0, {"cull_off": true}), "cone": Mk.mat(Mk.c(0x2c2824), .95, 0.0, {"cull_off": true}),
+			"dustcap": Mk.mat(Mk.c(0x34302c), .95, 0.0, {"cull_off": true}), "horn": Mk.mat(Mk.c(0x202020), .4, .4, {"cull_off": true}), "badge": Mk.mat(Color.WHITE, .4, .6, {"map": badge}),
+		})
+		mm.position = Vector3(0, .85, D / 2 + .025)
+		g.add_child(mm)
+		# petit encastré au plafond qui lèche la façade (on devine les membranes et le pavillon)
+		var sl := SpotLight3D.new()
+		sl.light_color = Mk.c(0xffd6aa)
+		sl.light_energy = .9
+		sl.spot_range = 2.6
+		sl.spot_angle = 26.0
+		sl.spot_angle_attenuation = 1.2
+		sl.position = Vector3(0, ROOM.y - .05, D / 2 + .55)
+		g.add_child(sl)
+		sl.rotation = Vector3(-1.2, 0, 0)
 
 
 ## Grande écoute encastrée façon 1977 : façade en noyer sombre à cadre mouluré, deux boomers 15"
@@ -1805,6 +1827,8 @@ func yaw_to(p: Vector3) -> float:
 
 ## Renvoie [position, point visé] : vue depuis le fauteuil, ou gros plan sur un module.
 func shot_pose(shot: String, cam: Camera3D, aspect: float) -> Array:
+	if shot == "v_monitor":  # dev : l'écoute encastrée de droite
+		return [Vector3(1.75, 1.45, -1.75), Vector3(.75, 1.45, -.15)]
 	if shot == "v_console":  # dev : la console en trois quarts
 		return [Vector3(1.55, 1.32, -1.95), Vector3(2.35, .86, -.8)]
 	if shot == "v_rack":  # dev : les racks sous le bureau producteur
