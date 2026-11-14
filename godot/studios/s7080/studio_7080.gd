@@ -1035,28 +1035,36 @@ func _cabinet(w: float, h: float, d: float, kind: String) -> Node3D:
 			for sx in [-1, 1]:
 				Mk.mi(Mk.box(Vector3(.016, bh, .006)), rail, Vector3(sx * (bw / 2 - .008), by + bh / 2, .014), g)
 			var U := .04445
-			var units := [[2, "blank"], [1, "vent"], [3, "blank"], [1, "vent"], [2, "blank"], [1, "vent"], [3, "blank"]]
+			_rack_n += 1
+			var names := Racks7080.layout(_rack_n * 7 + 3, int(bh / U))
 			var yy := by + bh - .004
-			for ui in 64:  # on reprend la liste en boucle jusqu'en bas de la baie
-				var u: Array = units[ui % units.size()]
-				var uh: float = u[0] * U - .001
-				if yy - uh < by:
+			for nm in names:
+				var uu := 1
+				if Racks7080.catalog().has(nm):
+					uu = int(Racks7080.catalog()[nm].u)
+				elif String(nm).begins_with("blank"):
+					uu = int(String(nm).substr(5))
+				var uh: float = uu * U - .001
+				if yy - uh < by - .002:
 					break
-				var pm := _rack_panel_mat(u[1], u[0])
+				var pm := Racks7080.panel_mat(nm)
 				Mk.mi(Mk.rounded_box(Vector3(bw, uh, .004), .001, [rail, rail, rail, rail, pm, rail], 1), null, Vector3(0, yy - uh / 2, .018), g)
 				for sx in [-1, 1]:
-					for sy in ([0.0] if u[0] == 1 else [uh / 2 - .01, -uh / 2 + .01]):
+					for sy in ([0.0] if uu == 1 else [uh / 2 - .01, -uh / 2 + .01]):
 						var sc := Mk.screw_head(.003)
 						sc.rotation.x = PI / 2
 						sc.position = Vector3(sx * (bw / 2 - .008), yy - uh / 2 + sy, .0205)
 						g.add_child(sc)
-				if u[1] != "vent":
-					_rack_unit_hardware(g, yy - uh / 2, uh, u[0], bw)
+				var hw := Node3D.new()
+				hw.position = Vector3(0, 0, .02)
+				g.add_child(hw)
+				Racks7080.hardware(hw, nm, yy - uh / 2, uh, bw)
 				yy -= uh + .001
 	return g
 
 
 var _rk := {}
+var _rack_n := 0
 
 
 ## Potards, LED et poignées en relief sur une façade de rack (positions calées sur la sérigraphie).
@@ -1798,6 +1806,8 @@ func yaw_to(p: Vector3) -> float:
 
 ## Renvoie [position, point visé] : vue depuis le fauteuil, ou gros plan sur un module.
 func shot_pose(shot: String, cam: Camera3D, aspect: float) -> Array:
+	if shot == "v_rack":  # dev : les racks sous le bureau producteur
+		return [Vector3(3.75, .5, -2.45), Vector3(4.4, .42, -2.45)]
 	if shot == "v_plaque":  # dev : le double disque d'or
 		return [Vector3(3.9, 1.85, -1.62), Vector3(4.98, 1.92, -1.62)]
 	if shot == "v_lava":  # dev : la lampe à lave
