@@ -46,6 +46,10 @@ def tufted(name, w, h, depth, sx=.15, sy=.11, res=.008, mat="leather_cognac", pa
         for i in range(nx):
             bm.faces.new([grid[j][i], grid[j][i + 1], grid[j + 1][i + 1], grid[j + 1][i]])
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bm.normal_update()
+    if sum(f.normal.y for f in bm.faces) > 0:    # la face visible doit regarder -Y (vers l'avant)
+        for f in bm.faces:
+            f.normal_flip()
     o = lib.obj_from_bm(name, bm, mat, parent, 80)
     # boutons au fond des creux (croisement des plis)
     btn = []
