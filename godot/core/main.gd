@@ -37,6 +37,10 @@ func _ready() -> void:
 		var kv := a.trim_prefix("--").split("=", true, 1)
 		_args[kv[0]] = kv[1] if kv.size() > 1 else "1"
 	DisplayServer.window_set_title("REEL'S TOOLS")
+	if _args.has("screenshot") or _args.has("selftest"):
+		# captures de dev (rendu logiciel, mémoire limitée) : ombres et anticrénelage allégés
+		get_viewport().positional_shadow_atlas_size = 4096
+		get_viewport().msaa_3d = Viewport.MSAA_DISABLED
 	DisplayServer.window_set_min_size(Vector2i(480, 320))
 	engine = TempoEngine.new()
 	studio = Studio7080.new(engine)

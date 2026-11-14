@@ -1,6 +1,7 @@
 class_name Beats7080
 extends Node3D
-## Module Boîtes à rythmes du studio 70/80 : deux boîtes assorties empilées (bois + alu).
+## Module Boîtes à rythmes du studio 70/80 : deux appareils rackables noirs (façon Waves / Slate) dans
+## une tour de racks en noyer sur roulettes.
 ##   · en haut, la BATTERIE : 16 pas lumineux, 5 instruments (KICK, CLAP, HAT, OPEN, PERC), potards
 ##     STYLE / BPM / SWING, GÉNÉRER, SYNC FAX (se caler sur la grille et le tempo du fax), EXPORT MIDI,
 ##     LECTURE. Molette sur un pas de hi-hat = roulement (x2, x3, x4).
@@ -8,15 +9,11 @@ extends Node3D
 ##     clic sur une touche = sa note). La 808 suit la fondamentale des accords du fax.
 ## Clavier : Espace = lecture, G = générer, S = sync fax, E = export, 1–5 = instrument.
 ##
-## Repère local : façade vers +Z (vers le fauteuil), posé sur y = 0. Corps entier : "m:beats".
+## Repère local : façade vers +Z (vers le fauteuil), tour posée sur y = 0. Corps entier : "m:beats".
 
-const W := .44
-const D := .36
-const LOW_H := .05            # boîte 808
-const TOP_D := .2             # boîte batterie, posée sur l'arrière de la 808
+const W := .483
 const TOP_H0 := .045          # hauteur avant de la boîte batterie
 const TOP_H1 := .09           # hauteur arrière
-const STEP_COLS := [0xc8382a, 0xe0782a, 0xe8c040, 0xece4d2]  # 4 groupes de 4 pas, façon boîte des années 80
 
 var fax: Fax7080
 var style := 1
@@ -38,7 +35,6 @@ var _bass_voice := -1
 var _open_voice := -1
 var dialog: FileDialog
 var led: TexLib.LiveCanvas
-var dpanel: Node3D
 var d_leds: Array[StandardMaterial3D] = []
 var b_leds: Array[StandardMaterial3D] = []
 var d_caps: Array[Node3D] = []
@@ -69,8 +65,9 @@ func _init(fax_ref: Fax7080) -> void:
 	swing = float(Store.get_v("beats_swing", swing))
 	seed = int(Store.get_v("beats_seed", 1))
 	_load_pattern()
-	_build_low()
-	_build_top()
+	_build_tower()
+	_build_drum_unit()
+	_build_bass_unit()
 	player = AudioStreamPlayer.new()
 	player.name = "BeatsPlayer"
 	add_child(player)
@@ -103,177 +100,279 @@ func _save_pattern() -> void:
 
 
 # ---------------------------------------------------------------- construction
+## Tour de racks 19" en noyer sur roulettes. Les deux machines sont des appareils rackables noirs
+## façon plugins Waves / Slate (aluminium anodisé noir, sérigraphie blanche, LED rouges, poignées).
+const RACK_W := .483
+const U := .04445
+const TOWER_W := .58
+const TOWER_D := .52
+const TOWER_H := 1.34
+const DRUM_Y := 1.14          # centre de la façade batterie (3U)
+const BASS_Y := DRUM_Y - 1.5 * U - .001 - U - .001  # centre de la façade 808 (2U), juste dessous
+const FOCUS := Vector3(0, (DRUM_Y + BASS_Y) / 2 - .005, TOWER_D / 2 - .02)
+const FOCUS_H := .16
+
+var _black_al: StandardMaterial3D
+var _ink := Color(.92, .9, .86, .92)
+var _ink_dim := Color(.92, .9, .86, .55)
+
+
 func _x_step(i: int) -> float:
-	return -.18 + i * .024
+	return -.1875 + i * .025
 
 
-func _build_low() -> void:
-	var walnut := Mk.pbr("fine_grained_wood", .5, {"tint": Mk.c(0xd8c0a8), "rough": .8, "clearcoat": .3})
-	var dark := Mk.mat(Mk.c(0x141414), .5)
-	# caisse + joues en bois
-	Mk.mi(Mk.rounded_box(Vector3(W - .04, LOW_H - .004, D), .004, dark, 2), null, Vector3(0, (LOW_H - .004) / 2, 0), self)
+func _build_tower() -> void:
+	var walnut := Mk.pbr("fine_grained_wood", .5, {"tint": Mk.c(0xc8a890), "rough": .75, "clearcoat": .35})
+	var dark := Mk.mat(Mk.c(0x0a0a0a), .7)
+	_black_al = Mk.mat(Mk.c(0x161618), .32, .85, {"normal": Mk.scratch_normal(), "normal_scale": .12})
+	var t := .028
+	# caisse : joues, dessus, fond, socle à roulettes
 	for sx in [-1, 1]:
-		Mk.mi(Mk.rounded_box(Vector3(.02, LOW_H + .004, D), .004, walnut, 2), null, Vector3(sx * (W / 2 - .01), (LOW_H + .004) / 2, 0), self)
-	var front_d := D - TOP_D
-	var pz := -D / 2 + TOP_D + front_d / 2
-	var panel := Mk.panel(W - .04, front_d, func(ci, P, w, h):
-		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0xb8b6b0))
-		Tex.brushed(ci, w, h, 808, .06)
-		var ink := Color(.08, .08, .09, .9)
-		var Zf := func(z: float) -> float: return (z - (pz - front_d / 2)) / front_d * h
-		var Xf := func(x: float) -> float: return P.call(x + (W - .04) / 2)
-		Tex.silk(ci, "RT-808  BASSE", Xf.call(.1), Zf.call(pz + .045), 30, ink, "left", 700)
-		Tex.silk(ci, "CLIC SUR UN PAS : LE CHOISIR · TOUCHE : SA NOTE", Xf.call(.1), Zf.call(pz + .065), 15, Color(.08, .08, .09, .6), "left", 500)
-		for i in 16:
-			Tex.silk(ci, str(i + 1), Xf.call(_x_step(i)), Zf.call(pz - .052), 15, Color(.08, .08, .09, .7), "center", 600)
-		for g in 4:
-			var x0: float = Xf.call(_x_step(g * 4) - .011)
-			var x1: float = Xf.call(_x_step(g * 4 + 3) + .011)
-			ci.draw_rect(Rect2(x0, Zf.call(pz - .046), x1 - x0, 3), Mk.c(STEP_COLS[g]))
-		Tex.grime(ci, w, h, 809, 1.0), {"res": 1536, "rough": .45})
-	panel.position = Vector3(0, LOW_H, pz)
-	add_child(panel)
-	# 16 pas de la 808
-	for i in 16:
-		var cap := _step_button(Vector3(_x_step(i), LOW_H, pz - .025), STEP_COLS[i / 4], "beats:bstep:%d" % i, b_leds)
-		b_caps.append(cap)
-	# clavier d'une octave (C à C)
-	var white := [0, 2, 4, 5, 7, 9, 11, 12]
-	var kw := .026
-	var kx0 := -.19
-	var kz := pz + .045
-	for j in white.size():
-		_key(white[j], Vector3(kx0 + j * kw + kw / 2, LOW_H, kz), Vector3(kw - .002, .008, .05), Mk.c(0xf2eee4))
-	var black := {1: 0, 3: 1, 6: 3, 8: 4, 10: 5}
-	for semi in black:
-		var j: int = black[semi]
-		_key(semi, Vector3(kx0 + (j + 1) * kw, LOW_H + .006, kz - .01), Vector3(.015, .01, .03), Mk.c(0x161616))
+		Mk.mi(Mk.rounded_box(Vector3(t, TOWER_H - .06, TOWER_D), .006, walnut, 2), null, Vector3(sx * (TOWER_W / 2 - t / 2), .06 + (TOWER_H - .06) / 2, 0), self)
+	Mk.mi(Mk.rounded_box(Vector3(TOWER_W + .01, t, TOWER_D + .01), .008, walnut, 2), null, Vector3(0, TOWER_H - t / 2, 0), self)
+	Mk.mi(Mk.rounded_box(Vector3(TOWER_W, .03, TOWER_D), .004, walnut, 2), null, Vector3(0, .075, 0), self)
+	Mk.mi(Mk.box(Vector3(TOWER_W - 2 * t, TOWER_H - .1, .01)), dark, Vector3(0, TOWER_H / 2 + .03, -TOWER_D / 2 + .01), self)
+	var steel := Mk.mat(Mk.c(0x1a1a1a), .4, .7)
+	var rubber := Mk.mat(Mk.c(0x0a0a0a), .7)
+	for sx in [-1, 1]:
+		for sz in [-1, 1]:
+			var c := Vector3(sx * (TOWER_W / 2 - .05), 0, sz * (TOWER_D / 2 - .05))
+			Mk.mi(Mk.box(Vector3(.05, .012, .05)), steel, c + Vector3(0, .056, 0), self)
+			Mk.mi(Mk.box(Vector3(.008, .03, .03)), steel, c + Vector3(0, .04, 0), self)
+			var wh := Mk.mi(Mk.cyl(.026, .026, .02, 18), rubber, c + Vector3(0, .027, .01), self)
+			wh.rotation.z = PI / 2
+	# rails 19"
+	var rail := Mk.mat(Mk.c(0x202020), .45, .8)
+	for sx in [-1, 1]:
+		Mk.mi(Mk.box(Vector3(.02, TOWER_H - .14, .008)), rail, Vector3(sx * (RACK_W / 2 - .006), TOWER_H / 2 + .02, TOWER_D / 2 - .03), self)
+	# appareils de remplissage : patchbay en haut, puis sous la 808 : blanc, compresseur, ventil, alim
+	var y := TOWER_H - t - .004
+	_filler(y - U / 2, 1, "patch")
+	var fill := [[1, "vent"], [2, "comp"], [1, "blank"], [2, "eq"], [1, "vent"], [1, "power"], [2, "blank"], [1, "vent"]]
+	var yy := BASS_Y - U - .001
+	for f in fill:
+		var h: float = f[0] * U
+		if yy - h < .1:
+			break
+		_filler(yy - h / 2, f[0], f[1])
+		yy -= h + .001
 
 
-func _key(semi: int, at: Vector3, size: Vector3, col: Color) -> void:
-	var k := Node3D.new()
-	k.position = at
-	add_child(k)
-	var m := Mk.mat(col, .4, 0.0, {"clearcoat": .4, "emission": Mk.c(0xff3020), "energy": 0.0})
-	Mk.mi(Mk.rounded_box(size, .002, m, 1), null, Vector3(0, size.y / 2, 0), k)
-	k.set_meta("semi", semi)
-	keys.append(k)
-	key_mats.append(m)
-	Mk.add_pick_later(k, "beats:key:%d" % semi, .002)
+## Façade d'un appareil rackable (vue de face, +Z). draw(ci, X, Y, w, h) avec X(m) et Y(m) -> pixels.
+func _face(units: int, cy: float, draw: Callable, res := 1536) -> Node3D:
+	var h := units * U - .001
+	var pw := res
+	var ph := int(round(res * h / W))
+	var tex := Tex.canvas(pw, ph, func(ci, w, hh):
+		ci.draw_rect(Rect2(0, 0, w, hh), Mk.c(0x141416))
+		Tex.brushed(ci, w, hh, 900 + units, .035, 1200)
+		var X := func(x: float) -> float: return (x + W / 2) / W * w
+		var Y := func(y: float) -> float: return (h / 2 - y) / h * hh
+		# oreilles de rack : trous oblongs
+		for sx in [-1, 1]:
+			for k in units:
+				var ey: float = h / 2 - U / 2 - k * U
+				var ex: float = sx * (W / 2 - .008)
+				ci.draw_rect(Rect2(X.call(ex) - 7, Y.call(ey) - 4, 14, 8), Color(0, 0, 0, .9))
+		draw.call(ci, X, Y, w, hh)
+		Tex.grime(ci, w, hh, 910 + units, .5))
+	var holder := Node3D.new()
+	holder.position = Vector3(0, cy, TOWER_D / 2 - .022)
+	add_child(holder)
+	var fm := Mk.mat(Color.WHITE, .34, .8, {"map": tex, "normal": Mk.scratch_normal(), "normal_scale": .1})
+	Mk.mi(Mk.rounded_box(Vector3(W, h, .006), .0015, [_black_al, _black_al, _black_al, _black_al, fm, _black_al], 1), null, Vector3.ZERO, holder)
+	# corps de l'appareil dans la tour
+	Mk.mi(Mk.box(Vector3(W - .04, h - .004, TOWER_D - .1)), _black_al, Vector3(0, 0, -(TOWER_D - .1) / 2 - .003), holder)
+	# vis d'oreilles
+	for sx in [-1, 1]:
+		for k in units:
+			var sc := Mk.screw_head(.0032)
+			sc.rotation.x = PI / 2
+			sc.position = Vector3(sx * (W / 2 - .008), h / 2 - U / 2 - k * U, .0035)
+			holder.add_child(sc)
+	return holder
 
 
-## Bouton de pas : capuchon coloré + LED rouge juste derrière.
-func _step_button(at: Vector3, col: int, action: String, leds: Array[StandardMaterial3D], parent: Node3D = null) -> Node3D:
-	var p: Node3D = self if parent == null else parent
+## Poignées chromées façon Slate / API sur les oreilles.
+func _handles(holder: Node3D, h: float) -> void:
+	var chrome := Mk.chrome_mat()
+	for sx in [-1, 1]:
+		var x: float = sx * (RACK_W / 2 - .019)
+		var top := Vector3(x, h / 2 - .012, .003)
+		var bot := Vector3(x, -h / 2 + .012, .003)
+		Mk.mi(Mk.tube([top, top + Vector3(0, -.004, .022), bot + Vector3(0, .004, .022), bot], .0042, 20, 8), chrome, Vector3.ZERO, holder)
+
+
+func _filler(cy: float, units: int, kind: String) -> void:
+	var holder := _face(units, cy, func(ci, X, Y, w, h): _draw_filler(ci, X, Y, w, h, kind))
+	match kind:
+		"comp", "eq":
+			for k in 6:
+				_knob(holder, Vector3(-.12 + k * .055, -.0045 * units, .003), .0085, "")
+			_handles(holder, units * U - .001)
+			Mk.mi(Mk.quad(.05, .035), Mk.glow(Mk.c(0xffd8a0), .9), Vector3(.19, 0, .0035), holder)
+		"power":
+			var lm := Mk.mat(Mk.c(0x300805), .4, 0.0, {"emission": Mk.c(0xff2a18), "energy": 1.4})
+			var pl := Mk.mi(Mk.cyl(.003, .003, .004, 10), lm, Vector3(.18, 0, .004), holder)
+			pl.rotation.x = PI / 2
+
+
+func _draw_filler(ci: CanvasItem, X: Callable, Y: Callable, w: float, h: float, kind: String) -> void:
+	match kind:
+		"patch":
+			for row in 2:
+				for k in 24:
+					var px: float = X.call(-.2 + k * .0174)
+					var py: float = h * (.3 + row * .42)
+					ci.draw_circle(Vector2(px, py), 6, Color(.6, .6, .58))
+					ci.draw_circle(Vector2(px, py), 3.5, Color(0, 0, 0))
+			Tex.silk(ci, "PATCH", X.call(.205), h * .55, 14, _ink_dim, "right", 600)
+		"vent":
+			var x0: float = X.call(-.19)
+			while x0 < X.call(.19):
+				ci.draw_rect(Rect2(x0, h * .3, 9, h * .4), Color(0, 0, 0, .95))
+				x0 += 18
+		"comp", "eq":
+			Tex.silk(ci, "RT-C76  COMPRESSOR" if kind == "comp" else "RT-Q5  EQUALIZER", X.call(-.2), h * .3, 20, _ink, "left", 700)
+			for k in 6:
+				var c := Vector2(X.call(-.12 + k * .055), h * .62)
+				ci.draw_circle(c, h * .2, Color(0, 0, 0, .7))
+				for tk in 11:
+					var a := deg_to_rad(-135 + tk * 27)
+					ci.draw_line(c + Vector2(sin(a), -cos(a)) * h * .25, c + Vector2(sin(a), -cos(a)) * h * .29, _ink_dim, 2.0)
+		"power":
+			Tex.silk(ci, "RT-PWR  POWER CONDITIONER", X.call(-.2), h * .62, 16, _ink, "left", 600)
+		_:
+			pass
+
+
+## Petit potard noir (axe vers +Z). Renvoie le nœud qui tourne (rotation.y = valeur).
+func _knob(holder: Node3D, at: Vector3, r: float, action: String) -> Node3D:
+	var base := Node3D.new()
+	base.position = at
+	base.rotation.x = PI / 2
+	holder.add_child(base)
+	var kn := Mk.knob(r, r * 1.3)
+	base.add_child(kn)
+	if action != "":
+		Mk.add_pick_later(base, action, .004)
+	return kn
+
+
+## Bouton de pas : capuchon carré en caoutchouc + LED rouge au-dessus (face +Z).
+func _step_button(holder: Node3D, at: Vector3, action: String, leds: Array[StandardMaterial3D], caps: Array[Node3D], col := 0x2a2a2c) -> void:
 	var b := Node3D.new()
 	b.position = at
-	p.add_child(b)
-	Mk.mi(Mk.rounded_box(Vector3(.02, .004, .02), .002, Mk.mat(Mk.c(0x0a0a0a), .6), 1), null, Vector3(0, .001, 0), b)
+	holder.add_child(b)
+	Mk.mi(Mk.rounded_box(Vector3(.019, .017, .004), .002, Mk.mat(Mk.c(0x050505), .6), 1), null, Vector3(0, 0, .002), b)
 	var cap := Node3D.new()
 	b.add_child(cap)
-	Mk.mi(Mk.rounded_box(Vector3(.017, .008, .017), .003, Mk.mat(Mk.c(col), .4, 0.0, {"clearcoat": .4}), 2), null, Vector3(0, .004, 0), cap)
+	Mk.mi(Mk.rounded_box(Vector3(.016, .014, .008), .003, Mk.mat(Mk.c(col), .55, 0.0, {"clearcoat": .2}), 2), null, Vector3(0, 0, .006), cap)
 	var lm := Mk.mat(Mk.c(0x300805), .4, 0.0, {"emission": Mk.c(0xff2a18), "energy": .05})
-	Mk.mi(Mk.cyl(.0025, .0025, .003, 10), lm, Vector3(0, .0015, -.016), b)
+	var led_n := Mk.mi(Mk.cyl(.0022, .0022, .003, 10), lm, Vector3(0, .0125, .0045), b)
+	led_n.rotation.x = PI / 2
 	leds.append(lm)
-	Mk.add_pick_later(b, action, .002)
-	return cap
+	caps.append(cap)
+	Mk.add_pick_later(b, action, .003)
 
 
-func _build_top() -> void:
-	var walnut := Mk.pbr("fine_grained_wood", .5, {"tint": Mk.c(0xd8c0a8), "rough": .8, "clearcoat": .3})
-	var dark := Mk.mat(Mk.c(0x141414), .5)
-	var z0 := -D / 2
-	var zc := z0 + TOP_D / 2
-	# caisse en biseau (profil extrudé le long de x) + joues en bois
-	var prof := PackedVector2Array([Vector2(-TOP_D / 2, 0), Vector2(TOP_D / 2, 0), Vector2(TOP_D / 2, TOP_H0), Vector2(-TOP_D / 2, TOP_H1)])
-	var body := Mk.mi(Mk.prism(prof, W - .04), dark, Vector3((W - .04) / 2, LOW_H, zc), self)
-	body.rotation.y = -PI / 2
-	for sx in [-1, 1]:
-		var ch := Mk.mi(Mk.prism(PackedVector2Array([Vector2(-TOP_D / 2, 0), Vector2(TOP_D / 2, 0), Vector2(TOP_D / 2, TOP_H0 + .006), Vector2(-TOP_D / 2, TOP_H1 + .006)]), .02), walnut, Vector3(sx * (W / 2 - .01) + .01, LOW_H, zc), self)
-		ch.rotation.y = -PI / 2
-	# panneau incliné
-	var slope := atan((TOP_H1 - TOP_H0) / TOP_D)
-	dpanel = Node3D.new()
-	dpanel.position = Vector3(0, LOW_H + (TOP_H0 + TOP_H1) / 2 + .001, zc)
-	dpanel.rotation.x = slope
-	add_child(dpanel)
-	var pd := TOP_D / cos(slope)
-	var panel := Mk.panel(W - .04, pd, func(ci, P, w, h):
-		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0xc4c2bc))
-		Tex.brushed(ci, w, h, 707, .06)
-		var ink := Color(.08, .08, .09, .9)
-		var Zf := func(z: float) -> float: return (z + pd / 2) / pd * h
-		var Xf := func(x: float) -> float: return P.call(x + (W - .04) / 2)
-		Tex.silk(ci, "RT-707  BATTERIE", Xf.call(-.19), Zf.call(-.083), 28, ink, "left", 700)
-		for i in BeatEngine.INSTR.size():
-			Tex.silk(ci, BeatEngine.INSTR[i], Xf.call(_x_instr(i)), Zf.call(-.002), 15, ink, "center", 600)
-		var lab := {"GÉNÉRER": .015, "SYNC FAX": .07, "EXPORT": .125, "LECTURE": .178}
-		for k in lab:
-			Tex.silk(ci, k, Xf.call(lab[k]), Zf.call(-.002), 14, ink, "center", 600)
-		var kl := {"STYLE": .03, "BPM": .095, "SWING": .16}
-		for k in kl:
-			Tex.silk(ci, k, Xf.call(kl[k]), Zf.call(-.04), 14, ink, "center", 600)
-		for i in 16:
-			Tex.silk(ci, str(i + 1), Xf.call(_x_step(i)), Zf.call(.087), 14, Color(.08, .08, .09, .7), "center", 600)
-		for g in 4:
-			var x0: float = Xf.call(_x_step(g * 4) - .011)
-			var x1: float = Xf.call(_x_step(g * 4 + 3) + .011)
-			ci.draw_rect(Rect2(x0, Zf.call(.078), x1 - x0, 3), Mk.c(STEP_COLS[g]))
-		Tex.silk(ci, "MOLETTE SUR UN PAS DE HI-HAT = ROULEMENT", Xf.call(.19), Zf.call(.097), 12, Color(.08, .08, .09, .55), "right", 500)
-		Tex.grime(ci, w, h, 708, 1.0), {"res": 1536, "rough": .45})
-	dpanel.add_child(panel)
-	# afficheur LED rouge (2 lignes)
-	led = Tex.live(512, 128, func(ci, w, h):
-		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0x0a0202))
-		var lines := _led_lines()
-		Tex.silk(ci, lines[0], 14, h * .42, 40, Mk.c(0xff3a22), "left", 600, "mono")
-		Tex.silk(ci, lines[1], 14, h * .86, 30, Mk.c(0xff3a22).darkened(.25), "left", 500, "mono"))
-	var win := Mk.face_window(Mk.glow(Color.WHITE, 1.4, led.texture), .15, .036, Mk.c(0x2a0606))
-	win.position = Vector3(-.1, .003, -.05)
-	win.rotation.x = -PI / 2
-	dpanel.add_child(win)
-	# potards STYLE / BPM / SWING
-	for k in [["style", .03], ["bpm", .095], ["swing", .16]]:
-		var kn := Mk.knob(.011, .014)
-		kn.position = Vector3(k[1], .002, -.058)
-		dpanel.add_child(kn)
-		knobs[k[0]] = kn
-		Mk.add_pick_later(kn, "beats:knob:" + k[0], .003)
-	# sélection d'instrument + boutons de fonction
-	for i in BeatEngine.INSTR.size():
-		var b := _small_button(Vector3(_x_instr(i), .002, -.018), Mk.c(0x3a3632), "beats:instr:%d" % i)
-		var lm := Mk.mat(Mk.c(0x300805), .4, 0.0, {"emission": Mk.c(0xff2a18), "energy": .05})
-		Mk.mi(Mk.cyl(.0022, .0022, .003, 10), lm, Vector3(.012, .002, 0), b)
-		i_leds.append(lm)
-	_small_button(Vector3(.015, .002, -.018), Mk.c(0x8a7a5a), "beats:gen")
-	var bs := _small_button(Vector3(.07, .002, -.018), Mk.c(0x3a3632), "beats:sync")
-	sync_led = Mk.mat(Mk.c(0x082008), .4, 0.0, {"emission": Mk.c(0x40ff60), "energy": .05})
-	Mk.mi(Mk.cyl(.0022, .0022, .003, 10), sync_led, Vector3(.013, .002, 0), bs)
-	_small_button(Vector3(.125, .002, -.018), Mk.c(0x3a3632), "beats:export")
-	var bp := _small_button(Vector3(.178, .002, -.018), Mk.c(0x3a7a4a), "beats:play")
-	play_led = Mk.mat(Mk.c(0x082008), .4, 0.0, {"emission": Mk.c(0x40ff60), "energy": .05})
-	Mk.mi(Mk.cyl(.0022, .0022, .003, 10), play_led, Vector3(.013, .002, 0), bp)
-	# 16 pas de la batterie
-	for i in 16:
-		var cap := _step_button(Vector3(_x_step(i), .002, .055), STEP_COLS[i / 4], "beats:dstep:%d" % i, d_leds, dpanel)
-		d_caps.append(cap)
-	# câble de synchro vers la 808 + secteur
-	var cable := Mk.mat(Mk.c(0x161616), .6)
-	Mk.mi(Mk.tube([Vector3(.16, LOW_H + .04, -D / 2), Vector3(.18, LOW_H + .01, -D / 2 - .03), Vector3(.17, .02, -D / 2 - .02), Vector3(.15, .025, -D / 2)], .003, 16, 6), cable, Vector3.ZERO, self)
+func _small_button(holder: Node3D, at: Vector3, col: Color, action: String, led_col := Color(0, 0, 0, 0)) -> StandardMaterial3D:
+	var b := Node3D.new()
+	b.position = at
+	holder.add_child(b)
+	Mk.mi(Mk.rounded_box(Vector3(.022, .013, .004), .002, Mk.mat(Mk.c(0x050505), .6), 1), null, Vector3(0, 0, .002), b)
+	Mk.mi(Mk.rounded_box(Vector3(.019, .01, .008), .003, Mk.mat(col, .4, .1, {"clearcoat": .4}), 2), null, Vector3(0, 0, .006), b)
+	Mk.add_pick_later(b, action, .003)
+	if led_col.a > 0:
+		var lm := Mk.mat(led_col.darkened(.85), .4, 0.0, {"emission": led_col, "energy": .05})
+		var l := Mk.mi(Mk.cyl(.0022, .0022, .003, 10), lm, Vector3(0, .011, .0045), b)
+		l.rotation.x = PI / 2
+		return lm
+	return null
 
 
 func _x_instr(i: int) -> float:
-	return -.185 + i * .034
+	return -.075 + i * .028
 
 
-func _small_button(at: Vector3, col: Color, action: String) -> Node3D:
-	var b := Node3D.new()
-	b.position = at
-	dpanel.add_child(b)
-	Mk.mi(Mk.rounded_box(Vector3(.024, .004, .016), .002, Mk.mat(Mk.c(0x0a0a0a), .6), 1), null, Vector3(0, .001, 0), b)
-	Mk.mi(Mk.rounded_box(Vector3(.02, .007, .012), .003, Mk.mat(col, .35, 0.0, {"clearcoat": .5}), 2), null, Vector3(0, .0045, 0), b)
-	Mk.add_pick_later(b, action, .002)
-	return b
+const FN_X := {"gen": .08, "sync": .108, "export": .136, "play": .19}
+
+
+func _build_drum_unit() -> void:
+	var h := 3 * U - .001
+	var holder := _face(3, DRUM_Y, func(ci, X, Y, w, hh):
+		Tex.silk(ci, "RT-707", X.call(-.205), Y.call(.052), 30, _ink, "left", 800)
+		Tex.silk(ci, "RHYTHM COMPOSER", X.call(-.205), Y.call(.04), 13, _ink_dim, "left", 600)
+		for i in BeatEngine.INSTR.size():
+			Tex.silk(ci, BeatEngine.INSTR[i], X.call(_x_instr(i)), Y.call(.04), 12, _ink, "center", 600)
+		var lab := {"GÉNÉRER": FN_X.gen, "SYNC": FN_X.sync, "MIDI": FN_X.export, "LECTURE": FN_X.play}
+		for k in lab:
+			Tex.silk(ci, k, X.call(lab[k]), Y.call(.04), 11, _ink, "center", 600)
+		for k in [["STYLE", -.185], ["BPM", -.15], ["SWING", -.115]]:
+			Tex.silk(ci, k[0], X.call(k[1]), Y.call(-.016), 10, _ink_dim, "center", 600)
+		for i in 16:
+			Tex.silk(ci, str(i + 1), X.call(_x_step(i)), Y.call(-.054), 10, _ink_dim, "center", 600)
+		for g in 4:
+			ci.draw_rect(Rect2(X.call(_x_step(g * 4) - .01), Y.call(-.05), X.call(_x_step(g * 4 + 3) + .01) - X.call(_x_step(g * 4) - .01), 2), Color(.85, .12, .08, .8) if g % 2 == 0 else _ink_dim)
+		Tex.silk(ci, "MOLETTE SUR UN PAS DE HAT = ROULEMENT", X.call(.205), Y.call(-.016), 9, _ink_dim, "right", 500))
+	_handles(holder, h)
+	# afficheur rouge à points
+	led = Tex.live(512, 128, func(ci, w, hh):
+		ci.draw_rect(Rect2(0, 0, w, hh), Mk.c(0x0a0202))
+		var lines := _led_lines()
+		Tex.silk(ci, lines[0], 14, hh * .42, 40, Mk.c(0xff3a22), "left", 600, "mono")
+		Tex.silk(ci, lines[1], 14, hh * .86, 30, Mk.c(0xff3a22).darkened(.25), "left", 500, "mono"))
+	var win := Mk.face_window(Mk.glow(Color.WHITE, 1.4, led.texture), .1, .026, Mk.c(0x2a0606))
+	win.position = Vector3(-.145, .022, .004)
+	holder.add_child(win)
+	# potards STYLE / BPM / SWING
+	for k in [["style", -.185], ["bpm", -.15], ["swing", -.115]]:
+		knobs[k[0]] = _knob(holder, Vector3(k[1], -.002, .003), .008, "beats:knob:" + k[0])
+	# instruments + fonctions
+	for i in BeatEngine.INSTR.size():
+		i_leds.append(_small_button(holder, Vector3(_x_instr(i), .022, .003), Mk.c(0x2a2a2c), "beats:instr:%d" % i, Mk.c(0xff2a18)))
+	_small_button(holder, Vector3(FN_X.gen, .022, .003), Mk.c(0x6a6a6e), "beats:gen")
+	sync_led = _small_button(holder, Vector3(FN_X.sync, .022, .003), Mk.c(0x2a2a2c), "beats:sync", Mk.c(0x40ff60))
+	_small_button(holder, Vector3(FN_X.export, .022, .003), Mk.c(0x2a2a2c), "beats:export")
+	play_led = _small_button(holder, Vector3(FN_X.play, .022, .003), Mk.c(0xb02018), "beats:play", Mk.c(0x40ff60))
+	# 16 pas
+	for i in 16:
+		_step_button(holder, Vector3(_x_step(i), -.034, .003), "beats:dstep:%d" % i, d_leds, d_caps)
+
+
+func _build_bass_unit() -> void:
+	var h := 2 * U - .001
+	var holder := _face(2, BASS_Y, func(ci, X, Y, w, hh):
+		Tex.silk(ci, "RT-808  SUB BASS", X.call(.205), Y.call(-.03), 20, _ink, "right", 800)
+		Tex.silk(ci, "PAS : CHOISIR  ·  TOUCHE : NOTE", X.call(.205), Y.call(-.039), 9, _ink_dim, "right", 500)
+		for i in 16:
+			Tex.silk(ci, str(i + 1), X.call(_x_step(i)), Y.call(.037), 9, _ink_dim, "center", 600)
+		ci.draw_rect(Rect2(X.call(-.2), Y.call(-.014), X.call(.0) - X.call(-.2), 2), _ink_dim))
+	_handles(holder, h)
+	for i in 16:
+		_step_button(holder, Vector3(_x_step(i), .016, .003), "beats:bstep:%d" % i, b_leds, b_caps)
+	# petit clavier d'une octave (13 touches) en bas à gauche
+	var white := [0, 2, 4, 5, 7, 9, 11, 12]
+	var kw := .022
+	var kx0 := -.19
+	for j in white.size():
+		_key(holder, white[j], Vector3(kx0 + j * kw + kw / 2, -.024, .004), Vector3(kw - .002, .03, .006), Mk.c(0xe8e4da))
+	var black := {1: 0, 3: 1, 6: 3, 8: 4, 10: 5}
+	for semi in black:
+		var j: int = black[semi]
+		_key(holder, semi, Vector3(kx0 + (j + 1) * kw, -.016, .009), Vector3(.013, .018, .007), Mk.c(0x121212))
+
+
+func _key(holder: Node3D, semi: int, at: Vector3, size: Vector3, col: Color) -> void:
+	var k := Node3D.new()
+	k.position = at
+	holder.add_child(k)
+	var m := Mk.mat(col, .4, 0.0, {"clearcoat": .4, "emission": Mk.c(0xff3020), "energy": 0.0})
+	Mk.mi(Mk.rounded_box(size, .0015, m, 1), null, Vector3.ZERO, k)
+	k.set_meta("semi", semi)
+	keys.append(k)
+	key_mats.append(m)
+	Mk.add_pick_later(k, "beats:key:%d" % semi, .001)
 
 
 # ---------------------------------------------------------------- état → visuels
@@ -299,9 +398,9 @@ func _refresh() -> void:
 	for i in 16:
 		var v: int = drums[instr][i]
 		d_leds[i].emission_energy_multiplier = (1.6 if v > 0 else .05) + (.0 if i != cur_step else 2.0)
-		d_caps[i].position.y = -.002 if v > 0 else 0.0
+		d_caps[i].position.z = -.003 if v > 0 else 0.0
 		b_leds[i].emission_energy_multiplier = (1.6 if bass[i] >= 0 else .05) + (2.0 if i == cur_step else 0.0) + (.8 if i == bass_sel else 0.0)
-		b_caps[i].position.y = -.002 if bass[i] >= 0 else 0.0
+		b_caps[i].position.z = -.003 if bass[i] >= 0 else 0.0
 	for i in i_leds.size():
 		i_leds[i].emission_energy_multiplier = 1.6 if i == instr else .05
 	var semi := bass[bass_sel]

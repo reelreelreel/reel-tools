@@ -53,7 +53,7 @@ func font(fam: String, weight := 700) -> Font:
 # ---------------------------------------------------------------- canvases
 ## Les textures dessinées sont rendues en HD : on dessine dans les mêmes coordonnées (w, h),
 ## mais la toile réelle est SUPERSAMPLE fois plus grande (plafonnée à 4096 px).
-const SUPERSAMPLE := 2.0
+var SUPERSAMPLE := 1.0 if OS.has_environment("REEL_LOWMEM") else 2.0  # captures de dev : 1
 
 
 func _viewport(w: int, h: int, fn: Callable, transparent := false) -> Array:
@@ -81,8 +81,7 @@ func canvas(w: int, h: int, fn: Callable, transparent := false) -> ImageTexture:
 	var img := Image.create(4, 4, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0.3, 0.3, 0.3, 0.0 if transparent else 1.0))
 	var tex := ImageTexture.create_from_image(img)
-	var vp_p := _viewport(w, h, fn, transparent)
-	_jobs.append([vp_p[0], tex])
+	_jobs.append([w, h, fn, transparent, tex])
 	return tex
 
 
@@ -96,21 +95,37 @@ func live(w: int, h: int, fn: Callable) -> LiveCanvas:
 	return lc
 
 
-## Cuit toutes les textures fixes en attente (mipmaps), puis libère leurs viewports.
+## Cuit toutes les textures fixes en attente (mipmaps), par lots pour limiter la mémoire vidéo :
+## chaque lot a ses viewports, rendus en une image, relus, puis libérés avant le lot suivant.
+const BATCH := 16
+
+
 func flush() -> void:
-	if _jobs.is_empty():
-		return
-	await get_tree().process_frame
-	await RenderingServer.frame_post_draw
-	for j in _jobs:
-		var vp: SubViewport = j[0]
-		var img := vp.get_texture().get_image()
-		if img:
-			img.convert(Image.FORMAT_RGBA8)
-			img.generate_mipmaps()
-			(j[1] as ImageTexture).set_image(img)
-		vp.queue_free()
-	_jobs.clear()
+	var total := 0
+	var count := _jobs.size()
+	var big := []
+	while not _jobs.is_empty():
+		var batch := _jobs.slice(0, BATCH)
+		_jobs = _jobs.slice(BATCH)
+		var vps := []
+		for j in batch:
+			vps.append(_viewport(j[0], j[1], j[2], j[3])[0])
+		await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		for i in batch.size():
+			var vp: SubViewport = vps[i]
+			var img := vp.get_texture().get_image()
+			if img:
+				img.convert(Image.FORMAT_RGBA8)
+				img.generate_mipmaps()
+				total += img.get_data_size()
+				if img.get_width() * img.get_height() >= 4000000:
+					big.append("%dx%d" % [img.get_width(), img.get_height()])
+				(batch[i][4] as ImageTexture).set_image(img)
+			vp.queue_free()
+		await get_tree().process_frame
+	if OS.has_environment("REEL_LOWMEM"):
+		print("[tex] %d toiles, %d Mo, grandes : %s" % [count, total / 1048576, str(big)])
 
 
 ## Image -> carte de normales (pour le moletage des potards, etc.)
