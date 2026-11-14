@@ -146,6 +146,59 @@ func _ready() -> void:
 	add_child(dr)
 	dr.build()
 	_build_module_spots()
+	if not OS.has_environment("REEL_NOTUNE"):
+		_tune_render.call_deferred()
+
+
+## Fluidité (sans changement visible) : les toutes petites pièces (vis, coutures, LED, clous…) ne
+## projettent plus d'ombre et s'effacent en fondu quand on est loin (elles font moins d'un pixel) ;
+## les zones cliquables invisibles ne sont plus dessinées (leurs boîtes de clic restent).
+func _tune_render() -> void:
+	var stack: Array[Node] = [self]
+	while not stack.is_empty():
+		var nd: Node = stack.pop_back()
+		stack.append_array(nd.get_children())
+		if not nd is MeshInstance3D:
+			continue
+		var m := nd as MeshInstance3D
+		if m.mesh == null:
+			continue
+		if _invisible_zone(m):
+			m.visible = false
+			continue
+		var bb: AABB = m.global_transform * m.get_aabb()
+		var ext := maxf(bb.size.x, maxf(bb.size.y, bb.size.z))
+		if ext < .022:
+			m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		if ext < .008:
+			m.visibility_range_end = 4.6
+			m.visibility_range_end_margin = .5
+			m.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	# fusion des ensembles fixes (tout sauf les machines et la voiture qui passe dans la rue)
+	var skip: Array = modules.values()
+	if street_car:
+		skip.append(street_car)
+	var before := 0
+	var after := 0
+	for ch in get_children():
+		if OS.has_environment("REEL_NOBAKE"):
+			break   # captures de dev en rendu logiciel : la fusion + SDFGI dépasse la mémoire du conteneur
+		if ch is Node3D and not skip.has(ch):
+			var r := Mk.bake(ch, skip)
+			before += r.x
+			after += r.y
+	if OS.has_environment("REEL_LOWMEM"):
+		print("[bake] %d pièces -> %d maillages" % [before, after])
+
+
+static func _invisible_zone(m: MeshInstance3D) -> bool:
+	var mat := m.material_override if m.material_override else m.get_surface_override_material(0)
+	if mat == null and m.mesh.get_surface_count() > 0:
+		mat = m.mesh.surface_get_material(0)
+	if mat is StandardMaterial3D:
+		var sm := mat as StandardMaterial3D
+		return sm.transparency != BaseMaterial3D.TRANSPARENCY_DISABLED and sm.albedo_color.a <= .001
+	return false
 
 
 # ---------------------------------------------------------------- spots sur les machines
@@ -333,7 +386,8 @@ func _build_environment() -> void:
 	if OS.has_environment("REEL_LOWMEM"):
 		# captures de dev (rendu logiciel) : moins de mémoire
 		env.volumetric_fog_enabled = false
-		env.sdfgi_cascades = 2
+		env.sdfgi_cascades = 1
+		env.sdfgi_min_cell_size = 0.07
 		env.ssil_enabled = false
 	var we := WorldEnvironment.new()
 	we.environment = env

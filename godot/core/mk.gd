@@ -698,3 +698,71 @@ static func boards_normal() -> Texture2D:
 				img.set_pixel(x, y, Color(v, v, v))
 		_cache["boards_n"] = Tex.normal_from_bump(img, 5.0)
 	return _cache["boards_n"]
+
+
+## Fluidité : fusionne les maillages fixes et opaques d'un ensemble (un appel de dessin par matériau
+## au lieu d'un par pièce). Les originaux sont cachés (les zones de clic restent). On laisse de côté
+## ce qui bouge (sous-arbres de `skip`), le transparent, les shaders maison et les échelles non uniformes.
+static func bake(root: Node3D, skip: Array = []) -> Vector2i:
+	var inv := root.global_transform.affine_inverse()
+	var groups := {}   # clé -> {st, mat, shadow, layers}
+	var done: Array[MeshInstance3D] = []
+	var stack: Array[Node] = [root]
+	while not stack.is_empty():
+		var nd: Node = stack.pop_back()
+		if skip.has(nd):
+			continue
+		stack.append_array(nd.get_children())
+		if not nd is MeshInstance3D:
+			continue
+		var m := nd as MeshInstance3D
+		if not m.is_visible_in_tree() or m.mesh == null or m.material_overlay != null or m.get_meta("baked", false):
+			continue
+		var xf: Transform3D = inv * m.global_transform
+		var sc := xf.basis.get_scale()
+		if xf.basis.determinant() <= 0.0 or absf(sc.x - sc.y) > sc.x * .01 or absf(sc.x - sc.z) > sc.x * .01:
+			continue
+		var wb: AABB = m.global_transform * m.get_aabb()
+		if wb.get_longest_axis_size() > .6:
+			continue   # les grandes pièces restent seules : elles gardent leur propre tri (ombres, champ de vision)
+		var cell := Vector3i((wb.get_center() / 2.4).floor())
+		var ok := m.mesh.get_surface_count() > 0
+		for s in m.mesh.get_surface_count():
+			var mat := m.get_active_material(s)
+			if not (mat is StandardMaterial3D) or (mat as StandardMaterial3D).transparency != BaseMaterial3D.TRANSPARENCY_DISABLED \
+					or (m.mesh is ArrayMesh and (m.mesh as ArrayMesh).surface_get_primitive_type(s) != Mesh.PRIMITIVE_TRIANGLES):
+				ok = false
+		if not ok:
+			continue
+		for s in m.mesh.get_surface_count():
+			var mat := m.get_active_material(s)
+			var fmt: int = Mesh.ARRAY_FORMAT_TANGENT | Mesh.ARRAY_FORMAT_TEX_UV
+			if m.mesh is ArrayMesh:
+				# (indexé ou non : SurfaceTool ne sait pas mélanger les deux sans perdre des triangles)
+				fmt = (m.mesh as ArrayMesh).surface_get_format(s) & (Mesh.ARRAY_FORMAT_TANGENT | Mesh.ARRAY_FORMAT_TEX_UV | Mesh.ARRAY_FORMAT_TEX_UV2 | Mesh.ARRAY_FORMAT_COLOR | Mesh.ARRAY_FORMAT_INDEX)
+			else:
+				fmt |= Mesh.ARRAY_FORMAT_INDEX
+			var key := "%d_%d_%d_%d_%s" % [mat.get_instance_id(), fmt, m.cast_shadow, m.layers, cell]
+			if not groups.has(key):
+				var st := SurfaceTool.new()
+				st.begin(Mesh.PRIMITIVE_TRIANGLES)
+				groups[key] = {"st": st, "mat": mat, "shadow": m.cast_shadow, "layers": m.layers}
+			(groups[key].st as SurfaceTool).append_from(m.mesh, s, xf)
+		done.append(m)
+	if done.size() < 2:
+		return Vector2i(done.size(), done.size())
+	for g in groups.values():
+		var am: ArrayMesh = (g.st as SurfaceTool).commit()
+		var mi := MeshInstance3D.new()
+		mi.name = "Baked"
+		mi.mesh = am
+		mi.material_override = g.mat
+		mi.cast_shadow = g.shadow
+		mi.gi_mode = GeometryInstance3D.GI_MODE_DISABLED   # petites pièces : rien à rebondir, et SDFGI reste léger
+		mi.layers = g.layers
+		mi.set_meta("baked", true)
+		root.add_child(mi)
+	for m in done:
+		m.visible = false
+		m.mesh = null   # libère la mémoire (le nœud reste : du code peut y tenir)
+	return Vector2i(done.size(), groups.size())

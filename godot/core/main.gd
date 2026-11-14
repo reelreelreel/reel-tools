@@ -37,9 +37,9 @@ func _ready() -> void:
 		var kv := a.trim_prefix("--").split("=", true, 1)
 		_args[kv[0]] = kv[1] if kv.size() > 1 else "1"
 	DisplayServer.window_set_title("REEL'S TOOLS")
-	if _args.has("screenshot") or _args.has("selftest"):
+	if _args.has("screenshot") or _args.has("selftest") or _args.has("perf"):
 		# captures de dev (rendu logiciel, mémoire limitée) : ombres et anticrénelage allégés
-		get_viewport().positional_shadow_atlas_size = 4096
+		get_viewport().positional_shadow_atlas_size = 2048 if OS.has_environment("REEL_LOWMEM") else 4096
 		get_viewport().msaa_3d = Viewport.MSAA_DISABLED
 	DisplayServer.window_set_min_size(Vector2i(480, 320))
 	engine = TempoEngine.new()
@@ -91,6 +91,8 @@ func _ready() -> void:
 	overlay.boot_done()
 	if _args.has("selftest"):
 		_selftest()
+	if _args.has("perf"):
+		_perf()
 	elif _args.has("screenshot"):
 		if _args.has("faxprint"):
 			studio.fax.on_action("send")
@@ -560,6 +562,41 @@ func _selftest() -> void:
 	sl.cur = saved_cur
 	sl._refresh()
 	go("overview")
+	get_tree().quit()
+
+
+## Contrôle de dev (--perf) : objets, appels de dessin et triangles par plan (moyenne sur quelques images).
+func _perf() -> void:
+	var n_mesh := 0
+	var n_shadow := 0
+	var stack: Array[Node] = [studio]
+	while not stack.is_empty():
+		var nd: Node = stack.pop_back()
+		if nd is MeshInstance3D and (nd as MeshInstance3D).visible:
+			n_mesh += 1
+			if (nd as MeshInstance3D).cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+				n_shadow += 1
+		stack.append_array(nd.get_children())
+	print("perf : meshes = ", n_mesh, " | qui projettent une ombre = ", n_shadow)
+	var per := {}
+	for ch in studio.get_children():
+		per[ch.name] = ch.find_children("*", "MeshInstance3D", true, false).filter(func(x): return x.visible).size()
+	var keys := per.keys()
+	keys.sort_custom(func(a, b): return per[a] > per[b])
+	print("perf top : ", keys.slice(0, 14).map(func(k): return "%s=%d" % [k, per[k]]))
+	for shot in ["overview", "beats", "splits"]:
+		go(shot)
+		for i in 40:
+			await get_tree().process_frame
+		var dc := 0
+		var ob := 0
+		var pr := 0
+		for i in 10:
+			await get_tree().process_frame
+			dc += RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)
+			ob += RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME)
+			pr += RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME)
+		print("perf ", shot, " : draw calls ", dc / 10, " | objets ", ob / 10, " | triangles ", pr / 10)
 	get_tree().quit()
 
 
