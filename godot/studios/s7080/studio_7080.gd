@@ -1383,17 +1383,12 @@ func _cart(g: Node3D, size: Vector3) -> void:
 ## Magnéto multipiste 2" 24 pistes sur pied (façon fin 70s) : caisse grise à joues noyer, platine
 ## inclinée avec deux bobines NAB 14", bloc têtes, cabestan, galet, bras de tension, touches de
 ## transport, compteur LED ; pont de 24 VU-mètres à l'arrière.
+## Magnéto multipiste 2" 24 pistes : modèle Blender (blender/multitrack.py) ; ici, les faces imprimées
+## (ouïes de façade, platine, compteur, pont de VU) et les vrais matériaux.
 func _multitrack() -> Node3D:
 	var g := Node3D.new()
 	g.name = "Multitrack"
-	var grey := Mk.mat(Mk.c(0x9a968c), .45, .6, {"normal": Mk.scratch_normal(), "normal_scale": .15})
-	var dark := Mk.mat(Mk.c(0x1a1a1a), .5, .3)
-	var walnut := Mk.mat(Mk.c(0x6a4028), .55, 0.0, {"map": Mk.walnut_tex(), "clearcoat": .3})
-	var chrome := Mk.chrome_mat()
 	var W := 1.02
-	var D := .72
-	# socle + caisse
-	Mk.mi(Mk.box(Vector3(W - .06, .08, D - .06)), dark, Vector3(0, .04, 0), g)
 	var face := Tex.canvas(1024, 640, func(ci, w, h):
 		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0x8e8a80))
 		Tex.brushed(ci, w, h, 41, .05)
@@ -1403,14 +1398,6 @@ func _multitrack() -> Node3D:
 				ci.draw_rect(Rect2(90 + k * 28, y0, 14, 120), Color(0, 0, 0, .75))
 		Tex.silk(ci, "RT-24", 60, h - 30, 18, Color(.1, .1, .1, .75), "left", 800)
 		Tex.grime(ci, w, h, 42, 1.2))
-	Mk.mi(Mk.rounded_box(Vector3(W - .06, .7, D - .04), .006, [grey, grey, grey, grey, Mk.mat(Color.WHITE, .5, .5, {"map": face}), grey], 2), null, Vector3(0, .08 + .35, 0), g)
-	for sx in [-1, 1]:
-		Mk.mi(Mk.rounded_box(Vector3(.03, .92, D), .008, walnut, 2), null, Vector3(sx * (W / 2 - .015), .46, 0), g)
-	# platine inclinée
-	var deck := Node3D.new()
-	deck.position = Vector3(0, .84, .02)
-	deck.rotation.x = .22
-	g.add_child(deck)
 	var plate := Tex.canvas(1024, 700, func(ci, w, h):
 		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0xb4b0a6))
 		Tex.brushed(ci, w, h, 43, .06)
@@ -1422,56 +1409,9 @@ func _multitrack() -> Node3D:
 		Tex.silk(ci, "EDIT", 860, h - 40, 16, ink, "center", 600)
 		ci.draw_rect(Rect2(380, 455, 270, 60), Color(.03, .01, .01))
 		Tex.grime(ci, w, h, 44, 1.5))
-	var pm := Mk.mat(Color.WHITE, .4, .6, {"map": plate})
-	Mk.mi(Mk.rounded_box(Vector3(W - .06, .02, .66), .005, [dark, dark, pm, dark, dark, dark], 2), null, Vector3.ZERO, deck)
-	# compteur LED
 	var led := Tex.canvas(256, 64, func(ci, w, h):
 		ci.draw_rect(Rect2(0, 0, w, h), Color(.03, .0, .0))
 		Tex.silk(ci, "00:12:34", w / 2, h * .78, 46, Mk.c(0xff3020), "center", 600, "mono"))
-	var cnt := Mk.mi(Mk.plane(.13, .032), Mk.glow(Color.WHITE, 1.6, led), Vector3(.005, .0105, .17), deck)
-	# bobines NAB 14" + galettes de bande
-	var tape_m := Mk.mat(Mk.c(0x2a1a12), .55)
-	for sx in [-1, 1]:
-		var rp := Vector3(sx * .26, .012, -.08)
-		var reel := Node3D.new()
-		reel.position = rp
-		deck.add_child(reel)
-		Mk.mi(Mk.cyl(.035, .035, .03, 24), chrome, Vector3(0, .015, 0), reel)
-		Mk.mi(Mk.cyl(.115 if sx < 0 else .085, .115 if sx < 0 else .085, .052, 48), tape_m, Vector3(0, .032, 0), reel)
-		for fy in [.004, .06]:
-			var fl := _reel_flange(.178)
-			fl.position = Vector3(0, fy, 0)
-			reel.add_child(fl)
-		reel.set_meta("dir", sx)
-		mt_reels.append(reel)
-		# bras de tension
-		var arm := Mk.mi(Mk.box(Vector3(.012, .01, .1)), chrome, rp + Vector3(sx * .12, .015, .17), deck)
-		arm.rotation.y = sx * .5
-		Mk.mi(Mk.cyl(.012, .012, .03, 16), chrome, rp + Vector3(sx * .15, .03, .21), deck)
-	# bloc têtes, cabestan, galet presseur
-	Mk.mi(Mk.rounded_box(Vector3(.2, .05, .07), .004, dark, 1), null, Vector3(0, .035, .1), deck)
-	for i in 3:
-		Mk.mi(Mk.rounded_box(Vector3(.035, .04, .025), .006, chrome, 2), null, Vector3(-.06 + i * .06, .06, .135), deck)
-	Mk.mi(Mk.cyl(.006, .006, .06, 12), chrome, Vector3(.13, .04, .14), deck)
-	Mk.mi(Mk.cyl(.022, .022, .052, 20), Mk.mat(Mk.c(0x0c0c0c), .7), Vector3(.165, .04, .14), deck)
-	# bande : de la bobine gauche aux guides, devant les têtes, vers la bobine droite
-	var tape_path := [Vector3(-.26 + .1, .045, .0), Vector3(-.15, .045, .2), Vector3(0, .045, .15), Vector3(.15, .045, .2), Vector3(.26 - .07, .045, -.03)]
-	for i in tape_path.size() - 1:
-		var a: Vector3 = tape_path[i]
-		var b: Vector3 = tape_path[i + 1]
-		var seg := Mk.mi(Mk.box(Vector3(.0015, .05, a.distance_to(b))), tape_m, (a + b) / 2, deck)
-		seg.rotation.y = atan2(b.x - a.x, b.z - a.z)
-	# touches de transport
-	var key_cols := [0x2a2a2a, 0x2a2a2a, 0x2a2a2a, 0x2a5a2a, 0xb02018]
-	for i in 5:
-		Mk.mi(Mk.rounded_box(Vector3(.06, .016, .035), .004, Mk.mat(Mk.c(key_cols[i]), .35, .1, {"clearcoat": .5}), 2), null, Vector3(-.21 + i * .093, .018, .27), deck)
-	# pont de VU-mètres
-	var bridge := Node3D.new()
-	bridge.position = Vector3(0, .94, -.28)
-	bridge.rotation.x = -.1
-	g.add_child(bridge)
-	Mk.mi(Mk.rounded_box(Vector3(W - .02, .36, .14), .006, dark, 2), null, Vector3(0, .18, 0), bridge)
-	Mk.mi(Mk.rounded_box(Vector3(W, .03, .16), .008, walnut, 2), null, Vector3(0, .375, 0), bridge)
 	var vu := Tex.canvas(1024, 330, func(ci, w, h):
 		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0x141414))
 		for row in 2:
@@ -1488,9 +1428,18 @@ func _multitrack() -> Node3D:
 				ci.draw_line(o2, o2 + Vector2(sin(na), -cos(na)) * 70, Color(.05, .05, .05), 2.0)
 				Tex.silk(ci, str(row * 12 + k + 1), cx, cy + 135, 18, Color(.85, .82, .76, .9), "center", 600)
 		Tex.grime(ci, w, h, 45, 1.0))
-	var vm := Mk.glow(Color(1, .92, .78), .55, vu)
-	Mk.mi(Mk.quad(W - .08, .33), vm, Vector3(0, .18, .0705), bridge)
-	Mk.mi(Mk.quad(W - .08, .33), Mk.mat(Mk.c(0x101010), .05, 0.0, {"alpha": .12, "clearcoat": 1.0}), Vector3(0, .18, .073), bridge)
+	var grey := Mk.mat(Mk.c(0x9a968c), .45, .6, {"normal": Mk.scratch_normal(), "normal_scale": .15})
+	var model := Props.model("multitrack.glb", {
+		"steel": grey, "mt_face": Mk.mat(Color.WHITE, .5, .5, {"map": face}), "mt_plate": Mk.mat(Color.WHITE, .4, .6, {"map": plate}),
+		"mt_counter": Mk.glow(Color.WHITE, 1.6, led), "mt_vu": Mk.glow(Color(1, .92, .78), .55, vu),
+		"walnut": Mk.mat(Mk.c(0x6a4028), .55, 0.0, {"map": Mk.walnut_tex(), "clearcoat": .3}),
+		"black": Mk.mat(Mk.c(0x1a1a1a), .5, .3), "chrome": Mk.chrome_mat(), "alu": Mk.mat(Mk.c(0xc8c6c0), .3, .95, {"cull_off": true}),
+		"rubber": Mk.mat(Mk.c(0x0c0c0c), .7), "tape": Mk.mat(Mk.c(0x2a1a12), .55, 0.0, {"cull_off": true}),
+		"glass": Mk.mat(Mk.c(0x101010), .05, 0.0, {"alpha": .12, "clearcoat": 1.0}),
+		"key_dark": Mk.mat(Mk.c(0x2a2a2a), .35, .1, {"clearcoat": .5}), "key_green": Mk.mat(Mk.c(0x2a5a2a), .35, .1, {"clearcoat": .5}),
+		"key_red": Mk.mat(Mk.c(0xb02018), .35, .1, {"clearcoat": .5}),
+	})
+	g.add_child(model)
 	return g
 
 
