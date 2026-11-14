@@ -146,6 +146,7 @@ func _ready() -> void:
 	add_child(dr)
 	dr.build()
 	_build_module_spots()
+	_build_daylight()
 	if not OS.has_environment("REEL_NOTUNE"):
 		_tune_render.call_deferred()
 
@@ -333,6 +334,7 @@ func _build_environment() -> void:
 	# ciel invisible qui ne sert qu'aux reflets (comme une pièce avec quelques sources chaudes)
 	var sky := Sky.new()
 	var pano := PanoramaSkyMaterial.new()
+	_sky_pano = pano
 	pano.panorama = ImageTexture.create_from_image(_reflection_room())
 	pano.energy_multiplier = 0.12
 	sky.sky_material = pano
@@ -1214,7 +1216,7 @@ func _build_back_units() -> void:
 		box.rotation.y = r.randf_range(-.05, .05)
 		x += bw + .004
 	# stores vénitiens à moitié baissés devant la fenêtre
-	var bl := Items7080.blinds(WIN.z1 - WIN.z0 - .04, WIN.y1 - WIN.y0, .6, .95)
+	var bl := Items7080.blinds(WIN.z1 - WIN.z0 - .04, WIN.y1 - WIN.y0, .3, .55)
 	bl.position = Vector3(.13, (WIN.y0 + WIN.y1) / 2, (WIN.z0 + WIN.z1) / 2)
 	bl.rotation.y = PI / 2
 	add_child(bl)
@@ -1549,180 +1551,180 @@ func _build_lectern() -> void:
 ## Vue par la fenêtre : trottoir, chaussée mouillée, voitures garées, réverbères au sodium (orange),
 ## immeuble en face avec fenêtres éclairées et enseigne au néon. Une voiture passe de temps en temps.
 var street_car: Node3D
+var street: Street7080
 
 
 func _build_street() -> void:
-	var st := Node3D.new()
-	st.name = "Street"
-	st.rotation.y = -PI / 2  # la rue est derrière le mur droit
-	st.position = Vector3(0, 0, (WIN.z0 + WIN.z1) / 2 - 1.5)
-	add_child(st)
-	var gy := -.35  # le studio est un peu surélevé (rez-de-chaussée sur cave)
-	# chaussée mouillée + trottoirs
-	var asphalt := Mk.mat(Mk.c(0x141416), .22, 0.0, {"normal": Mk.noise_tex(.4, 256, 2), "normal_scale": .3})
-	Mk.mi(Mk.plane(60, 9), asphalt, Vector3(1.5, gy, 7.0), st)
-	var curb := Mk.mat(Mk.c(0x2a2826), .85)
-	Mk.mi(Mk.box(Vector3(60, .14, 2.3)), curb, Vector3(1.5, gy + .07, 1.6), st)
-	Mk.mi(Mk.box(Vector3(60, .14, 2.6)), curb, Vector3(1.5, gy + .07, 12.8), st)
-	# immeuble d'en face
-	var fac := _facade_mat()
-	var front := Mk.mi(Mk.quad(40, 16), fac, Vector3(1.5, gy + 8, 14.1), st)
-	front.rotation.y = PI
-	_facade_lights(st, gy)
-	# ciel de nuit au-dessus
-	var sky := Mk.mi(Mk.quad(120, 50), Mk.mat(Mk.c(0x0a0f1e), 1.0, 0.0, {"unshaded": true}), Vector3(1.5, 20, 40), st)
-	sky.rotation.y = PI
-	# enseigne au néon (rouge) au rez-de-chaussée en face
-	var neon := Tex.canvas(512, 128, func(ci, w, h):
-		ci.draw_rect(Rect2(0, 0, w, h), Color(0, 0, 0, 0))
-		Tex.silk(ci, "HOTEL  NORTH STAR", w * .5 - 210, h * .68, 56, Color(1, 1, 1)), true)
-	var nm := StandardMaterial3D.new()
-	nm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	nm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-	nm.albedo_texture = neon
-	nm.albedo_color = Color(2.6, .35, .45)
-	var sign := Mk.mi(Mk.quad(4.2, 1.05), nm, Vector3(2.4, gy + 3.4, 14.0), st)
-	sign.rotation.y = PI
-	var nl := OmniLight3D.new()
-	nl.light_color = Color(1, .25, .35)
-	nl.light_energy = 1.2
-	nl.omni_range = 6.0
-	nl.position = Vector3(2.4, gy + 3.2, 13.2)
-	st.add_child(nl)
-	# réverbères au sodium (orange) des deux côtés
-	for p in [Vector3(-1.2, gy + .14, 2.3), Vector3(5.6, gy + .14, 2.3), Vector3(2.2, gy + .14, 12.0)]:
-		_street_lamp(st, p, p.z > 6)
-	# voitures garées (berlines 70s)
-	_car(st, Vector3(-.6, gy, 3.4), 0.0, Mk.c(0x2e3a28))
-	_car(st, Vector3(4.4, gy, 3.4), 0.0, Mk.c(0x6a4a2a))
-	_car(st, Vector3(1.0, gy, 11.3), PI, Mk.c(0xc8b890))
-	street_car = _car(st, Vector3(-20, gy, 6.2), 0.0, Mk.c(0x7a1a14), true)
+	street = Street7080.new()
+	street.rotation.y = -PI / 2  # la rue est derrière le mur droit
+	street.position = Vector3(0, 0, (WIN.z0 + WIN.z1) / 2 - 1.5)
+	add_child(street)
+	street_car = street.car
 
 
-func _street_lamp(parent: Node3D, at: Vector3, far: bool) -> void:
-	var g := Node3D.new()
-	g.position = at
-	if far:
-		g.rotation.y = PI
-	parent.add_child(g)
-	var pole := Mk.mat(Mk.c(0x2a2c2a), .5, .6)
-	Mk.mi(Mk.cyl(.07, .1, 5.0, 12), pole, Vector3(0, 2.5, 0), g)
-	Mk.mi(Mk.tube([Vector3(0, 4.9, 0), Vector3(0, 5.25, .4), Vector3(0, 5.2, 1.2)], .05, 12, 8), pole, Vector3.ZERO, g)
-	Mk.mi(Mk.rounded_box(Vector3(.3, .12, .55), .04, pole, 2), null, Vector3(0, 5.16, 1.3), g)
-	var bulb := StandardMaterial3D.new()
-	bulb.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	bulb.albedo_color = Color(2.4, 1.05, .25)
-	Mk.mi(Mk.box(Vector3(.24, .03, .45)), bulb, Vector3(0, 5.09, 1.3), g)
-	var l := SpotLight3D.new()
-	l.light_color = Color(1.0, .55, .18)
-	l.light_energy = 1.4
-	l.spot_range = 8.0
-	l.spot_angle = 60.0
-	l.spot_angle_attenuation = .8
-	l.position = Vector3(0, 5.0, 1.3)
-	l.rotation.x = -PI / 2
-	g.add_child(l)
+# ---------------------------------------------------------------- heure du jour
+## Quatre ambiances selon l'heure du Mac (ou une heure forcée dans les réglages) : matin frais, journée
+## claire, coucher de soleil orangé, nuit de session. Fondus entre elles. Le soleil entre par la fenêtre
+## (à travers les stores), la rue s'allume la nuit, il pleut le soir.
+const TOD_KEYS := [  # heure, [nuit, matin, jour, coucher]
+	[0.0, [1, 0, 0, 0]], [5.5, [1, 0, 0, 0]], [7.0, [0, 1, 0, 0]], [9.5, [0, 0, 1, 0]],
+	[16.5, [0, 0, 1, 0]], [18.5, [0, 0, 0, 1]], [20.5, [1, 0, 0, 0]], [24.0, [1, 0, 0, 0]],
+]
+#            soleil couleur,         énergie, élév., ciel,                        ambiance,              énergie amb., lampes, pluie, expo
+const TOD_LOOK := [
+	[Color(0, 0, 0), 0.0, 6.0, Color(.035, .05, .1), Color(.25, .23, .2), .16, 1.0, 1.0, 1.15],      # nuit
+	[Color(1.0, .84, .66), 1.8, 12.0, Color(.6, .7, .82), Color(.55, .6, .68), .7, .75, 0.0, 1.0],    # matin
+	[Color(1.0, .97, .92), 2.4, 38.0, Color(.55, .7, .92), Color(.62, .64, .66), .95, .6, 0.0, 1.0],  # jour
+	[Color(1.0, .5, .22), 2.0, 5.0, Color(.95, .5, .28), Color(.6, .42, .32), .55, .9, .25, 1.05],    # coucher
+]
+var sun: DirectionalLight3D
+var tod_override := -1.0      # < 0 : heure du Mac
+var _tod_shown := -1.0        # heure affichée (glisse vers la cible)
+var _tod_tick := 0.0
+var _room_lights: Array = []  # [lumière, énergie de base]
+var _sky_pano: PanoramaSkyMaterial
+var _window_fill: SpotLight3D
+var _day_bounce: OmniLight3D
 
 
-## Berline 70s : caisse longue, pavillon, vitres sombres, chromes, phares, roues. Repère : avant vers +X.
-func _car(parent: Node3D, at: Vector3, rot: float, col: Color, moving := false) -> Node3D:
-	var g := Node3D.new()
-	g.position = at
-	g.rotation.y = rot
-	parent.add_child(g)
-	var paint := Mk.mat(col, .3, .2, {"clearcoat": 1.0, "clearcoat_rough": .1})
-	var glass := Mk.mat(Mk.c(0x0a0c10), .05, 0.0, {"clearcoat": 1.0})
-	var chrome := Mk.chrome_mat()
-	var tyre := Mk.mat(Mk.c(0x0c0c0c), .8)
-	Mk.mi(Mk.rounded_box(Vector3(4.7, .5, 1.8), .09, paint, 3), null, Vector3(0, .55, 0), g)
-	Mk.mi(Mk.rounded_box(Vector3(2.3, .48, 1.62), .1, paint, 3), null, Vector3(-.25, 1.02, 0), g)
-	for sz in [-1, 1]:
-		Mk.mi(Mk.box(Vector3(2.1, .34, .01)), glass, Vector3(-.25, 1.04, sz * .815), g)
-	for sx in [-1, 1]:
-		var ws := Mk.mi(Mk.box(Vector3(.01, .36, 1.48)), glass, Vector3(-.25 + sx * 1.16, 1.03, 0), g)
-		ws.rotation.z = sx * -.5
-		Mk.mi(Mk.rounded_box(Vector3(.1, .12, 1.86), .04, chrome, 2), null, Vector3(sx * 2.36, .42, 0), g)
-	for wx in [-1.45, 1.45]:
-		for sz in [-1, 1]:
-			var w := Mk.mi(Mk.cyl(.33, .33, .22, 20), tyre, Vector3(wx, .33, sz * .8), g)
-			w.rotation.x = PI / 2
-			var hub := Mk.mi(Mk.cyl(.16, .16, .23, 16), chrome, Vector3(wx, .33, sz * .8), g)
-			hub.rotation.x = PI / 2
-	var head := StandardMaterial3D.new()
-	head.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	head.albedo_color = Color(3.0, 2.6, 1.8) if moving else Color(.5, .45, .35)
-	var tail := StandardMaterial3D.new()
-	tail.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	tail.albedo_color = Color(3.0, .2, .1) if moving else Color(.25, .02, .02)
-	for sz in [-1, 1]:
-		var hl := Mk.mi(Mk.cyl(.09, .09, .03, 16), head, Vector3(2.36, .62, sz * .62), g)
-		hl.rotation.z = PI / 2
-		Mk.mi(Mk.box(Vector3(.03, .1, .28)), tail, Vector3(-2.36, .62, sz * .6), g)
-	if moving:
-		var l := SpotLight3D.new()
-		l.light_color = Color(1, .9, .7)
-		l.light_energy = 2.5
-		l.spot_range = 14.0
-		l.spot_angle = 30.0
-		l.position = Vector3(2.4, .6, 0)
-		l.rotation.y = -PI / 2
-		g.add_child(l)
-	return g
+func _build_daylight() -> void:
+	sun = DirectionalLight3D.new()
+	sun.name = "Sun"
+	sun.shadow_enabled = true
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
+	sun.directional_shadow_max_distance = 30.0
+	sun.shadow_blur = 1.5
+	sun.light_angular_distance = .6
+	add_child(sun)
+	tod_override = float(Store.get_v("tod_override", -1.0))
+	# lumière du ciel qui entre par la fenêtre (remplissage doux, plus fort le jour)
+	_window_fill = SpotLight3D.new()
+	_window_fill.name = "WindowFill"
+	_window_fill.spot_range = 7.0
+	_window_fill.spot_angle = 75.0
+	_window_fill.spot_angle_attenuation = .6
+	_window_fill.shadow_enabled = false
+	# lumière du jour renvoyée par la pièce (remplissage doux, sans ombre)
+	_day_bounce = OmniLight3D.new()
+	_day_bounce.name = "DayBounce"
+	_day_bounce.omni_range = 7.5
+	_day_bounce.omni_attenuation = .7
+	_day_bounce.position = Vector3(2.0, 2.2, -3.2)
+	add_child(_day_bounce)
+	_aim(_window_fill, Vector3(.15, (WIN.y0 + WIN.y1) / 2, (WIN.z0 + WIN.z1) / 2), Vector3(3.5, .6, (WIN.z0 + WIN.z1) / 2 + .3))
+	add_child(_window_fill)
+	# les murs, le sol et le plafond bloquent le soleil des deux côtés (sinon il traverse les murs)
+	for n in find_children("*", "MeshInstance3D", true, false):
+		var mi := n as MeshInstance3D
+		if mi.mesh is ArrayMesh or mi.name in ["Floor", "Ceiling"]:
+			if mi.get_parent().name.ends_with("Wall") or mi.name in ["Floor", "Ceiling"]:
+				mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_DOUBLE_SIDED
+	for l in find_children("*", "Light3D", true, false):
+		if l == sun or l == _window_fill or l == _day_bounce or street.is_ancestor_of(l):
+			continue
+		_room_lights.append([l, (l as Light3D).light_energy])
+	_apply_tod(tod_hour(), true)
 
 
-## Immeuble d'en face : enduit sombre à peine visible, fenêtres sombres ; les fenêtres éclairées et la
-## vitrine du bar sont des petits panneaux lumineux posés devant (voir _facade_lights).
-func _facade_mat() -> StandardMaterial3D:
-	var alb := Tex.canvas(1024, 512, func(ci, w, h):
-		ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0x2a221e))
-		var r := Tex.rng(910)
-		for i in 2500:
-			ci.draw_rect(Rect2(r.randf() * w, r.randf() * h, 3, 3), Color(0, 0, 0, .15) if r.randf() > .5 else Color(1, .9, .8, .04))
-		for row in 5:
-			for col in 14:
-				var x: float = 30.0 + col * (w - 60) / 14.0
-				var y := 40.0 + row * 90.0
-				ci.draw_rect(Rect2(x, y, 44, 62), Color(.03, .035, .045))
-				ci.draw_rect(Rect2(x - 3, y + 62, 50, 5), Mk.c(0x3a302a)))
-	var m := Mk.mat(Color.WHITE, .9, 0.0, {"map": alb})
-	m.emission_enabled = true
-	m.emission = Mk.c(0x2a2420)
-	m.emission_energy_multiplier = .25
-	return m
+func tod_hour() -> float:
+	if tod_override >= 0.0:
+		return tod_override
+	var t := Time.get_time_dict_from_system()
+	return t.hour + t.minute / 60.0
 
 
-## Fenêtres allumées et vitrine du bar : panneaux lumineux devant la façade (mêmes cases que la texture).
-func _facade_lights(parent: Node3D, gy: float) -> void:
-	var r := Tex.rng(911)
-	var fw := 40.0
-	var fh := 16.0
-	for row in 5:
-		for col in 14:
-			if r.randf() > .3:
-				continue
-			var warm := Color(1.0, .7, .36).lerp(Color(.7, .8, 1.0), r.randf() * .35)
-			var m := StandardMaterial3D.new()
-			m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-			m.albedo_color = warm * (.55 + r.randf() * .5)
-			# coordonnées texture (1024 x 512) -> mètres sur la façade (vue de la rue, x inversé)
-			var px := 30.0 + col * (1024 - 60) / 14.0 + 22
-			var py := 40.0 + row * 90.0 + 31
-			var x: float = 1.5 + fw / 2 - px / 1024.0 * fw
-			var y: float = gy + fh - py / 512.0 * fh
-			var q := Mk.mi(Mk.quad(44.0 / 1024.0 * fw, 62.0 / 512.0 * fh), m, Vector3(x, y, 14.05), parent)
-			q.rotation.y = PI
-			if r.randf() < .5:  # rideau à moitié tiré
-				var cm := StandardMaterial3D.new()
-				cm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-				cm.albedo_color = m.albedo_color * .45
-				var c := Mk.mi(Mk.quad(.7, 62.0 / 512.0 * fh), cm, Vector3(x + .5, y, 14.04), parent)
-				c.rotation.y = PI
-	# vitrine du bar sous l'enseigne
-	var vm := StandardMaterial3D.new()
-	vm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	vm.albedo_color = Color(1.2, .6, .28)
-	var v := Mk.mi(Mk.quad(6.0, 1.8), vm, Vector3(2.4, gy + 1.2, 14.05), parent)
-	v.rotation.y = PI
+func set_tod_override(h: float) -> void:
+	tod_override = h
+	Store.set_v("tod_override", h)
+
+
+static func tod_weights(h: float) -> Array:
+	h = fposmod(h, 24.0)
+	for i in TOD_KEYS.size() - 1:
+		var a: Array = TOD_KEYS[i]
+		var b: Array = TOD_KEYS[i + 1]
+		if h >= a[0] and h <= b[0]:
+			var k: float = (h - a[0]) / maxf(.001, b[0] - a[0])
+			k = k * k * (3.0 - 2.0 * k)
+			var out := []
+			for j in 4:
+				out.append(lerpf(float(a[1][j]), float(b[1][j]), k))
+			return out
+	return [1.0, 0.0, 0.0, 0.0]
+
+
+static func tod_name(h: float) -> String:
+	var w := tod_weights(h)
+	var best := 0
+	for j in 4:
+		if w[j] > w[best]:
+			best = j
+	return ["Nuit", "Matin", "Journée", "Coucher de soleil"][best]
+
+
+func _apply_tod(h: float, _instant := false) -> void:
+	var w := tod_weights(h)
+	var look := []
+	for k in 9:
+		var v: Variant = null
+		for j in 4:
+			var x: Variant = TOD_LOOK[j][k]
+			if v == null:
+				v = x * float(w[j])
+			else:
+				v = v + x * float(w[j])
+		look.append(v)
+	var sun_col: Color = look[0]
+	sun.light_color = Color(sun_col.r, sun_col.g, sun_col.b).clamp() if sun_col.v > .01 else Color.WHITE
+	sun.light_energy = look[1]
+	sun.visible = look[1] > .02
+	# le soleil arrive de la rue (côté -X), un peu de biais ; il monte dans la journée
+	var elev := deg_to_rad(float(look[2]))
+	# le matin il entre par la fenêtre ; l'après-midi il passe derrière le studio et éclaire les façades d'en face
+	var az := deg_to_rad(lerpf(25.0, 160.0, clampf((fposmod(h, 24.0) - 6.5) / 12.5, 0.0, 1.0)))
+	var dir := Vector3(cos(elev) * cos(az), -sin(elev), cos(elev) * sin(az))   # direction de la lumière (vers +X)
+	sun.transform = Transform3D(Basis.looking_at(dir, Vector3.UP), Vector3(-5, 6, -3.5))
+	var day := 1.0 - float(w[0])
+	var sky_c: Color = look[3]
+	_window_fill.light_color = sky_c.lerp(Color.WHITE, .5)
+	_window_fill.light_energy = day * 2.2
+	_window_fill.visible = day > .02
+	_day_bounce.light_color = sky_c.lerp(Mk.c(0xffe8d0), .6)
+	_day_bounce.light_energy = day * 1.1
+	_day_bounce.visible = day > .02
+	env.ambient_light_color = look[4]
+	env.ambient_light_energy = look[5]
+	env.tonemap_exposure = look[8]
+	if _sky_pano:
+		_sky_pano.energy_multiplier = lerpf(.12, .45, 1.0 - float(w[0]))
+	var lamps: float = look[6]
+	for e in _room_lights:
+		var l: Light3D = e[0]
+		if not module_spot_light(l):
+			l.light_energy = float(e[1]) * lamps
+	var night: float = float(w[0]) + float(w[3]) * .55 + float(w[1]) * .15
+	street.set_time(clampf(night, 0.0, 1.0), look[3], look[7])
+
+
+func module_spot_light(l: Light3D) -> bool:
+	for s in module_spots.values():
+		if s.light == l:
+			return true
+	return false
+
+
+func _animate_tod(dt: float) -> void:
+	_tod_tick -= dt
+	var target := tod_hour()
+	if _tod_shown < 0.0:
+		_tod_shown = target
+	var diff := wrapf(target - _tod_shown, -12.0, 12.0)
+	if absf(diff) < .01 and _tod_tick > 0.0:
+		return
+	_tod_tick = 1.0
+	# fondu : quand on change l'heure à la main, on traverse les ambiances en ~2 s
+	_tod_shown = fposmod(_tod_shown + clampf(diff, -dt * 8.0, dt * 8.0) if absf(diff) > .01 else target, 24.0)
+	_apply_tod(_tod_shown)
 
 
 # ---------------------------------------------------------------- lumières
@@ -1787,6 +1789,8 @@ func yaw_to(p: Vector3) -> float:
 
 ## Renvoie [position, point visé] : vue depuis le fauteuil, ou gros plan sur un module.
 func shot_pose(shot: String, cam: Camera3D, aspect: float) -> Array:
+	if shot == "v_street":  # dev : le nez à la fenêtre
+		return [Vector3(.75, 1.42, (WIN.z0 + WIN.z1) / 2), Vector3(-6, 1.9, (WIN.z0 + WIN.z1) / 2 + .4)]
 	if shot == "splits":
 		return _via(splits, Vector3(0, 0, .012), Vector3(0, 0, 1), Splits7080.PW + .012, Splits7080.PH / 2 + .01, cam, aspect, 1.1)
 	if shot == "export":
@@ -1864,6 +1868,8 @@ func on_shot(shot: String, _cam: Camera3D, _aspect: float) -> void:
 
 func animate(t: float, dt: float, reduced: bool) -> void:
 	_animate_spots(dt)
+	_animate_tod(dt)
+	street.animate(t)
 	# voyant ON AIR : allumé quand une machine joue
 	if on_air_mat:
 		var live: bool = beats.playing or (fax.player != null and fax.player.playing)

@@ -45,6 +45,9 @@ func _ready() -> void:
 	engine = TempoEngine.new()
 	studio = Studio7080.new(engine)
 	add_child(studio)
+	if _args.has("tod"):  # dev : heure forcée (captures)
+		studio.tod_override = float(_args.tod)
+		studio._tod_shown = -1.0
 	if _args.has("splitspdf"):
 		studio.splits.demo()
 		studio.splits.write_pdf(_args.splitspdf)
