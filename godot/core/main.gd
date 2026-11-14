@@ -539,6 +539,15 @@ func _selftest() -> void:
 	bt.toggle_play()
 	bt._export_to("/tmp/beats_test.mid")
 	print("beats : midi écrit = ", FileAccess.get_file_as_bytes("/tmp/beats_test.mid").size(), " octets")
+	# lampe à lave + heure du jour
+	var lv: Lava7080 = studio.lava
+	var lava_before := lv.index
+	print("pick lampe à lave -> ", _wide_pick(lv.to_global(Vector3(0, .3, 0))))
+	studio.on_deco("lava")
+	print("lampe à lave : couleur ", lava_before, " -> ", lv.index, " (", Lava7080.COLORS[lv.index][0], ")")
+	lv.set_color(lava_before)
+	for h in [3.0, 8.0, 13.0, 18.0, 22.0]:
+		print("heure %.0f h -> %s %s" % [h, Studio7080.tod_name(h), Studio7080.tod_weights(h)])
 	# carnet de splits
 	var sl: Splits7080 = studio.splits
 	print("pick splits (plan large) -> ", _wide_pick(sl.to_global(Vector3(-.1, .05, .02))))
