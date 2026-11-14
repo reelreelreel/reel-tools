@@ -45,6 +45,11 @@ func _ready() -> void:
 	engine = TempoEngine.new()
 	studio = Studio7080.new(engine)
 	add_child(studio)
+	if _args.has("splitspdf"):
+		studio.splits.demo()
+		studio.splits.write_pdf(_args.splitspdf)
+		get_tree().quit()
+		return
 	if _args.has("overlaps"):
 		_overlaps()
 		get_tree().quit()
@@ -106,14 +111,7 @@ func _ready() -> void:
 		elif _args.get("ui", "").begins_with("hover="):
 			hover_module = _args.ui.substr(6)
 		elif _args.get("ui", "") == "splits_demo":
-			var sl: Splits7080 = studio.splits
-			sl.pages = [{"title": "Midnight Drive", "artist": "SDM", "date": "11/14/2026", "mode": "sacem",
-				"notes": "Sample: none. Feat. Kore on the 2nd verse. Session at Combo Studio, mix by REEL.",
-				"rows": [{"name": "Maxime D. (REEL)", "role": "C", "share": 0.0}, {"name": "SDM", "role": "A", "share": 0.0},
-					{"name": "Kore", "role": "AC", "share": 0.0}, {"name": "REEL Music", "role": "E", "share": 0.0}]}]
-			sl.cur = 0
-			sl.split_equal()
-			sl._refresh()
+			studio.splits.demo()
 		elif _args.get("ui", "") == "toast":
 			Toast.say("Copié : 428,6 ms")
 		_screenshot_and_quit()

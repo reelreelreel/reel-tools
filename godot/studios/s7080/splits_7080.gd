@@ -37,6 +37,7 @@ var _turn_swapped := false
 var _turn_target := 0
 var _blink := -1
 var _caret_on := false
+var _pdf := PackedByteArray()
 
 
 func _init(walnut: Material) -> void:
@@ -390,35 +391,77 @@ func recap() -> String:
 	return "\n".join(t)
 
 
-## PDF d'une page, écrit à la main (Helvetica, WinAnsi) : aucune dépendance.
+## PDF d'une page A4, écrit à la main (Helvetica, WinAnsi) : en-tête, tableau des ayants droit,
+## contrôle du total, notes. Aucune dépendance.
 func write_pdf(path: String) -> void:
 	if not path.to_lower().ends_with(".pdf"):
 		path += ".pdf"
-	var lines: Array = recap().replace("✓", "OK").replace("✗", "X").replace("—", "-").split("\n")
-	var cs := PackedByteArray()
-	var y := 790
-	cs.append_array(("BT /F1 18 Tf 56 %d Td " % y).to_ascii_buffer())
-	for i in lines.size():
-		if i == 1:
-			cs.append_array(" /F1 11 Tf 0 -30 Td ".to_ascii_buffer())
-		elif i > 1:
-			cs.append_array(" 0 -17 Td ".to_ascii_buffer())
-		cs.append_array("(".to_ascii_buffer())
-		cs.append_array(_pdf_str(String(lines[i])))
-		cs.append_array(") Tj".to_ascii_buffer())
-	cs.append_array(" ET\n".to_ascii_buffer())
-	cs.append_array("0.6 0.08 0.06 RG 1 w 56 770 m 539 770 l S\n".to_ascii_buffer())
-	cs.append_array("BT /F1 8 Tf 0.4 g 56 40 Td (REEL'S TOOLS - split sheet) Tj ET\n".to_ascii_buffer())
+	var p := _page()
+	var fr: bool = p.mode == "sacem"
+	_pdf = PackedByteArray()
+	var T := func(x: float, y: float, size: float, txt: String, bold := false, grey := 0.0) -> void:
+		_pdf.append_array(("BT /%s %.1f Tf %.3f g %.1f %.1f Td (" % ["F2" if bold else "F1", size, grey, x, y]).to_ascii_buffer())
+		_pdf.append_array(_pdf_str(txt))
+		_pdf.append_array(") Tj ET\n".to_ascii_buffer())
+	var L := func(x0: float, y0: float, x1: float, y1: float, w := .6, red := false) -> void:
+		_pdf.append_array(("%s %.2f w %.1f %.1f m %.1f %.1f l S\n" % ["0.62 0.1 0.08 RG" if red else "0.3 G", w, x0, y0, x1, y1]).to_ascii_buffer())
+	# en-tête
+	T.call(56, 780, 22, "FEUILLE DE SPLITS" if fr else "SPLIT SHEET", true)
+	T.call(539 - 120, 784, 9, ("SACEM" if fr else "INTERNATIONAL"), true, .35)
+	L.call(56, 768, 539, 768, 1.5, true)
+	var y := 740.0
+	for row in [["Titre" if fr else "Title", p.title], ["Artiste" if fr else "Artist", p.artist], ["Date", p.date]]:
+		T.call(56, y, 10, String(row[0]).to_upper(), true, .45)
+		T.call(150, y, 13, String(row[1]))
+		y -= 22
+	# tableau
+	y -= 18
+	var cols := [56.0, 330.0, 539.0]
+	T.call(cols[0], y, 9, "NOM" if fr else "NAME", true, .45)
+	T.call(cols[1], y, 9, "RÔLE" if fr else "ROLE", true, .45)
+	T.call(cols[2] - 40, y, 9, "PART" if fr else "SHARE", true, .45)
+	y -= 8
+	L.call(56, y, 539, y, .8)
+	for r in p.rows:
+		y -= 20
+		var role: String = ROLE_FR.get(r.role, r.role) if fr else String(r.role)
+		var sh := _pct(float(r.share), fr) + " %"
+		T.call(cols[0], y, 12, String(r.name))
+		T.call(cols[1], y, 12, role)
+		T.call(cols[2] - 6.2 * sh.length(), y, 12, sh)
+		L.call(56, y - 7, 539, y - 7, .3)
+	y -= 30
+	var chk := check()
+	var lab: String = chk.label.replace(".", ",") if fr else String(chk.label)
+	T.call(56, y, 12, lab + ("   -   OK" if chk.ok else ("   -   le total doit faire 100 %" if fr else "   -   must total 100 %")), true, 0.0 if chk.ok else .55)
+	# notes
+	if String(p.notes).strip_edges() != "":
+		y -= 40
+		T.call(56, y, 10, "NOTES", true, .45)
+		for line in _wrap(String(p.notes), 90):
+			y -= 16
+			T.call(56, y, 11, String(line))
+	# signatures
+	y = maxf(120.0, y - 70.0)
+	T.call(56, y + 14, 9, "SIGNATURES", true, .45)
+	var n: int = p.rows.size()
+	for i in n:
+		var cx := 56.0 + (i % 3) * 165.0
+		var cy: float = y - 34.0 - floor(i / 3.0) * 46.0
+		L.call(cx, cy, cx + 140, cy, .4)
+		T.call(cx, cy - 11, 8, String(p.rows[i].name), false, .4)
+	T.call(56, 36, 8, "REEL'S TOOLS  -  " + ("feuille de splits" if fr else "split sheet"), false, .5)
 	var objs := [
 		"<< /Type /Catalog /Pages 2 0 R >>".to_ascii_buffer(),
 		"<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_ascii_buffer(),
-		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>".to_ascii_buffer(),
+		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R /F2 6 0 R >> >> /Contents 5 0 R >>".to_ascii_buffer(),
 		"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>".to_ascii_buffer(),
 	]
-	var stream := ("<< /Length %d >>\nstream\n" % cs.size()).to_ascii_buffer()
-	stream.append_array(cs)
+	var stream := ("<< /Length %d >>\nstream\n" % _pdf.size()).to_ascii_buffer()
+	stream.append_array(_pdf)
 	stream.append_array("\nendstream".to_ascii_buffer())
 	objs.append(stream)
+	objs.append("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>".to_ascii_buffer())
 	var out := "%PDF-1.4\n".to_ascii_buffer()
 	var offs := []
 	for i in objs.size():
@@ -457,6 +500,17 @@ static func _pdf_str(s: String) -> PackedByteArray:
 
 
 # ---------------------------------------------------------------- données
+## Page d'exemple (captures de dev et test du PDF).
+func demo() -> void:
+	pages = [{"title": "Midnight Drive", "artist": "SDM", "date": "11/14/2026", "mode": "sacem",
+		"notes": "Sample: none. Feat. Kore on the 2nd verse. Session at Combo Studio, mix by REEL.",
+		"rows": [{"name": "Maxime D. (REEL)", "role": "C", "share": 0.0}, {"name": "SDM", "role": "A", "share": 0.0},
+			{"name": "Kore", "role": "AC", "share": 0.0}, {"name": "REEL Music", "role": "E", "share": 0.0}]}]
+	cur = 0
+	split_equal()
+	_refresh()
+
+
 func _blank_page() -> Dictionary:
 	var d := Time.get_date_dict_from_system()
 	return {"title": "", "artist": "", "date": "%02d/%02d/%d" % [d.month, d.day, d.year], "notes": "", "mode": "sacem", "rows": []}
