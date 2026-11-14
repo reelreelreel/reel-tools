@@ -440,16 +440,16 @@ func _machine_labels() -> void:
 ## Images dans res://assets/frames/ (copiées depuis « REEL TOOLS/AFFICHE 70s » sur son Mac).
 ## Affiches : [image, position, cap, largeur]. Certifications : [image, position, cap, "or" | "platine"].
 const POSTERS := [
-	["1_bowie", Vector3(1.75, 1.8, -5.995), 0.0, .5],
-	["2_floyd", Vector3(4.995, 1.82, -3.55), -PI / 2, .45],
-	["5_kiss", Vector3(4.58, 1.8, -5.995), 0.0, .42],
-	["3_wonder", Vector3(.005, 2.02, -1.95), PI / 2, .34],
+	["1_bowie", Vector3(1.75, 1.97, -5.985), 0.0, .62],
+	["2_floyd", Vector3(4.985, 1.98, -3.5), -PI / 2, .56],
+	["5_kiss", Vector3(4.58, 1.92, -5.985), 0.0, .52],
+	["3_wonder", Vector3(.015, 2.02, -1.98), PI / 2, .42],
 ]
+## [images, position, cap, "or" | "platine", "simple" | "double"]
 const PLAQUES := [
-	["4_ewf", Vector3(4.995, 1.58, -1.25), -PI / 2, "or"],
-	["3_wonder", Vector3(4.995, 1.92, -4.6), -PI / 2, "platine"],
-	["5_kiss", Vector3(4.995, 1.72, -5.3), -PI / 2, "or"],
-	["4_ewf", Vector3(4.995, 2.02, -2.05), -PI / 2, "platine"],
+	[["4_ewf", "4_ewf"], Vector3(4.985, 1.92, -1.62), -PI / 2, "or", "double"],
+	[["3_wonder"], Vector3(4.985, 1.95, -4.62), -PI / 2, "platine", "simple"],
+	[["5_kiss"], Vector3(4.985, 1.9, -5.38), -PI / 2, "or", "simple"],
 ]
 
 
@@ -462,7 +462,7 @@ func _img(name: String) -> Texture2D:
 
 
 func _frames() -> void:
-	var black := Mk.mat(Mk.c(0x0b0908), .35, 0.0, {"clearcoat": .6})
+	var black := Mk.mat(Mk.c(0x0b0908), .32, 0.0, {"clearcoat": .7, "clearcoat_rough": .2})
 	for it in POSTERS:
 		var tex := _img(it[0])
 		if tex == null:
@@ -473,65 +473,143 @@ func _frames() -> void:
 		g.position = it[1]
 		g.rotation.y = it[2]
 		add_child(g)
-		Mk.mi(Mk.rounded_box(Vector3(w + .06, h + .06, .03), .004, black, 2), null, Vector3(0, 0, .015), g)
-		Mk.mi(Mk.quad(w + .02, h + .02), Mk.mat(Mk.c(0xf2ead8), .9), Vector3(0, 0, .031), g)
-		Mk.mi(Mk.quad(w, h), Mk.mat(Color.WHITE, .6, 0.0, {"map": tex}), Vector3(0, 0, .032), g)
-		Mk.mi(Mk.quad(w + .05, h + .05), Mk.mat(Color.WHITE, .03, 0.0, {"alpha": .08, "clearcoat": 1.0}), Vector3(0, 0, .036), g)
-		_picture_light(g, w + .06, h + .06)
+		var m := .05   # passe-partout
+		_frame_box(g, w + 2 * m, h + 2 * m, black, .028)
+		Mk.mi(Mk.quad(w + 2 * m, h + 2 * m), Mk.mat(Mk.c(0xeee6d4), .95), Vector3(0, 0, .016), g)
+		# biseau du passe-partout (liseré clair) + affiche
+		Mk.mi(Mk.quad(w + .008, h + .008), Mk.mat(Mk.c(0xfaf6ec), .9), Vector3(0, 0, .017), g)
+		Mk.mi(Mk.quad(w, h), Mk.mat(Color.WHITE, .7, 0.0, {"map": tex}), Vector3(0, 0, .0175), g)
+		_glass(g, w + 2 * m, h + 2 * m, .03)
+		_wall_shadow(g, w + 2 * m + .056, h + 2 * m + .056)
+		_picture_light(g, w + 2 * m + .056, h + 2 * m + .056)
 	for it in PLAQUES:
-		var tex := _img(it[0])
-		if tex == null:
+		var texs: Array = []
+		for n in it[0]:
+			var t := _img(n)
+			if t:
+				texs.append(t)
+		if texs.is_empty():
 			continue
-		var g := _plaque(tex, it[3])
+		var g := _plaque(texs, it[3], it[4] == "double")
 		g.position = it[1]
 		g.rotation.y = it[2]
 		add_child(g)
 
 
-## Certification façon disque d'or / de platine : cadre noir laqué, fond de velours, disque métal
-## gravé avec étiquette, pochette en réduction, plaque gravée en laiton, verre.
-func _plaque(cover: Texture2D, kind: String) -> Node3D:
-	var g := Node3D.new()
-	var W := .44
-	var H := .56
-	var gold := kind == "or"
-	var frame := Mk.mat(Mk.c(0x0b0908), .3, 0.0, {"clearcoat": .8})
-	Mk.mi(Mk.rounded_box(Vector3(W, H, .035), .006, frame, 2), null, Vector3(0, 0, .0175), g)
+## Cadre en baguette : quatre montants à profil arrondi, posé à `gap` du mur (vis + crochet invisibles).
+func _frame_box(g: Node3D, w: float, h: float, mat: Material, bar := .028, depth := .04) -> void:
 	for sx in [-1, 1]:
-		Mk.mi(Mk.box(Vector3(.02, H, .02)), frame, Vector3(sx * (W / 2 - .01), 0, .045), g)
+		Mk.mi(Mk.rounded_box(Vector3(bar, h + 2 * bar, depth), .006, mat, 2), null, Vector3(sx * (w / 2 + bar / 2), 0, depth / 2), g)
 	for sy in [-1, 1]:
-		Mk.mi(Mk.box(Vector3(W, .02, .02)), frame, Vector3(0, sy * (H / 2 - .01), .045), g)
-	Mk.mi(Mk.quad(W - .05, H - .05), Mk.mat(Mk.c(0x14100e), 1.0, 0.0, {"normal": Mk.noise_tex(2.0, 128, 1), "normal_scale": .5}), Vector3(0, 0, .036), g)
-	# disque : sillons gravés (anneaux) + étiquette centrale
-	if not _tex.has("grooves"):
-		_tex["grooves"] = Tex.canvas(512, 512, func(ci, w, h):
-			var c := Vector2(w / 2.0, h / 2.0)
-			ci.draw_rect(Rect2(0, 0, w, h), Color(0, 0, 0, 0))
-			ci.draw_circle(c, w * .5, Color(1, 1, 1))
-			for k in 60:
-				var r: float = w * (.17 + k * .0055)
-				ci.draw_arc(c, r, 0, TAU, 128, Color(.55, .55, .55, .35 if k % 3 else .6), 1.2)
-			ci.draw_arc(c, w * .5 - 2, 0, TAU, 128, Color(.7, .7, .7), 3.0)
-			ci.draw_circle(c, w * .16, Color(.85, .85, .85))
-			ci.draw_circle(c, w * .012, Color(.1, .1, .1)), true)
-	var metal := Mk.mat(Mk.c(0xe8c060) if gold else Mk.c(0xe8eaec), .25, .75, {"map": _tex["grooves"], "emission": Mk.c(0x4a3a18) if gold else Mk.c(0x3a3a3c), "energy": .6})
-	metal.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-	var disc := Mk.mi(Mk.quad(.27, .27), metal, Vector3(-.02, .07, .038), g)
-	disc.name = "Record"
-	# pochette en réduction qui chevauche le disque
-	Mk.mi(Mk.box(Vector3(.14, .14 * float(cover.get_height()) / cover.get_width(), .004)), Mk.mat(Color.WHITE, .5, 0.0, {"map": cover}), Vector3(.12, -.04, .041), g)
-	# plaque gravée
+		Mk.mi(Mk.rounded_box(Vector3(w, bar, depth), .006, mat, 2), null, Vector3(0, sy * (h / 2 + bar / 2), depth / 2), g)
+	# fond (carton) derrière
+	Mk.mi(Mk.box(Vector3(w, h, .012)), Mk.mat(Mk.c(0x3a2a1c), 1.0), Vector3(0, 0, .007), g)
+
+
+## Verre : presque invisible, avec un reflet en biais (comme sur les photos de cadres).
+func _glass(g: Node3D, w: float, h: float, z: float) -> void:
+	if not _tex.has("glass"):
+		_tex["glass"] = Tex.canvas(256, 256, func(ci: CanvasItem, ww: float, hh: float) -> void:
+			ci.draw_rect(Rect2(0, 0, ww, hh), Color(1, 1, 1, .02))
+			for k in 3:
+				var x0 := ww * (.1 + k * .28)
+				var pts := PackedVector2Array([Vector2(x0, 0), Vector2(x0 + 22 + k * 10, 0), Vector2(x0 - 50 + k * 10, hh), Vector2(x0 - 72, hh)])
+				ci.draw_colored_polygon(pts, Color(1, 1, 1, .07 - k * .015)), true)
+	var gm := Mk.mat(Color.WHITE, .02, 0.0, {"map": _tex["glass"], "clearcoat": 1.0, "clearcoat_rough": .02})
+	gm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	gm.metallic_specular = 1.0
+	Mk.mi(Mk.quad(w, h), gm, Vector3(0, 0, z), g)
+
+
+## Ombre douce du cadre sur le mur (un peu décalée vers le bas : la lumière vient du dessus).
+func _wall_shadow(g: Node3D, w: float, h: float) -> void:
+	if not _tex.has("fshadow"):
+		_tex["fshadow"] = Tex.canvas(128, 128, func(ci: CanvasItem, ww: float, hh: float) -> void:
+			ci.draw_rect(Rect2(0, 0, ww, hh), Color(0, 0, 0, 0))
+			for k in 16:
+				var m := 2.0 + k * 1.6
+				ci.draw_rect(Rect2(m, m, ww - 2 * m, hh - 2 * m), Color(0, 0, 0, .055)), true)
+	var sm := Mk.mat(Color.WHITE, 1.0, 0.0, {"map": _tex["fshadow"]})
+	sm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	var q := Mk.mi(Mk.quad(w + .08, h + .08), sm, Vector3(.006, -.025, .0035), g)
+	q.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+
+## Disque doré / platine : métal miroir à reflets en étoile (anisotropie circulaire, comme sur les
+## photos), sillons gravés, étiquette centrale avec la pochette.
+func _record_mat(gold: bool, cover: Texture2D) -> StandardMaterial3D:
+	if not _tex.has("rec_flow"):
+		var img := Image.create(256, 256, false, Image.FORMAT_RGB8)
+		for y in 256:
+			for x in 256:
+				var d := Vector2(x - 127.5, y - 127.5).normalized()
+				var t := Vector2(-d.y, d.x)
+				img.set_pixel(x, y, Color(t.x * .5 + .5, t.y * .5 + .5, 0))
+		_tex["rec_flow"] = ImageTexture.create_from_image(img)
+		_tex["rec_rough"] = Tex.canvas(512, 512, func(ci: CanvasItem, w: float, h: float) -> void:
+			var c := Vector2(w / 2, h / 2)
+			ci.draw_rect(Rect2(0, 0, w, h), Color(.2, .2, .2))
+			for k in 90:
+				var r: float = w * (.2 + k * .0033)
+				ci.draw_arc(c, r, 0, TAU, 160, Color(.45, .45, .45) if k % 4 == 0 else Color(.12, .12, .12), 1.4)
+			ci.draw_arc(c, w * .5 - 3, 0, TAU, 160, Color(.05, .05, .05), 5.0))
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Mk.c(0xf0c050) if gold else Mk.c(0xe8eaee)
+	m.metallic = 1.0
+	m.roughness = 1.0
+	m.roughness_texture = _tex["rec_rough"]
+	m.anisotropy_enabled = true
+	m.anisotropy = .85
+	m.anisotropy_flowmap = _tex["rec_flow"]
+	return m
+
+
+func _plaque(covers: Array, kind: String, double: bool) -> Node3D:
+	var g := Node3D.new()
+	var gold := kind == "or"
+	var n := 2 if double else 1
+	var W := .82 if double else .5
+	var H := .6 if double else .66
+	var bar := .03
+	var frame_mat: Material = Mk.mat(Mk.c(0xc8a050), .28, 1.0) if double else Mk.mat(Mk.c(0x0b0908), .3, 0.0, {"clearcoat": .8})
+	_frame_box(g, W, H, frame_mat, bar, .045)
+	# velours : bordeaux pour le double (comme ta photo), noir sinon
+	var vel := Mk.mat(Mk.c(0x4a0e10) if double else Mk.c(0x111014), 1.0, 0.0, {"normal": Mk.noise_tex(3.0, 128, 1), "normal_scale": .35, "rim": .35})
+	Mk.mi(Mk.quad(W, H), vel, Vector3(0, 0, .014), g)
+	var rd := .3 if double else .32
+	for i in n:
+		var cx := (i - (n - 1) / 2.0) * (W / n) * 1.0
+		var cy := .06 if double else .1
+		var disc := Mk.mi(Mk.disc(rd / 2, 96), _record_mat(gold, covers[mini(i, covers.size() - 1)]), Vector3(cx, cy, .018), g)
+		disc.name = "Record"
+		disc.rotation.x = PI / 2
+		# étiquette : la pochette, en rond, au centre
+		var lab := Mk.mat(Color.WHITE, .6, 0.0, {"map": covers[mini(i, covers.size() - 1)]})
+		var lb := Mk.mi(Mk.disc(rd * .17, 48), lab, Vector3(cx, cy, .0185), g)
+		lb.rotation.x = PI / 2
+		var hole := Mk.mi(Mk.disc(.004, 16), Mk.mat(Mk.c(0x0a0a0a), .5), Vector3(cx, cy, .019), g)
+		hole.rotation.x = PI / 2
+	if not double:
+		# pochette en réduction en bas à gauche
+		var cv: Texture2D = covers[0]
+		Mk.mi(Mk.box(Vector3(.12, .12 * float(cv.get_height()) / cv.get_width(), .003)), Mk.mat(Color.WHITE, .5, 0.0, {"map": cv}), Vector3(-.14, -.22, .017), g)
+	# plaque gravée en laiton
 	var key := "plate" + kind
 	if not _tex.has(key):
-		_tex[key] = Tex.canvas(512, 128, func(ci, w, h):
-			ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0xc8a050) if gold else Mk.c(0xc8c8c8))
+		_tex[key] = Tex.canvas(512, 160, func(ci: CanvasItem, w: float, h: float) -> void:
+			ci.draw_rect(Rect2(0, 0, w, h), Mk.c(0xd0aa58) if gold else Mk.c(0xcacaca))
 			Tex.brushed(ci, w, h, 5, .08)
-			ci.draw_rect(Rect2(6, 6, w - 12, h - 12), Color(.1, .08, .05, .7), false, 2.0)
-			Tex.silk(ci, "GOLD RECORD" if gold else "PLATINUM RECORD", w / 2.0, h * .45, 34, Color(.12, .09, .05), "center", 800)
-			Tex.silk(ci, "presented to REEL'S TOOLS · recorded in this studio", w / 2.0, h * .78, 17, Color(.12, .09, .05, .85), "center", 600))
-	Mk.mi(Mk.rounded_box(Vector3(.3, .075, .004), .002, Mk.mat(Color.WHITE, .3, 1.0, {"map": _tex[key]}), 1), null, Vector3(0, -.205, .039), g)
-	Mk.mi(Mk.quad(W - .03, H - .03), Mk.mat(Color.WHITE, .03, 0.0, {"alpha": .08, "clearcoat": 1.0}), Vector3(0, 0, .05), g)
-	_picture_light(g, W, H)
+			Tex.silk(ci, "PRESENTED TO", w / 2.0, h * .2, 15, Color(.12, .09, .05, .8), "center", 600)
+			Tex.silk(ci, "REEL'S TOOLS STUDIO", w / 2.0, h * .38, 22, Color(.12, .09, .05), "center", 800)
+			Tex.silk(ci, "to commemorate the sale of more than", w / 2.0, h * .56, 14, Color(.12, .09, .05, .85), "center", 500)
+			Tex.silk(ci, ("500,000" if gold else "1,000,000") + " copies of the album", w / 2.0, h * .7, 14, Color(.12, .09, .05, .85), "center", 500)
+			Tex.silk(ci, "GOLD RECORD AWARD" if gold else "PLATINUM RECORD AWARD", w / 2.0, h * .88, 17, Color(.12, .09, .05), "center", 800))
+	var pw := .26 if not double else .22
+	var plate := Mk.mat(Color.WHITE, .3, .35, {"map": _tex[key]})
+	Mk.mi(Mk.rounded_box(Vector3(pw, pw * .31, .003), .002, plate, 1), null, Vector3(.08 if not double else 0.0, -.22 if not double else -.2, .017), g)
+	_glass(g, W, H, .043)
+	_wall_shadow(g, W + 2 * bar, H + 2 * bar)
+	_picture_light(g, W + 2 * bar, H + 2 * bar)
 	return g
 
 

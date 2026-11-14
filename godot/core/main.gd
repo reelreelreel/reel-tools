@@ -41,6 +41,8 @@ func _ready() -> void:
 		# captures de dev (rendu logiciel, mémoire limitée) : ombres et anticrénelage allégés
 		get_viewport().positional_shadow_atlas_size = (1024 if OS.has_environment("REEL_TINY") else 2048) if OS.has_environment("REEL_LOWMEM") else 4096
 		get_viewport().msaa_3d = Viewport.MSAA_DISABLED
+		if OS.has_environment("REEL_LOWMEM"):
+			RenderingServer.directional_shadow_atlas_set_size(1024, true)
 	DisplayServer.window_set_min_size(Vector2i(480, 320))
 	engine = TempoEngine.new()
 	studio = Studio7080.new(engine)

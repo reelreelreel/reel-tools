@@ -1798,6 +1798,8 @@ func yaw_to(p: Vector3) -> float:
 
 ## Renvoie [position, point visé] : vue depuis le fauteuil, ou gros plan sur un module.
 func shot_pose(shot: String, cam: Camera3D, aspect: float) -> Array:
+	if shot == "v_plaque":  # dev : le double disque d'or
+		return [Vector3(3.9, 1.85, -1.62), Vector3(4.98, 1.92, -1.62)]
 	if shot == "v_lava":  # dev : la lampe à lave
 		return [Vector3(1.75, 1.32, -5.05), Vector3(1.6, 1.2, -5.68)]
 	if shot == "v_street":  # dev : le nez à la fenêtre
